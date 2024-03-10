@@ -27,6 +27,11 @@ inline constexpr char16_t CR = 0x000D;  // Carriage Return
 inline constexpr char16_t LS = 0x2028;  // Line Separater
 inline constexpr char16_t PS = 0x2029;  // Paragrah Separater
 
+
+// End of Line
+// U+0000 means NULL in Unicode, here we use it to represent EOS
+inline constexpr char16_t EOS = 0x0000;
+
 // Unicode Character Categories "Space Separater"
 // https://www.compart.com/en/unicode/category/Zs
 constexpr bool IsUSP(char16_t ch) {

@@ -1,0 +1,42 @@
+#ifndef VOIDJS_LEXER_H
+#define VOIDJS_LEXER_H
+
+#include <string>
+
+#include "voidjs/parser/character.h"
+#include "voidjs/parser/token.h"
+
+namespace voidjs {
+
+class Lexer {
+ public:
+  explicit Lexer(const std::u16string& src)
+    : src_(src), cur_(0), nxt_(1) {
+    if (!src_.empty()) {
+      ch_ = src_.at(0);
+    } else {
+      ch_ = character::EOS;
+    }
+  }
+  ~Lexer() = default;
+
+  // Non-Copyable
+  Lexer(const Lexer&) = delete;
+  Lexer& operator=(const Lexer&) = delete;
+
+  Token NextToken();
+
+ private:
+  char16_t NextChar();
+  char16_t PeekChar();
+  
+ private:
+  std::u16string src_;
+  char16_t ch_ {};
+  std::size_t cur_ {};
+  std::size_t nxt_ {};
+};
+
+}  // namespace voidjs
+
+#endif  // VOIDJS_LEXER_H

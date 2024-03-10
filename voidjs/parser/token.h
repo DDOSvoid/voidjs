@@ -77,7 +77,9 @@ enum class TokenType {
 
   // Illegal
   ILLEGAL,
-  
+
+  // End of Source
+  EOS, 
 };
 
 const std::array<std::u16string, 26> kKeywords = {
@@ -100,11 +102,11 @@ const std::array<std::u16string, 9> kStrictModeFutureReservedWords = {
   u"interface",  u"package",   u"protected",   u"static"
 };
 
-class Token {
- public:
-  
- private:
-  
+struct Token {
+  TokenType type {TokenType::EOS};
+  std::u16string str;
+  std::size_t start {};
+  std::size_t end {};
 };
  
 }  // namespace voidjs
