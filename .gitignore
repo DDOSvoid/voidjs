@@ -1,0 +1,9 @@
+# ignore clangd cache files
+/.cache
+
+# ignore binary dir
+/bin
+
+# ignore build dir
+/build
+
