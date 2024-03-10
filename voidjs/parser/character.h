@@ -27,8 +27,7 @@ inline constexpr char16_t CR = 0x000D;  // Carriage Return
 inline constexpr char16_t LS = 0x2028;  // Line Separater
 inline constexpr char16_t PS = 0x2029;  // Paragrah Separater
 
-
-// End of Line
+// End of Source
 // U+0000 means NULL in Unicode, here we use it to represent EOS
 inline constexpr char16_t EOS = 0x0000;
 
@@ -93,7 +92,6 @@ constexpr bool IsNonZeroDigit(char16_t ch) {
 constexpr bool IsHexDigit(char16_t ch) {
   return IsDecimalDigit(ch) || (u'a' <= ch && ch <= u'f') || (u'A' <= ch && ch <= u'F');
 }
-
 
 // String Literal Predicates
 // Defined in EcMAScript 5.1 Charpter 7.8.4
