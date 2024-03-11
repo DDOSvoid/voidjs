@@ -10,8 +10,8 @@ namespace voidjs {
 
 class Lexer {
  public:
-  explicit Lexer(const std::u16string& src)
-    : src_(src), cur_(0), nxt_(1) {
+  explicit Lexer(const std::u16string& src, bool use_strict = false)
+    : src_(src), cur_(0), nxt_(1), use_strict_(use_strict) {
     if (!src_.empty()) {
       ch_ = src_.at(0);
     } else {
@@ -35,6 +35,7 @@ class Lexer {
   char16_t ch_ {};
   std::size_t cur_ {};
   std::size_t nxt_ {};
+  bool use_strict_ {};
 };
 
 }  // namespace voidjs

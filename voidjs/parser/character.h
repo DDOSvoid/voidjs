@@ -1,6 +1,8 @@
 #ifndef VOIDJS_CHARACTER_H
 #define VOIDJS_CHARACTER_H
 
+#include "voidjs/parser/unicode.h"
+
 namespace voidjs {
 namespace character {
 
@@ -53,19 +55,20 @@ constexpr bool IsLineTerminator(char16_t ch) {
 // Identifier Predicates
 // Defined in ECMAScript 5.1 Chapter 7.6
 constexpr bool IsUnicodeLetter(char16_t ch) {
-  return true;
+  return 1 << unicode::GetCategory(ch) & (unicode::Lu | unicode::Ll | unicode::Lt |
+                                          unicode::Lm | unicode::Lo | unicode::Nl);
 }
 
 constexpr bool IsUnicodeCombiningMark(char16_t ch) {
-  return true;
+  return 1 << unicode::GetCategory(ch) & (unicode::Mn | unicode::Mc);
 }
 
 constexpr bool IsUnicodeDigit(char16_t ch) {
-  return true;
+  return unicode::GetCategory(ch) == unicode::DECIMAL_DIGIT_NUMBER;
 }
 
 constexpr bool IsUnicodeConnectorPunctuation(char16_t ch) {
-  return true;
+  return unicode::GetCategory(ch) == unicode::CONNECTOR_PUNCTUATION;
 }
 
 constexpr bool IsIdentifierStart(char16_t ch) {
@@ -98,7 +101,7 @@ constexpr bool IsHexDigit(char16_t ch) {
 constexpr bool IsSingleEscapeCharacter(char16_t ch) {
   return
     ch == u'\'' || ch == u'"'  || ch == u'\\' || ch == u'b' ||
-    ch == u'f'  || ch == u'n'  || ch == u'r' ||
+    ch == u'f'  || ch == u'n'  || ch == u'r'  ||
     ch == u't'  || ch == u'v';
 }
 

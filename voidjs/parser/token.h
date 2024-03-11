@@ -28,7 +28,7 @@ enum class TokenType {
   SEMICOLON,             // ;
   COMMA,                 // ,
   LESS_THAN,             // <
-  GREATER_THEN,          // >
+  GREATER_THAN,          // >
   LESS_EQUAL,            // <= 
   GREATER_EQUAL,         // >=
   EQUAL,                 // ==
@@ -63,7 +63,7 @@ enum class TokenType {
   U_RIGHT_SHIFT_ASSIGN,  // >>>=
   BIT_AND_ASSIGN,        // &=
   BIT_OR_ASSIGN,         // |= 
-  BIT_NOT_ASSIGN,        // ~=
+  BIT_XOR_ASSIGN,        // ^=
 
   // DivPunctuator
   DIV,                   // /
