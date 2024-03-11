@@ -75,6 +75,12 @@ enum class TokenType {
   // StringLiteral
   STRING,
 
+  // Types defined below are not part of the standard
+  
+  // Comment
+  SINGLE_LINE_COMMENT,
+  MULTI_LINE_COMMENT,
+  
   // Illegal
   ILLEGAL,
 

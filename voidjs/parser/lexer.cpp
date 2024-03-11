@@ -1,4 +1,5 @@
 #include "voidjs/parser/lexer.h"
+#include "voidjs/parser/character.h"
 #include "voidjs/parser/token.h"
 
 namespace voidjs {
@@ -14,10 +15,10 @@ Token Lexer::NextToken() {
   
   // go back to start when encounter Line Terminator
  start:
-  while (character::IsWhitespace(ch_)) NextChar();
+  SkipWhitespace();
   
   switch (ch_) {
-    // Punctor
+    // Punctuator
     case u'{':
       token.type = TokenType::LEFT_BRACE;
       NextChar();
@@ -224,20 +225,28 @@ Token Lexer::NextToken() {
       break;
     case u'/':
       // / // /* /=
-      NextChar();
-      if (ch_ == u'/') {
-        // SingleLineComment
-        
-      } else if (ch_ == u'*') {
-        // MultiLineComment
-      } else if (ch_ == u'=') {
+      if (PeekChar() == u'/') {
+        SkipSingleLineComment();
+        goto start;
+      } else if (PeekChar() == u'*') {
+        SkipMultiLineComment();
+        goto start;
+      } else if (PeekChar() == u'=') {
+        NextChar();
         token.type = TokenType::DIV_ASSIGN;
         NextChar();
       } else {
         token.type = TokenType::DIV;
+        NextChar();
       }
       break;
     default:
+      if (character::IsLineTerminator(ch_)) {
+        SkipLineTerminator();
+        goto start;
+      } else {
+        
+      }
       break;
   }
   return token;
@@ -259,6 +268,56 @@ char16_t Lexer::PeekChar() {
   } else {
     return character::EOS;
   }
+}
+
+void Lexer::SkipWhitespace() {
+  while (character::IsWhitespace(ch_)) {
+    NextChar();
+  }
+}
+
+// Skip line terminator
+// Defined in ECMAScript 5.1 Chapter 7.3
+void Lexer::SkipLineTerminator() {
+  // The character sequence <CR><LF> is commonly used as a line terminator
+  if (ch_ == character::CR && PeekChar() == character::LF) {
+    NextChar();
+  }
+  NextChar();
+}
+
+// Skip until LineTerminator
+// Defined in ECMAScript 5.1 Chapter 7.4
+// Because a single-line comment can contain any character except a LineTerminator character,
+// and because of the general rule that a token is always as long as possible,
+// a single-line comment always consists of all characters from the // marker to the end of the line.
+// However, the LineTerminator at the end of the line is not considered to be part of the single-line comment;
+// it is recognised separately by the lexical grammar and becomes part of the stream of input elements for the syntactic grammar.
+TokenType Lexer::SkipSingleLineComment() {
+  NextChar();
+  NextChar();
+  while (ch_ != character::EOS && !character::IsLineTerminator(ch_)) {
+    NextChar();
+  }
+  return TokenType::SINGLE_LINE_COMMENT;
+}
+
+// Skip multi-line comment
+// Defined in ECMAScript 5.1 Chapter 7.4
+// Multi-line comments cannot nest.
+TokenType Lexer::SkipMultiLineComment() {
+  NextChar();
+  NextChar();
+  while (ch_ != character::EOS) {
+    if (ch_ == u'*' && PeekChar() == u'/') {
+      NextChar();
+      NextChar();
+      return TokenType::MULTI_LINE_COMMENT;
+    } else {
+      NextChar();
+    }
+  }
+  return TokenType::ILLEGAL;
 }
 
 }  // namespace voidjs

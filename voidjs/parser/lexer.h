@@ -29,6 +29,11 @@ class Lexer {
  private:
   char16_t NextChar();
   char16_t PeekChar();
+
+  void SkipWhitespace();
+  void SkipLineTerminator();
+  TokenType SkipSingleLineComment();
+  TokenType SkipMultiLineComment();
   
  private:
   std::u16string src_;

@@ -7,7 +7,7 @@
 
 using namespace voidjs;
 
-TEST(Lexer, PunctuatorTest) {
+TEST(Lexer, Punctuator) {
   Lexer lexer(u"{}()[].;,< << <= <<= > >> >>> >= >>= >>>= ! != !== + ++ += - -- -= * *= % %= & && &= | || |= ^ ^= ~ ? : / /=");
 
   std::vector<std::any> expects = {
@@ -57,6 +57,32 @@ TEST(Lexer, PunctuatorTest) {
     {TokenType::DIV},                   // /
     {TokenType::DIV_ASSIGN},            // /=
     {TokenType::EOS},                   // EOS
+  };
+
+  for (auto& expect : expects) {
+    EXPECT_EQ(std::any_cast<TokenType>(expect), lexer.NextToken().type);
+  }
+}
+
+TEST(Lexer, Comment) {
+  std::u16string source = uR"(
++
+// -- ++
+/* << >>
+&&& */
+-
+|||
+)";
+
+  Lexer lexer(source); 
+
+  std::vector<std::any> expects = {
+    {TokenType::ADD},
+    {TokenType::SUB},
+    {TokenType::LOGICAL_OR},
+    {TokenType::BIT_OR},
+    {TokenType::EOS},
+    {TokenType::EOS},
   };
 
   for (auto& expect : expects) {
