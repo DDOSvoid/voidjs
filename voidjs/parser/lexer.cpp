@@ -538,7 +538,7 @@ bool Lexer::SkipEscapeSequence() {
     return true;
   } else if (ch_ == u'x' && SkipHexEscapeSequence()) {
     return true;
-  } else if (ch_ == '\\' && SkipUnicodeEscapeSequence().has_value()) {
+  } else if (ch_ == u'\\' && SkipUnicodeEscapeSequence().has_value()) {
     // UnicodeEscapeSequence is not escaped for now.
     return true;
   } else {
@@ -603,7 +603,7 @@ Token Lexer::ScanIdentifier() {
   std::size_t start = cur_;
 
   // IdentifierStart
-  if (ch_ == '\\') {
+  if (ch_ == u'\\') {
     if (auto ret = SkipUnicodeEscapeSequence(); ret.has_value()) {
       ident_name.push_back(ret.value());
     } else {
@@ -615,7 +615,7 @@ Token Lexer::ScanIdentifier() {
   }
   
   while (character::IsIdentifierPart(ch_)) {
-    if (ch_ == '\\') {
+    if (ch_ == u'\\') {
       if (auto ret = SkipUnicodeEscapeSequence(); ret.has_value()) {
         ident_name.push_back(ret.value());
       } else {
