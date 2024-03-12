@@ -2,6 +2,7 @@
 #define VOIDJS_LEXER_H
 
 #include <string>
+#include <optional>
 
 #include "voidjs/parser/character.h"
 #include "voidjs/parser/token.h"
@@ -34,6 +35,12 @@ class Lexer {
   void SkipLineTerminator();
   TokenType SkipSingleLineComment();
   TokenType SkipMultiLineComment();
+
+  std::optional<char16_t> SkipUnicodeEscapeSequence();
+
+  Token ScanIdentifier();
+  Token ScanNumericLiteral();
+  Token ScanStringLiteral();
   
  private:
   std::u16string src_;

@@ -72,12 +72,12 @@ constexpr bool IsUnicodeConnectorPunctuation(char16_t ch) {
 }
 
 constexpr bool IsIdentifierStart(char16_t ch) {
-  return IsUnicodeLetter(ch) || ch == u'$' || ch == u'_';
+  return IsUnicodeLetter(ch) || ch == u'$' || ch == u'_' || ch == u'\\';
 }
 
 constexpr bool IsIdentifierPart(char16_t ch) {
   return
-    IsIdentifierPart(ch) || IsUnicodeCombiningMark(ch)        ||
+    IsIdentifierStart(ch) || IsUnicodeCombiningMark(ch)        ||
     IsUnicodeDigit(ch)   || IsUnicodeConnectorPunctuation(ch) ||
     ch == ZWNJ           || ch == ZWJ; 
 }

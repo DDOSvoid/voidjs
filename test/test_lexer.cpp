@@ -82,10 +82,37 @@ TEST(Lexer, Comment) {
     {TokenType::LOGICAL_OR},
     {TokenType::BIT_OR},
     {TokenType::EOS},
-    {TokenType::EOS},
   };
 
   for (auto& expect : expects) {
     EXPECT_EQ(std::any_cast<TokenType>(expect), lexer.NextToken().type);
+  }
+}
+
+TEST(Lexer, Identifier) {
+  std::u16string source = uR"(
+value x
+var = // dsdsfdf
+enum private
+/* public */ test
+)";
+
+  Lexer lexer(source);
+
+  std::vector<Token> expects = {
+    {TokenType::IDENTIFIER, u"value"},
+    {TokenType::IDENTIFIER, u"x"},
+    {TokenType::KEYWORD, u"var"},
+    {TokenType::ASSIGN},
+    {TokenType::FUTURE_RESERVED_WORD, u"enum"},
+    {TokenType::STRICT_MODE_FUTURE_RESERVED_WORD, u"private"},
+    {TokenType::IDENTIFIER, u"test"}, 
+    {TokenType::EOS},
+  };
+  
+  for (auto& expect_token : expects) {
+    auto token = lexer.NextToken();
+    EXPECT_EQ(expect_token.type, token.type);
+    EXPECT_EQ(expect_token.value, token.value);
   }
 }

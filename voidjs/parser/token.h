@@ -14,6 +14,7 @@ enum class TokenType {
   // ReservedWord
   KEYWORD,
   FUTURE_RESERVED_WORD,
+  STRICT_MODE_FUTURE_RESERVED_WORD,
   NULL_LITERAL,
   BOOLEAN_LITERAL,
 
@@ -89,28 +90,28 @@ enum class TokenType {
 };
 
 const std::array<std::u16string, 26> kKeywords = {
-  u"break",      u"do",        u"instanceof",  u"typeof",
-  u"case",       u"else",      u"new",         u"var",
-  u"catch",      u"finally",   u"return",      u"void",
-  u"continue",   u"for",       u"switch",      u"while",
-  u"debugger",   u"function",  u"this",        u"with",
-  u"default",    u"if",        u"throw",
-  u"delete",     u"in",        u"try",
+  u"break",       u"do",         u"instanceof",  u"typeof",
+  u"case",        u"else",       u"new",         u"var",
+  u"catch",       u"finally",    u"return",      u"void",
+  u"continue",    u"for",        u"switch",      u"while",
+  u"debugger",    u"function",   u"this",        u"with",
+  u"default",     u"if",         u"throw",
+  u"delete",      u"in",         u"try",
 };
 
 const std::array<std::u16string, 7> kFutureReservedWords = {
-  u"class",      u"enum",      u"extends",     u"super",
-  u"const",      u"export",    u"import",
+  u"class",       u"enum",       u"extends",     u"super",
+  u"const",       u"export",     u"import",
 };
 
 const std::array<std::u16string, 9> kStrictModeFutureReservedWords = {
-  u"implements", u"let",       u"private",     u"public", u"yield",
-  u"interface",  u"package",   u"protected",   u"static"
+  u"implements",  u"let",        u"private",     u"public",   u"yield",
+  u"interface",   u"package",    u"protected",   u"static"
 };
 
 struct Token {
   TokenType type {TokenType::EOS};
-  std::u16string str;
+  std::u16string value;
   std::size_t start {};
   std::size_t end {};
 };

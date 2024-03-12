@@ -2,13 +2,16 @@
 #include "voidjs/parser/character.h"
 #include "voidjs/parser/token.h"
 
+#include <iostream>
+#include <optional>
+
 namespace voidjs {
 
 // Token ::
-//          IdentifierName
-//          Punctuator
-//          NumericLiteral
-//          StringLiteral
+//   IdentifierName
+//   Punctuator
+//   NumericLiteral
+//   StringLiteral
 // Defined in ECMAScript 5.1 Chapter 7.5
 Token Lexer::NextToken() {
   Token token;
@@ -19,43 +22,57 @@ Token Lexer::NextToken() {
   
   switch (ch_) {
     // Punctuator
-    case u'{':
+    case u'{': {
       token.type = TokenType::LEFT_BRACE;
       NextChar();
       break;
-    case u'}':
+    }
+    case u'}': {
       token.type = TokenType::RIGHT_BRACE;
       NextChar();
       break;
-    case u'(':
+    }
+    case u'(': {
       token.type = TokenType::LEFT_PAREN;
       NextChar();
       break;
-    case u')':
+    }
+    case u')': {
       token.type = TokenType::RIGHT_PAREN;
       NextChar();
       break;
-    case u'[':
+    }
+    case u'[': {
       token.type = TokenType::LEFT_BRACKET;
       NextChar();
       break;
-    case u']':
+    }
+    case u']': {
       token.type = TokenType::RIGHT_BRACKET;
       NextChar();
       break;
-    case u'.':
-      token.type = TokenType::DOT;
-      NextChar();
+    }
+    case u'.': {
+      // . NumericLiteral
+      if (character::IsDecimalDigit(PeekChar())) {
+        ScanNumericLiteral();
+      } else {
+        token.type = TokenType::DOT;
+        NextChar();
+      }
       break;
-    case u';':
+    }
+    case u';': {
       token.type = TokenType::SEMICOLON;
       NextChar();
       break;
-    case u',':
+    }
+    case u',': {
       token.type = TokenType::COMMA;
       NextChar();
       break;
-    case u'<':
+    }
+    case u'<': {
       // < << <= <<=
       NextChar();
       if (ch_ == u'<') {
@@ -73,7 +90,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::LESS_THAN;
       }
       break;
-    case u'>':
+    }
+    case u'>': {
       // > >> >>> >= >>= >>>=
       NextChar();
       if (ch_ == u'>') {
@@ -99,7 +117,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::GREATER_THAN;
       }
       break;
-    case u'=':
+    }
+    case u'=': {
       // = == ===
       NextChar();
       if (ch_ == u'=') {
@@ -114,7 +133,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::ASSIGN;
       }
       break;
-    case u'!':
+    }
+    case u'!': {
       // ! != !==
       NextChar();
       if (ch_ == u'=') {
@@ -129,7 +149,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::LOGICAL_NOT;
       }
       break;
-    case u'+':
+    }
+    case u'+': {
       // + ++ +=
       NextChar();
       if (ch_ == u'+') {
@@ -142,7 +163,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::ADD;
       }
       break;
-    case u'-':
+    }
+    case u'-': {
       // - -- -=
       NextChar();
       if (ch_ == u'-') {
@@ -155,7 +177,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::SUB;
       }
       break;
-    case u'*':
+    }
+    case u'*': {
       // * *=
       NextChar();
       if (ch_ == u'=') {
@@ -165,7 +188,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::MUL;
       }
       break;
-    case u'%':
+    }
+    case u'%': {
       // % %=
       NextChar();
       if (ch_ == u'=') {
@@ -175,7 +199,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::MOD;
       }
       break;
-    case u'&':
+    }
+    case u'&': {
       // & && &=
       NextChar();
       if (ch_ == u'&') {
@@ -188,7 +213,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::BIT_AND;
       }
       break;
-    case u'|':
+    }
+    case u'|': {
       // | || |=
       NextChar();
       if (ch_ == u'|') {
@@ -201,7 +227,8 @@ Token Lexer::NextToken() {
         token.type = TokenType::BIT_OR;
       }
       break;
-    case u'^':
+    }
+    case u'^': {
       // ^ ^=
       NextChar();
       if (ch_ == u'=') {
@@ -211,19 +238,23 @@ Token Lexer::NextToken() {
         token.type = TokenType::BIT_XOR;
       }
       break;
-    case u'~':
+    }
+    case u'~': {
       token.type = TokenType::BIT_NOT;
       NextChar();
       break;
-    case u'?':
+    }
+    case u'?': {
       token.type = TokenType::QUESTION;
       NextChar();
       break;
-    case u':':
+    }
+    case u':': {
       token.type = TokenType::COLON;
       NextChar();
       break;
-    case u'/':
+    }
+    case u'/': {
       // / // /* /=
       if (PeekChar() == u'/') {
         SkipSingleLineComment();
@@ -240,14 +271,25 @@ Token Lexer::NextToken() {
         NextChar();
       }
       break;
-    default:
-      if (character::IsLineTerminator(ch_)) {
+    }
+    default: {
+      if (character::IsIdentifierStart(ch_)) {
+        token = ScanIdentifier();
+      } else if (character::IsDecimalDigit(ch_)) {
+        token = ScanNumericLiteral();
+      } else if (ch_ == '\'' || ch_ == '"') {
+        token = ScanStringLiteral();
+      } else if (character::IsLineTerminator(ch_)) {
         SkipLineTerminator();
         goto start;
+      } else if (ch_ == character::EOS) {
+        token.type = TokenType::EOS;
       } else {
-        
+        token.type = TokenType::ILLEGAL;
+        NextChar();
       }
       break;
+    }
   }
   return token;
 }
@@ -318,6 +360,110 @@ TokenType Lexer::SkipMultiLineComment() {
     }
   }
   return TokenType::ILLEGAL;
+}
+
+
+// Skip Unicode escape sequence
+// Modified from https://github.com/zhuzilin/es/blob/main/es/parser/lexer.h
+// IdentifierStart ::
+//   UnicodeLetter
+//   $
+//   _
+//   \ UnicodeEscapeSequence
+// UnicodeEscapeSequence ::
+//   u HexDigit HexDigit HexDigit HexDigit
+// Defined in ECMAScript 5.1 7.8.4
+std::optional<char16_t> Lexer::SkipUnicodeEscapeSequence() {
+  if (PeekChar() != u'u') {
+    return std::nullopt;
+  }
+  NextChar();
+  NextChar();
+  char16_t ch = 0x0000;
+  auto hexdigit_to_decimaldigit = [](char16_t ch) -> char16_t {
+    if (u'0' <= u'9') {
+      return ch - u'0';
+    }
+    if (u'a' <= u'f') {
+      return ch - u'a' + 10;
+    }
+    if (u'A' <= u'F') {
+      return ch - u'A' + 10;
+    }
+  };
+  for (std::size_t i = 0; i < 4; ++i) {
+    if (character::IsHexDigit(ch_)) {
+      return std::nullopt;
+    }
+    ch = ch << 4 | hexdigit_to_decimaldigit(ch);
+    NextChar();
+  }
+  return {ch};
+}
+
+// Scan identifier
+// Defined in ECMAScript 5.1 Chapter 7.6
+// IdentifierName ::
+//   IdentifierStart
+//   IdentifierName IdentifierPart
+// Unicode escape sequences are also permitted in an IdentifierName,
+// where they contribute a single character to the IdentifierName,
+// as computed by the CV of the UnicodeEscapeSequence (see 7.8.4).
+Token Lexer::ScanIdentifier() {
+  std::u16string ident_name;
+  std::size_t start = cur_;
+
+  // IdentifierStart
+  if (ch_ == '\\') {
+    if (auto ret = SkipUnicodeEscapeSequence(); ret.has_value()) {
+      ident_name.push_back(ret.value());
+    } else {
+      return {TokenType::ILLEGAL};
+    }
+  } else {
+    ident_name.push_back(ch_);
+    NextChar();
+  }
+  
+  while (character::IsIdentifierPart(ch_)) {
+    if (ch_ == '\\') {
+      if (auto ret = SkipUnicodeEscapeSequence(); ret.has_value()) {
+        ident_name.push_back(ret.value());
+      } else {
+        return {TokenType::ILLEGAL};
+      }
+    } else {
+      ident_name.push_back(ch_);
+      NextChar();
+    }
+  }
+
+  // ReservedWord
+  if (ident_name == u"null") {
+    return {TokenType::NULL_LITERAL, ident_name, start, cur_};
+  } else if (ident_name == u"true" || ident_name == u"false") {
+    return {TokenType::BOOLEAN_LITERAL, ident_name, start, cur_};
+  } else if (std::find(kKeywords.begin(), kKeywords.end(), ident_name) != kKeywords.end()) {
+    return {TokenType::KEYWORD, ident_name, start, cur_};
+  } else if (std::find(kFutureReservedWords.begin(),
+                       kFutureReservedWords.end(), ident_name) != kFutureReservedWords.end()) {
+    return {TokenType::FUTURE_RESERVED_WORD, ident_name, start, cur_};
+  } else if (std::find(kStrictModeFutureReservedWords.begin(),
+                       kStrictModeFutureReservedWords.end(), ident_name) != kStrictModeFutureReservedWords.end()) {
+    return {TokenType::STRICT_MODE_FUTURE_RESERVED_WORD, ident_name, start, cur_};
+  } else {
+    return {TokenType::IDENTIFIER, ident_name, start, cur_};
+  }
+}
+
+Token Lexer::ScanNumericLiteral() {
+  Token token;
+  return token;
+}
+
+Token Lexer::ScanStringLiteral() {
+  Token token;
+  return token;
 }
 
 }  // namespace voidjs
