@@ -116,3 +116,36 @@ enum private
     EXPECT_EQ(expect_token.value, token.value);
   }
 }
+
+TEST(Lexer, NumericLiteral) {
+  // This tests is copied from
+  // https://github.com/zhuzilin/es/blob/main/test/test_lexer.cc#L77
+  std::u16string source = uR"(
+0 101 0.01 12.05 .8 0xAbC09
+1e10 101E02 0.01E5 .8E5 12.05e05 123e-1
+)";
+
+  Lexer lexer(source);
+
+  std::vector<Token> expects = {
+    {TokenType::NUMBER, u"0"},
+    {TokenType::NUMBER, u"101"},
+    {TokenType::NUMBER, u"0.01"},
+    {TokenType::NUMBER, u"12.05"},
+    {TokenType::NUMBER, u".8"},
+    {TokenType::NUMBER, u"0xAbC09"},
+    {TokenType::NUMBER, u"1e10"},
+    {TokenType::NUMBER, u"101E02"},
+    {TokenType::NUMBER, u"0.01E5"},
+    {TokenType::NUMBER, u".8E5"},
+    {TokenType::NUMBER, u"12.05e05"},
+    {TokenType::NUMBER, u"123e-1"},
+    {TokenType::EOS},
+  };
+  
+  for (auto& expect_token : expects) {
+    auto token = lexer.NextToken();
+    EXPECT_EQ(expect_token.type, token.type);
+    EXPECT_EQ(expect_token.value, token.value);
+  }
+}

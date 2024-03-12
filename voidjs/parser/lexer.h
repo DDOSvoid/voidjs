@@ -37,6 +37,11 @@ class Lexer {
   TokenType SkipMultiLineComment();
 
   std::optional<char16_t> SkipUnicodeEscapeSequence();
+  bool SkipDecimalDigits();
+  bool SkipSignedInteger();
+  bool SkipExponentPart();
+  bool SkipDecimalIntegerLiteral();
+  bool SkipHexDigits();
 
   Token ScanIdentifier();
   Token ScanNumericLiteral();

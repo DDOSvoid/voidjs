@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <optional>
+#include <string>
 
 namespace voidjs {
 
@@ -55,7 +56,7 @@ Token Lexer::NextToken() {
     case u'.': {
       // . NumericLiteral
       if (character::IsDecimalDigit(PeekChar())) {
-        ScanNumericLiteral();
+        token = ScanNumericLiteral();
       } else {
         token.type = TokenType::DOT;
         NextChar();
@@ -336,6 +337,11 @@ void Lexer::SkipLineTerminator() {
 // However, the LineTerminator at the end of the line is not considered to be part of the single-line comment;
 // it is recognised separately by the lexical grammar and becomes part of the stream of input elements for the syntactic grammar.
 TokenType Lexer::SkipSingleLineComment() {
+  if (ch_ != u'/' && PeekChar() != u'/') {
+    NextChar();  // skip the illegal char
+    NextChar();  // skip the illegal char
+    return TokenType::ILLEGAL;
+  }
   NextChar();
   NextChar();
   while (ch_ != character::EOS && !character::IsLineTerminator(ch_)) {
@@ -348,6 +354,11 @@ TokenType Lexer::SkipSingleLineComment() {
 // Defined in ECMAScript 5.1 Chapter 7.4
 // Multi-line comments cannot nest.
 TokenType Lexer::SkipMultiLineComment() {
+  if (ch_ != u'/' && PeekChar() != u'*') {
+    NextChar();  // skip the illegal char
+    NextChar();  // skip the illegal char
+    return TokenType::ILLEGAL;
+  }
   NextChar();
   NextChar();
   while (ch_ != character::EOS) {
@@ -359,9 +370,9 @@ TokenType Lexer::SkipMultiLineComment() {
       NextChar();
     }
   }
+  NextChar();  // skip the illegal char
   return TokenType::ILLEGAL;
 }
-
 
 // Skip Unicode escape sequence
 // Modified from https://github.com/zhuzilin/es/blob/main/es/parser/lexer.h
@@ -374,7 +385,8 @@ TokenType Lexer::SkipMultiLineComment() {
 //   u HexDigit HexDigit HexDigit HexDigit
 // Defined in ECMAScript 5.1 7.8.4
 std::optional<char16_t> Lexer::SkipUnicodeEscapeSequence() {
-  if (PeekChar() != u'u') {
+  if (ch_ != '\\' && PeekChar() != u'u') {
+    NextChar();  // skip the illegal char
     return std::nullopt;
   }
   NextChar();
@@ -393,12 +405,79 @@ std::optional<char16_t> Lexer::SkipUnicodeEscapeSequence() {
   };
   for (std::size_t i = 0; i < 4; ++i) {
     if (character::IsHexDigit(ch_)) {
+      NextChar();  // skip the illegal char
       return std::nullopt;
     }
     ch = ch << 4 | hexdigit_to_decimaldigit(ch);
     NextChar();
   }
   return {ch};
+}
+
+// Skip DecimalDigits
+// Defined in ECMAScript 5.1 Chapter 7.8.3
+bool Lexer::SkipDecimalDigits() {
+  if (!character::IsDecimalDigit(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  } 
+  while (character::IsDecimalDigit(ch_)) {
+    NextChar();
+  }
+  return true;
+}
+
+// Skip SignedInteger
+// Defined in ECMAScript 5.1 Chapter 7.8.3
+bool Lexer::SkipSignedInteger() {
+  if (ch_ != u'+' && ch_ != u'-' && !character::IsDecimalDigit(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  if (ch_ == u'+' || ch_ == u'-') {
+    NextChar();
+  }
+  return SkipDecimalDigits();
+}
+
+// Skip ExponentPart
+// Defined in ECMAScript 5.1 Chapter 7.8.3
+bool Lexer::SkipExponentPart() {
+  if (ch_ != u'e' && ch_ != u'E') {
+    NextChar(); // skip the illegal char
+    return false; 
+  }
+  NextChar();
+  return SkipSignedInteger();
+}
+
+// Skip DecimalIntegerLiteral
+// Defined in ECMAScript 5.1 Chapter 7.8.3
+bool Lexer::SkipDecimalIntegerLiteral() {
+  if (!character::IsDecimalDigit(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  if (ch_ == u'0') {
+    NextChar();
+  } else {
+    NextChar();
+    while (character::IsDecimalDigit(ch_)) {
+      NextChar();
+    }
+  }
+  return true;
+}
+
+bool Lexer::SkipHexDigits() {
+  if (!character::IsHexDigit(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  while (character::IsHexDigit(ch_)) {
+    NextChar();
+  }
+  return true;
 }
 
 // Scan identifier
@@ -456,9 +535,54 @@ Token Lexer::ScanIdentifier() {
   }
 }
 
+// Scan NumericLiteral
+// Defined in ECMAScript 5.1 Chapter 7.8.3
 Token Lexer::ScanNumericLiteral() {
-  Token token;
-  return token;
+  std::size_t start = cur_;
+  if (ch_ == u'.') {
+    // . DecimalDigits ExponentPart_opt
+    NextChar();
+    if (!SkipDecimalDigits()) {
+      return {TokenType::ILLEGAL};
+    }
+    if ((ch_ == u'e' || ch_ == u'E') && !SkipExponentPart()) {
+      return {TokenType::ILLEGAL};
+    }
+  } else if ((ch_ == u'0' && PeekChar() != u'x' && PeekChar() != u'X') ||
+             (ch_ != u'0' && character::IsDecimalDigit(ch_))) {
+    // DecimalIntegerLiteral . DecimalDigits_opt ExponentPart_opt
+    // DecimalIntegerLiteral ExponentPart_opt
+    if (!SkipDecimalIntegerLiteral()) {
+      return {TokenType::ILLEGAL};
+    }
+    if (ch_ == u'.') {
+      NextChar();
+      if (character::IsDecimalDigit(ch_) && !SkipDecimalDigits()) {
+        return {TokenType::ILLEGAL};
+      }
+      if ((ch_ == u'e' || ch_ == u'E') && !SkipExponentPart()) {
+        return {TokenType::ILLEGAL};
+      }
+    } else {
+      if ((ch_ == u'e' || ch_ == u'E') && !SkipExponentPart()) {
+        return {TokenType::ILLEGAL};
+      }
+    }
+  } else if (ch_ == u'0' && (PeekChar() == u'x' || PeekChar() == u'X')) {
+    // HexIntegerLiteral :: 
+    //   0x HexDigit
+    //   0X HexDigit
+    //   HexIntegerLiteral HexDigit
+    NextChar();
+    NextChar();
+    if (!SkipHexDigits()) {
+      return {TokenType::ILLEGAL};
+    }
+  } else {
+    NextChar();  // skip the illegal char
+    return {TokenType::ILLEGAL};
+  }
+  return {TokenType::NUMBER, src_.substr(start, cur_ - start), start, cur_};
 }
 
 Token Lexer::ScanStringLiteral() {
