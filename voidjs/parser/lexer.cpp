@@ -281,7 +281,7 @@ Token Lexer::NextToken() {
       } else if (ch_ == '\'' || ch_ == '"') {
         token = ScanStringLiteral();
       } else if (character::IsLineTerminator(ch_)) {
-        SkipLineTerminator();
+        SkipLineTerminatorSequence();
         goto start;
       } else if (ch_ == character::EOS) {
         token.type = TokenType::EOS;
@@ -321,12 +321,17 @@ void Lexer::SkipWhitespace() {
 
 // Skip line terminator
 // Defined in ECMAScript 5.1 Chapter 7.3
-void Lexer::SkipLineTerminator() {
+bool Lexer::SkipLineTerminatorSequence() {
+  if (!character::IsLineTerminator(ch_)) {
+    NextChar(); // skip the illegal char
+    return false;
+  }
   // The character sequence <CR><LF> is commonly used as a line terminator
   if (ch_ == character::CR && PeekChar() == character::LF) {
     NextChar();
   }
   NextChar();
+  return true;
 }
 
 // Skip until LineTerminator
@@ -385,11 +390,15 @@ TokenType Lexer::SkipMultiLineComment() {
 //   u HexDigit HexDigit HexDigit HexDigit
 // Defined in ECMAScript 5.1 7.8.4
 std::optional<char16_t> Lexer::SkipUnicodeEscapeSequence() {
-  if (ch_ != '\\' && PeekChar() != u'u') {
+  if (ch_ != u'\\') {
     NextChar();  // skip the illegal char
     return std::nullopt;
   }
   NextChar();
+  if (ch_ != u'u') {
+    NextChar();  // skip the illegal char
+    return std::nullopt;
+  }
   NextChar();
   char16_t ch = 0x0000;
   auto hexdigit_to_decimaldigit = [](char16_t ch) -> char16_t {
@@ -404,7 +413,7 @@ std::optional<char16_t> Lexer::SkipUnicodeEscapeSequence() {
     }
   };
   for (std::size_t i = 0; i < 4; ++i) {
-    if (character::IsHexDigit(ch_)) {
+    if (!character::IsHexDigit(ch_)) {
       NextChar();  // skip the illegal char
       return std::nullopt;
     }
@@ -478,6 +487,107 @@ bool Lexer::SkipHexDigits() {
     NextChar();
   }
   return true;
+}
+
+// Skip CharacterEscapeSequence
+// Defined in ECMAScript 5.1 Chapter 7.8.4
+bool Lexer::SkipCharacterEscapeSequence() {
+  if (!character::IsCharacterEscapeSequence(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  NextChar();
+  return true;
+}
+
+// Skip HexEscapeSequence
+// Defined in ECMAScript 5.1 Chapter 7.8.4
+// HexEscapeSequence ::
+//   x HexDigit HexDigit
+bool Lexer::SkipHexEscapeSequence() {
+  if (ch_ != u'x') {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  NextChar();
+  if (!character::IsHexDigit(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  NextChar();
+  if (!character::IsHexDigit(ch_)) {
+    NextChar();  // skip the illegal char
+    return false;
+  }
+  NextChar();
+  return true;
+}
+
+// Skip EscapeSequence
+// Defined in ECMAScript 5.1 Chapter 7.8.4
+// EscapeSequence ::
+//   CharacterEscapeSequence
+//   0 [lookahead ∉ DecimalDigit]
+//   HexEscapeSequence
+//   UnicodeEscapeSequence
+bool Lexer::SkipEscapeSequence() {
+  if (!character::IsCharacterEscapeSequence(ch_) && SkipCharacterEscapeSequence()) {
+    return true;
+  } else if (ch_ == u'0' && !character::IsDecimalDigit(PeekChar())) {
+    NextChar();
+    return true;
+  } else if (ch_ == u'x' && SkipHexEscapeSequence()) {
+    return true;
+  } else if (ch_ == '\\' && SkipUnicodeEscapeSequence().has_value()) {
+    // UnicodeEscapeSequence is not escaped for now.
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// Skip SingleStringCharacter
+// Defined in ECMAScript 5.1 Chapter 7.8.4
+// SingleStringCharacter ::
+//   SourceCharacter but not single-quote ' or backslash \ or LineTerminator
+//   \ EscapeSequence
+//   \ LineTerminatorSequence
+bool Lexer::SkipSingleStringCharacter() {
+  if (ch_ == u'\\') {
+    NextChar();
+    return
+      character::IsLineTerminator(ch_) && SkipLineTerminatorSequence() ||
+      SkipEscapeSequence();
+  } else {
+    if (ch_ != u'\'' && ch_ != u'\\') {
+      NextChar();
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+// Skip DoubleStringCharacter
+// Defined in ECMAScript 5.1 Chapter 7.8.4
+// SingleStringCharacter ::
+//   SourceCharacter but not double-quote " or backslash \ or LineTerminator
+//   \ EscapeSequence
+//   \ LineTerminatorSequence
+bool Lexer::SkipDoubleStringCharacter() {
+  if (ch_ == u'\\') {
+    NextChar();
+    return
+      character::IsLineTerminator(ch_) && SkipLineTerminatorSequence() ||
+      SkipEscapeSequence();
+  } else {
+    if (ch_ != u'"' && ch_ != u'\\') {
+      NextChar();
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
 
 // Scan identifier
@@ -585,9 +695,46 @@ Token Lexer::ScanNumericLiteral() {
   return {TokenType::NUMBER, src_.substr(start, cur_ - start), start, cur_};
 }
 
+// Scan StringLiteral
+// Defined in ECMAScript 5.1 Chapter 7.8.4
 Token Lexer::ScanStringLiteral() {
-  Token token;
-  return token;
+  std::size_t start = cur_;
+  if (ch_ == u'\'') {
+    NextChar();
+    while (ch_ != u'\'' && ch_ != character::EOS) {
+      if (ch_ == u'\\') {
+        if (!SkipSingleStringCharacter()) {
+          return {TokenType::ILLEGAL};
+        }
+      } else {
+        NextChar();
+      }
+    }
+    // ' not found
+    if (ch_ == character::EOS) {
+      return {TokenType::ILLEGAL};
+    }
+    NextChar();
+  } else if (ch_ == u'"') {
+    NextChar();
+    while (ch_ != u'"' && ch_ != character::EOS) {
+      if (ch_ == u'\\') {
+        if (!SkipSingleStringCharacter()) {
+          return {TokenType::ILLEGAL};
+        }
+      } else {
+        NextChar();
+      }
+    }
+    // " not found
+    if (ch_ == character::EOS) {
+      return {TokenType::ILLEGAL};
+    }
+    NextChar();
+  } else {
+    return {TokenType::ILLEGAL};
+  }
+  return {TokenType::STRING, src_.substr(start, cur_ - start), start, cur_};
 }
 
 }  // namespace voidjs

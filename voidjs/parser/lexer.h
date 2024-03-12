@@ -32,7 +32,7 @@ class Lexer {
   char16_t PeekChar();
 
   void SkipWhitespace();
-  void SkipLineTerminator();
+  bool SkipLineTerminatorSequence();
   TokenType SkipSingleLineComment();
   TokenType SkipMultiLineComment();
 
@@ -42,6 +42,11 @@ class Lexer {
   bool SkipExponentPart();
   bool SkipDecimalIntegerLiteral();
   bool SkipHexDigits();
+  bool SkipCharacterEscapeSequence();
+  bool SkipHexEscapeSequence();
+  bool SkipEscapeSequence();
+  bool SkipSingleStringCharacter();
+  bool SkipDoubleStringCharacter();
 
   Token ScanIdentifier();
   Token ScanNumericLiteral();

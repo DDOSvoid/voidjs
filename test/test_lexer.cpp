@@ -149,3 +149,84 @@ TEST(Lexer, NumericLiteral) {
     EXPECT_EQ(expect_token.value, token.value);
   }
 }
+
+TEST(Lexer, StringLiteral) {
+  std::u16string source = uR"(
+'asd' '' ""
+"
+"
+"😊"
+)";
+
+  Lexer lexer(source);
+
+  std::vector<Token> expects = {
+    {TokenType::STRING, uR"('asd')"},
+    {TokenType::STRING, uR"('')"},
+    {TokenType::STRING, uR"("")"},
+    {TokenType::STRING, uR"("
+")"},
+    {TokenType::STRING, uR"("😊")"},
+    // {TokenType::EOS},
+  };
+  
+  for (auto& expect_token : expects) {
+    auto token = lexer.NextToken();
+    EXPECT_EQ(expect_token.type, token.type);
+    EXPECT_EQ(expect_token.value, token.value);
+  }
+}
+
+TEST(Lexer, Lexer) {
+  std::u16string source = uR"(
+function fnSupportsStrict() {
+  "use strict";
+  try {
+      eval('with ({}) {}');
+      return false;
+  } catch (e) {
+      return true;
+  }
+}
+)";
+
+  Lexer lexer(source);
+
+  std::vector<Token> expects = {
+    {TokenType::KEYWORD, u"function"},
+    {TokenType::IDENTIFIER, u"fnSupportsStrict"},
+    {TokenType::LEFT_PAREN},
+    {TokenType::RIGHT_PAREN},
+    {TokenType::LEFT_BRACE},
+    {TokenType::STRING, uR"("use strict")"},
+    {TokenType::SEMICOLON},
+    {TokenType::KEYWORD, u"try"},
+    {TokenType::LEFT_BRACE},
+    {TokenType::IDENTIFIER, u"eval"},
+    {TokenType::LEFT_PAREN},
+    {TokenType::STRING, uR"('with ({}) {}')"},
+    {TokenType::RIGHT_PAREN},
+    {TokenType::SEMICOLON},
+    {TokenType::KEYWORD, u"return"},
+    {TokenType::BOOLEAN_LITERAL, u"false"},
+    {TokenType::SEMICOLON},
+    {TokenType::RIGHT_BRACE},
+    {TokenType::KEYWORD, u"catch"},
+    {TokenType::LEFT_PAREN},
+    {TokenType::IDENTIFIER, u"e"},
+    {TokenType::RIGHT_PAREN},
+    {TokenType::LEFT_BRACE},
+    {TokenType::KEYWORD, u"return"},
+    {TokenType::BOOLEAN_LITERAL, u"true"},
+    {TokenType::SEMICOLON},
+    {TokenType::RIGHT_BRACE},
+    {TokenType::RIGHT_BRACE},
+    {TokenType::EOS},
+  };
+  
+  for (auto& expect_token : expects) {
+    auto token = lexer.NextToken();
+    EXPECT_EQ(expect_token.type, token.type);
+    EXPECT_EQ(expect_token.value, token.value);
+  }
+}
