@@ -1,6 +1,6 @@
 #include "voidjs/parser/parser.h"
-#include "voidjs/parser/character.h"
-#include "voidjs/parser/token.h"
+#include "voidjs/lexer/character.h"
+#include "voidjs/lexer/token.h"
 
 namespace voidjs {
 

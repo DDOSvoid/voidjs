@@ -1,7 +1,7 @@
 #ifndef VOIDJS_PARSER_H
 #define VOIDJS_PARSER_H
 
-#include "voidjs/parser/lexer.h"
+#include "voidjs/lexer/lexer.h"
 #include "voidjs/parser/ast.h"
 
 namespace voidjs {

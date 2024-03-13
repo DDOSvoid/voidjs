@@ -1,7 +1,7 @@
 #ifndef VOIDJS_CHARACTER_H
 #define VOIDJS_CHARACTER_H
 
-#include "voidjs/parser/unicode.h"
+#include "voidjs/lexer/unicode.h"
 
 namespace voidjs {
 namespace character {

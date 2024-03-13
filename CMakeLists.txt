@@ -11,8 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 
 add_library(voidjs_obj OBJECT
-  voidjs/parser/token.cpp
-  voidjs/parser/lexer.cpp
+  voidjs/lexer/lexer.cpp
   voidjs/parser/parser.cpp
 )
 target_include_directories(voidjs_obj PUBLIC .)

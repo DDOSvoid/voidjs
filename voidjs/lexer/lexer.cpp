@@ -1,6 +1,6 @@
-#include "voidjs/parser/lexer.h"
-#include "voidjs/parser/character.h"
-#include "voidjs/parser/token.h"
+#include "voidjs/lexer/lexer.h"
+#include "voidjs/lexer/character.h"
+#include "voidjs/lexer/token.h"
 
 #include <iostream>
 #include <optional>

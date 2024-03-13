@@ -2,8 +2,8 @@
 #include <any>
 
 #include "gtest/gtest.h"
-#include "voidjs/parser/lexer.h"
-#include "voidjs/parser/token.h"
+#include "voidjs/lexer/lexer.h"
+#include "voidjs/lexer/token.h"
 
 using namespace voidjs;
 
