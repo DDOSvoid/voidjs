@@ -1,5 +1,5 @@
-#ifndef VOIDJS_CHARACTER_H
-#define VOIDJS_CHARACTER_H
+#ifndef VOIDJS_LEXER_CHARACTER_H
+#define VOIDJS_LEXER_CHARACTER_H
 
 #include "voidjs/lexer/unicode.h"
 
@@ -124,5 +124,5 @@ constexpr bool IsCharacterEscapeSequence(char16_t c) {
 }  // namespace character 
 }  // namespace voidjs
 
-#endif  // VOIDJS_CHARACTER_H
+#endif  // VOIDJS_LEXER_CHARACTER_H
 

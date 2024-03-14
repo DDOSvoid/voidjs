@@ -1,5 +1,5 @@
-#ifndef VOIDJS_HELPER_H
-#define VOIDJS_HELPER_H
+#ifndef VOIDJS_UTILS_HELPER_H
+#define VOIDJS_UTILS_HELPER_H
 
 #include <string>
 #include <codecvt>
@@ -23,4 +23,4 @@ inline std::string U16StrToU8Str(std::u16string u16str) {
 }  // namespace utils
 }  // namespace voidjs
 
-#endif  // VOIDJS_HELPER_H
+#endif  // VOIDJS_UTILS_HELPER_H

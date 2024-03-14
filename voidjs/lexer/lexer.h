@@ -1,5 +1,5 @@
-#ifndef VOIDJS_LEXER_H
-#define VOIDJS_LEXER_H
+#ifndef VOIDJS_LEXER_LEXER_H
+#define VOIDJS_LEXER_LEXER_H
 
 #include <string>
 #include <optional>
@@ -62,4 +62,4 @@ class Lexer {
 
 }  // namespace voidjs
 
-#endif  // VOIDJS_LEXER_H
+#endif  // VOIDJS_LEXER_LEXER_H

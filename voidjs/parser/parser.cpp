@@ -1,6 +1,11 @@
 #include "voidjs/parser/parser.h"
 #include "voidjs/lexer/character.h"
 #include "voidjs/lexer/token.h"
+#include "voidjs/ir/ast.h"
+#include "voidjs/ir/program.h"
+#include "voidjs/ir/statement.h"
+#include "voidjs/ir/expression.h"
+#include "voidjs/utils/error.h"
 
 namespace voidjs {
 
@@ -17,21 +22,25 @@ using namespace ast;
 //   Statement
 //   FunctionDeclaration
 Program* Parser::ParseProgram() {
-  auto ret = new Program;
   if (token_.type == TokenType::STRING &&
       (token_.value == uR"('use strict')" || token_.value == uR"("use strict")")) {
     // use strict
-    }
-  while (token_.type != TokenType::EOS) {
-    auto stmt = ParseStatement();
-    ret->Statements().push_back(stmt);
   }
-  return ret;
+  Statements stmts;
+  while (token_.type != TokenType::EOS) {
+    try {
+      auto stmt = ParseStatement();
+      stmts.push_back(stmt);
+    } catch(const utils::Error& e) {
+      error_ = e;
+      return nullptr;
+    }
+  }
+  return new Program(std::move(stmts)); 
 }
 
 Statement* Parser::ParseStatement() {
-  auto ret = new Statement;
-  return ret;
+  return nullptr;
 }
 
 // Parse BlockStatement
@@ -39,20 +48,23 @@ Statement* Parser::ParseStatement() {
 // Block :
 //   { StatementList_opt }
 Statement* Parser::ParseBlockStatement() {
-  auto ret = new BlockStatement;
-  if (token_.type != TokenType::LEFT_BRACE) {
-    // error handling
-  }
+  // begin with {
   NextToken();
-  if (nxt_token_.type != TokenType::RIGHT_BRACE) {
-    auto stmts = ParseStatementList();
-    std::swap(ret->Statements(), stmts);
-  }
+  Statements stmts;
+  stmts = ParseStatementList(TokenType::RIGHT_BRACE);
   if (token_.type != TokenType::RIGHT_BRACE) {
-    // error handling
+    ThrowSyntaxError("expects a '{'");
   }
   NextToken();
-  return ret;
+  return new BlockStatement(std::move(stmts));
+}
+
+// Parse EmptyStatement
+// Defined in ECMAScript 5.1 Chapter 12.3
+// EmptyStatement :
+//   ;
+Statement* Parser::ParseEmptyStatement() {
+  return new EmptyStatement();
 }
 
 // Parse StatementList
@@ -60,12 +72,10 @@ Statement* Parser::ParseBlockStatement() {
 // StatementList :
 //   Statement
 //   StatementList Statement
-std::vector<Statement*> Parser::ParseStatementList() {
+Statements Parser::ParseStatementList(TokenType end_type) {
+  // Empty StatementList is permitted
   std::vector<Statement*> stmts;
-  if (token_.type == TokenType::EOS) {
-    // error handling
-  }
-  while (token_.type != TokenType::EOS) {
+  while (token_.type != end_type) {
     stmts.push_back(ParseStatement());
   }
   return stmts;
@@ -75,6 +85,10 @@ Token Parser::NextToken() {
   std::swap(token_, nxt_token_);
   nxt_token_ = lexer_.NextToken();
   return token_;
+}
+
+void Parser::ThrowSyntaxError(std::string msg) {
+  throw utils::Error{utils::ErrorType::SYNTAX_ERROR, std::move(msg)};
 }
 
 }  // namespace voidjs

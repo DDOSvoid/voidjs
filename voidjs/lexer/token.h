@@ -1,5 +1,5 @@
-#ifndef VOIDJS_TOKEN_H
-#define VOIDJS_TOKEN_H
+#ifndef VOIDJS_LEXER_TOKEN_H
+#define VOIDJS_LEXER_TOKEN_H
 
 #include <array>
 #include <string>
@@ -118,4 +118,4 @@ struct Token {
  
 }  // namespace voidjs
 
-#endif  // VOIDJS_TOKEN_H
+#endif  // VOIDJS_LEXER_TOKEN_H

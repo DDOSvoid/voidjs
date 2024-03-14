@@ -16,7 +16,7 @@ add_library(voidjs_obj OBJECT
 )
 target_include_directories(voidjs_obj PUBLIC .)
 
-add_executable(voidjs voidjs.cpp)
+add_executable(voidjs voidjs/voidjs.cpp)
 target_link_libraries(voidjs PRIVATE voidjs_obj)
 
 # GoogleTest

@@ -1,8 +1,8 @@
 // This code in this file is directly extracted from zhuzilin/es and Constellation/iv
 // https://github.com/zhuzilin/es/blob/main/es/parser/unicode.h
 // https://github.com/Constellation/iv/blob/master/iv/unicode.h
-#ifndef VOIDJS_UNICODE_H
-#define VOIDJS_UNICODE_H
+#ifndef VOIDJS_LEXER_UNICODE_H
+#define VOIDJS_LEXER_UNICODE_H
 
 #include <algorithm>
 #include <array>
@@ -721,4 +721,4 @@ constexpr Category GetCategory(char16_t c) {
 }  // namespace character
 }  // namespace voidjs
 
-#endif  // VOIDJS_UNICODE_H
+#endif  // VOIDJS_LEXER_UNICODE_H
