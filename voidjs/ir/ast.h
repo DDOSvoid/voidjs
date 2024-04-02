@@ -32,7 +32,15 @@ enum class AstNodeType {
 class AstNode;
 class Program;
 class Statement;
+class BlockStatement;
+class VariableStatement;
+class EmptyStatement;
+class ExpressionStatement;
+class IfStatement;
 class Expression;
+class LeftHandSideExpression;
+class AssignmentExpression;
+class Literal;
 class VariableDeclaration;
 
 using Statements = std::vector<Statement*>;
@@ -48,7 +56,8 @@ class AstNode {
   AstNode(const AstNode&) = delete;
   AstNode& operator=(const AstNode&) = delete;
 
-  bool IsProgram() const { return type_ == AstNodeType::PROGRAM; }
+  // Is Check
+  virtual bool IsProgram() const { return type_ == AstNodeType::PROGRAM; }
   virtual bool IsStatement() const { return type_ == AstNodeType::STATEMENT; }
   bool IsBlockStatement() const { return type_ == AstNodeType::BLOCK_STATEMENT; }
   bool IsVariableStatement() const { return type_ == AstNodeType::VARIABLE_STATEMENT; }
@@ -58,8 +67,22 @@ class AstNode {
   virtual bool IsExpression() const { return type_ == AstNodeType::EXPRESSION; }
   bool IsLeftHandSideExpression() const { return type_ == AstNodeType::LEFT_HAND_SIDE_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
-  bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
   virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
+  bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
+
+  // As Cast
+  Program* AsProgram() { return reinterpret_cast<Program*>(this); }
+  Statement* AsStatement() { return reinterpret_cast<Statement*>(this); }
+  BlockStatement* AsBlockStatement() { return reinterpret_cast<BlockStatement*>(this); }
+  VariableStatement* AsVariableStatement() { return reinterpret_cast<VariableStatement*>(this); }
+  EmptyStatement* AsEmptyStatement() { return reinterpret_cast<EmptyStatement*>(this); }
+  ExpressionStatement* AsExpressionStatement() { return reinterpret_cast<ExpressionStatement*>(this); }
+  IfStatement* AsIfStatement() { return reinterpret_cast<IfStatement*>(this); }
+  Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
+  LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
+  AssignmentExpression* AsAssignmentExpression() { return reinterpret_cast<AssignmentExpression*>(this); }
+  Literal* AsLiteral() { return reinterpret_cast<Literal*>(this); }
+  VariableDeclaration* AsVariableDeclaration() { return reinterpret_cast<VariableDeclaration*>(this); }
   
  private:
   AstNodeType type_;

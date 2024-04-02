@@ -7,12 +7,20 @@
 namespace voidjs {
 namespace ast {
 
+class BooleanLiteral;
+
+
 class Literal : public Expression {
  public:
   explicit Literal(AstNodeType type)
     : Expression(type) {}
 
   bool IsLiteral() const override { return true; }
+
+  bool GetBoolean() const;
+  uint32_t GetInt() const;
+  double GetDouble() const;
+  std::string GetString() const;
 };
 
 
