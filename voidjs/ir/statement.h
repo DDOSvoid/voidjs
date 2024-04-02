@@ -30,6 +30,8 @@ class Statement : public AstNode {
   explicit Statement(AstNodeType type)
     : AstNode(type)
   {}
+
+  bool IsStatement() const override { return true; }
 };
 
 class BlockStatement : public Statement {
@@ -37,14 +39,6 @@ class BlockStatement : public Statement {
   explicit BlockStatement(Statements statements)
     : Statement(AstNodeType::BLOCK_STATEMENT), statements_(std::move(statements))
   {}
-  
-  void Append(Statement* stmt) {
-    statements_.push_back(stmt);
-  }
-  
-  void Assign(Statements stmts) {
-    statements_.swap(stmts);
-  }
 
  private:
   Statements statements_;

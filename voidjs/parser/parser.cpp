@@ -43,10 +43,6 @@ Statement* Parser::ParseStatement() {
   return nullptr;
 }
 
-Expression* Parser::ParseExpression() {
-  return nullptr;
-}
-
 // Parse BlockStatement
 // Defined in ECMAScript 5.1 Chapter 12.1
 // Block :
@@ -128,6 +124,16 @@ Statement* Parser::ParseIfStatement() {
 
   return new IfStatement(cond, cons, alt); 
 }
+
+// Parse Expression
+// Defined in ECMAScript 5.1 chapter 11.14
+// Expression :
+//   AssignmentExpression
+//   Expression , AssignmentExpression
+Expression* Parser::ParseExpression() {
+  return nullptr;
+}
+
 
 // Parse StatementList
 // Defined in ECMAScript 5.1 Chapter 12.1

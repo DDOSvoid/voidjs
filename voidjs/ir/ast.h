@@ -18,6 +18,12 @@ enum class AstNodeType {
   IF_STATEMENT,
 
   // Expression
+  EXPRESSION,
+  LEFT_HAND_SIDE_EXPRESSION,
+  ASSIGNMENT_EXPRESSION,
+
+  // Literal
+  LITERAL,
 
   // Others
   VARIABLE_DECLARATION,
@@ -42,14 +48,18 @@ class AstNode {
   AstNode(const AstNode&) = delete;
   AstNode& operator=(const AstNode&) = delete;
 
-  bool IsProgram() { return type_ == AstNodeType::PROGRAM; }
-  bool IsStatement() { return type_ == AstNodeType::STATEMENT; }
-  bool IsBlockStatement() { return type_ == AstNodeType::BLOCK_STATEMENT; }
-  bool IsVariableStatement() { return type_ == AstNodeType::VARIABLE_STATEMENT; }
-  bool IsEmptyStatement() { return type_ == AstNodeType::EMPTY_STATEMENT; }
-  bool IsExpressionStatement() { return type_ == AstNodeType::EXPRESSION_STATEMENT; }
-  bool IsIfStatement() { return type_ == AstNodeType::IF_STATEMENT; }
-  bool IsVariableDeclaraion() { return type_ == AstNodeType::VARIABLE_DECLARATION; }
+  bool IsProgram() const { return type_ == AstNodeType::PROGRAM; }
+  virtual bool IsStatement() const { return type_ == AstNodeType::STATEMENT; }
+  bool IsBlockStatement() const { return type_ == AstNodeType::BLOCK_STATEMENT; }
+  bool IsVariableStatement() const { return type_ == AstNodeType::VARIABLE_STATEMENT; }
+  bool IsEmptyStatement() const { return type_ == AstNodeType::EMPTY_STATEMENT; }
+  bool IsExpressionStatement() const { return type_ == AstNodeType::EXPRESSION_STATEMENT; }
+  bool IsIfStatement() const { return type_ == AstNodeType::IF_STATEMENT; }
+  virtual bool IsExpression() const { return type_ == AstNodeType::EXPRESSION; }
+  bool IsLeftHandSideExpression() const { return type_ == AstNodeType::LEFT_HAND_SIDE_EXPRESSION; }
+  bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
+  bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
+  virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
   
  private:
   AstNodeType type_;
