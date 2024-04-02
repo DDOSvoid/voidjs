@@ -43,6 +43,10 @@ Statement* Parser::ParseStatement() {
   return nullptr;
 }
 
+Expression* Parser::ParseExpression() {
+  return nullptr;
+}
+
 // Parse BlockStatement
 // Defined in ECMAScript 5.1 Chapter 12.1
 // Block :
@@ -50,13 +54,26 @@ Statement* Parser::ParseStatement() {
 Statement* Parser::ParseBlockStatement() {
   // begin with {
   NextToken();
-  Statements stmts;
-  stmts = ParseStatementList(TokenType::RIGHT_BRACE);
+  
+  Statements stmts = ParseStatementList(TokenType::RIGHT_BRACE);
+  
   if (token_.type != TokenType::RIGHT_BRACE) {
-    ThrowSyntaxError("expects a '{'");
+    ThrowSyntaxError("expects a '}'");
   }
   NextToken();
+  
   return new BlockStatement(std::move(stmts));
+}
+
+// Parse VariableStatment
+// Defined in ECMAScript 5.1 chapter 12.2
+// VariableStatement :
+//   var VariableDeclarationList ;
+Statement* Parser::ParseVariableStatement() {
+  // begin with var
+  NextToken();
+  
+  return new VariableStatement(ParseVariableDeclarationList());
 }
 
 // Parse EmptyStatement
@@ -67,6 +84,51 @@ Statement* Parser::ParseEmptyStatement() {
   return new EmptyStatement();
 }
 
+// Parse ExpressionStatement
+// Defined in ECMAScript 5.1 Chapter 12.4
+// ExpressionStatement :
+//   [lookahead ∉ {{, function}] Expression ;
+Statement* Parser::ParseExpressionStatement() {
+  if (nxt_token_.type == TokenType::COMMA ||
+      nxt_token_.value == u"function") {
+    
+  }
+  Expression* expr = ParseExpression();
+  return new ExpressionStatement(expr);
+}
+
+// Parse IfStatement
+// Defined in ECMAScript 5.1 chapter 12.5
+// IfStatement :
+//   if ( Expression ) Statement else Statement
+//   if ( Expression ) Statement
+Statement* Parser::ParseIfStatement() {
+  // begin with if
+  NextToken();
+  
+  if (token_.type != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expect '('");
+  }
+  NextToken();
+  
+  Expression* cond = ParseExpression();
+  
+  if (token_.type != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expect ')'");
+  }
+  NextToken();
+
+  Statement* cons = ParseStatement();
+
+  Statement* alt = nullptr;
+  if (token_.value == u"else") {
+    NextToken();
+    alt = ParseStatement();
+  }
+
+  return new IfStatement(cond, cons, alt); 
+}
+
 // Parse StatementList
 // Defined in ECMAScript 5.1 Chapter 12.1
 // StatementList :
@@ -74,11 +136,40 @@ Statement* Parser::ParseEmptyStatement() {
 //   StatementList Statement
 Statements Parser::ParseStatementList(TokenType end_type) {
   // Empty StatementList is permitted
-  std::vector<Statement*> stmts;
+  Statements stmts;
   while (token_.type != end_type) {
     stmts.push_back(ParseStatement());
   }
   return stmts;
+}
+
+// Parse VariableDeclarationList
+// Defined in ECMAScript 5.1 chapter 12.2
+// VariableDeclarationList :
+//   VariableDeclaration
+//   VariableDeclarationList , VariableDeclaration
+VariableDeclarations Parser::ParseVariableDeclarationList() {
+  VariableDeclarations var_decls;
+  var_decls.push_back(ParseVariableDeclaration());
+  while (token_.type == TokenType::COMMA) {
+    NextToken();
+    var_decls.push_back(ParseVariableDeclaration());
+  }
+  return var_decls;
+}
+
+// Parse VariableDeclaration
+// Defined in ECMAScript 5.1 chapter 12.2
+// VariableDeclaration :
+//   Identifier Initialiser_opt
+VariableDeclaration* Parser::ParseVariableDeclaration() {
+  Expression* ident = ParseExpression();
+  // need to test if ident is Identifier
+
+  Expression* init = ParseExpression();
+  // need to test if init is valid
+
+  return new VariableDeclaration(ident, init); 
 }
 
 Token Parser::NextToken() {

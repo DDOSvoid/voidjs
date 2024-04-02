@@ -1,6 +1,7 @@
 #ifndef VOIDJS_PARSER_PARSER_H
 #define VOIDJS_PARSER_PARSER_H
 
+#include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/lexer/lexer.h"
 #include "voidjs/ir/ast.h"
@@ -27,13 +28,20 @@ class Parser {
 
   void ThrowSyntaxError(std::string msg); 
 
-  std::vector<ast::Statement*> ParseStatementList(TokenType end_token_type);
+  ast::Statements ParseStatementList(TokenType end_token_type);
+  ast::VariableDeclarations ParseVariableDeclarationList();
+  ast::VariableDeclaration* ParseVariableDeclaration(); 
   
   ast::Program* ParseProgram();
 
   ast::Statement* ParseStatement();
   ast::Statement* ParseBlockStatement();
+  ast::Statement* ParseVariableStatement(); 
   ast::Statement* ParseEmptyStatement();
+  ast::Statement* ParseExpressionStatement();
+  ast::Statement* ParseIfStatement();
+
+  ast::Expression* ParseExpression(); 
 
  private:
   Lexer lexer_;
