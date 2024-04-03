@@ -86,7 +86,7 @@ Statement* Parser::ParseEmptyStatement() {
 //   [lookahead ∉ {{, function}] Expression ;
 Statement* Parser::ParseExpressionStatement() {
   if (nxt_token_.type == TokenType::COMMA ||
-      nxt_token_.value == u"function") {
+      nxt_token_.type == TokenType::KEYWORD_FUNCTION) {
     
   }
   Expression* expr = ParseExpression();
@@ -117,7 +117,7 @@ Statement* Parser::ParseIfStatement() {
   Statement* cons = ParseStatement();
 
   Statement* alt = nullptr;
-  if (token_.value == u"else") {
+  if (token_.type == TokenType::KEYWORD_ELSE) {
     NextToken();
     alt = ParseStatement();
   }

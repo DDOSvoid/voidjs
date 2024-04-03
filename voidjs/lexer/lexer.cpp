@@ -633,7 +633,7 @@ Token Lexer::ScanIdentifier() {
   } else if (ident_name == u"true" || ident_name == u"false") {
     return {TokenType::BOOLEAN_LITERAL, ident_name, start, cur_};
   } else if (std::find(kKeywords.begin(), kKeywords.end(), ident_name) != kKeywords.end()) {
-    return {TokenType::KEYWORD, ident_name, start, cur_};
+    return {kStringToKeywords.at(ident_name), ident_name, start, cur_};
   } else if (std::find(kFutureReservedWords.begin(),
                        kFutureReservedWords.end(), ident_name) != kFutureReservedWords.end()) {
     return {TokenType::FUTURE_RESERVED_WORD, ident_name, start, cur_};
