@@ -41,7 +41,8 @@ class Parser {
   ast::Statement* ParseExpressionStatement();
   ast::Statement* ParseIfStatement();
 
-  ast::Expression* ParseExpression(); 
+  ast::Expression* ParseExpression();
+  ast::Expression* ParsePrimaryExpression(); 
 
  private:
   Lexer lexer_;

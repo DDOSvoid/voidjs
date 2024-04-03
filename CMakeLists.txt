@@ -13,6 +13,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 add_library(voidjs_obj OBJECT
   voidjs/lexer/lexer.cpp
   voidjs/parser/parser.cpp
+  voidjs/ir/literal.cpp
 )
 target_include_directories(voidjs_obj PUBLIC .)
 

@@ -134,6 +134,19 @@ Expression* Parser::ParseExpression() {
   return nullptr;
 }
 
+// Parse PrimaryExpression
+// Defined in ECMAScript 5.1 chapter 11.1
+//  PrimaryExpression :
+//    this
+//    Identifier
+//    Literal
+//    ArrayLiteral
+//    ObjectLiteral
+//    ( Expression )
+Expression* Parser::ParsePrimaryExpression() {
+  return nullptr;
+}
+
 
 // Parse StatementList
 // Defined in ECMAScript 5.1 Chapter 12.1

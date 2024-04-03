@@ -24,6 +24,10 @@ enum class AstNodeType {
 
   // Literal
   LITERAL,
+  NULL_LITERAL,
+  BOOLEAN_LITERAL,
+  NUMERIC_LITERAL,
+  STRING_LITERAL,
 
   // Others
   VARIABLE_DECLARATION,
@@ -41,6 +45,10 @@ class Expression;
 class LeftHandSideExpression;
 class AssignmentExpression;
 class Literal;
+class NullLiteral;
+class BooleanLiteral;
+class NumericLiteral;
+class StringLiteral; 
 class VariableDeclaration;
 
 using Statements = std::vector<Statement*>;
@@ -68,6 +76,10 @@ class AstNode {
   bool IsLeftHandSideExpression() const { return type_ == AstNodeType::LEFT_HAND_SIDE_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
   virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
+  bool IsNullLiteral() const { return type_ == AstNodeType::NULL_LITERAL; }
+  bool IsBooleanLiteral() const { return type_ == AstNodeType::BOOLEAN_LITERAL; }
+  bool IsNumericLiteral() const { return type_ == AstNodeType::NUMERIC_LITERAL; }
+  bool IsStringLiteral() const { return type_ == AstNodeType::STRING_LITERAL; }
   bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
 
   // As Cast
@@ -82,7 +94,30 @@ class AstNode {
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
   AssignmentExpression* AsAssignmentExpression() { return reinterpret_cast<AssignmentExpression*>(this); }
   Literal* AsLiteral() { return reinterpret_cast<Literal*>(this); }
+  NullLiteral* AsNullLiteral() { return reinterpret_cast<NullLiteral*>(this); }
+  BooleanLiteral* AsBooleanLiteral() { return reinterpret_cast<BooleanLiteral*>(this); }
+  NumericLiteral* AsNumericLiteral() { return reinterpret_cast<NumericLiteral*>(this); }
+  StringLiteral* AsStringLiteral() { return reinterpret_cast<StringLiteral*>(this); }
   VariableDeclaration* AsVariableDeclaration() { return reinterpret_cast<VariableDeclaration*>(this); }
+
+
+  // As Cast const-version
+  const Program* AsProgram() const { return reinterpret_cast<const Program*>(this); }
+  const Statement* AsStatement() const { return reinterpret_cast<const Statement*>(this); }
+  const BlockStatement* AsBlockStatement() const { return reinterpret_cast<const BlockStatement*>(this); }
+  const VariableStatement* AsVariableStatement() const { return reinterpret_cast<const VariableStatement*>(this); }
+  const EmptyStatement* AsEmptyStatement() const { return reinterpret_cast<const EmptyStatement*>(this); }
+  const ExpressionStatement* AsExpressionStatement() const { return reinterpret_cast<const ExpressionStatement*>(this); }
+  const IfStatement* AsIfStatement() const { return reinterpret_cast<const IfStatement*>(this); }
+  const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
+  const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
+  const AssignmentExpression* AsAssignmentExpression() const { return reinterpret_cast<const AssignmentExpression*>(this); }
+  const Literal* AsLiteral() const { return reinterpret_cast<const Literal*>(this); }
+  const NullLiteral* AsNullLiteral() const { return reinterpret_cast<const NullLiteral*>(this); }
+  const BooleanLiteral* AsBooleanLiteral() const { return reinterpret_cast<const BooleanLiteral*>(this); }
+  const NumericLiteral* AsNumericLiteral() const { return reinterpret_cast<const NumericLiteral*>(this); }
+  const StringLiteral* AsStringLiteral() const { return reinterpret_cast<const StringLiteral*>(this); }
+  const VariableDeclaration* AsVariableDeclaration() const { return reinterpret_cast<const VariableDeclaration*>(this); }
   
  private:
   AstNodeType type_;
