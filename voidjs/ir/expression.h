@@ -19,7 +19,7 @@ namespace ast {
 // Shift Expression
 // Relational Expression
 // Equality Expression
-// Bitwise Expression --> and or xor
+// Bitwise Expression             --> and or xor
 // Conditional Expression
 // Assignment Expression
 class Expression : public AstNode {
@@ -29,6 +29,26 @@ class Expression : public AstNode {
   {}
 
   bool IsExpression() const override { return true; }
+};
+
+class ThisExpression : public Expression {
+ public:
+  ThisExpression()
+    : Expression(AstNodeType::THIS_EXPRESSION)
+  {}
+};
+
+class Identifier : public Expression {
+ public:
+  explicit Identifier(std::u16string name)
+    : Expression(AstNodeType::IDENTIFIER),
+      name_(std::move(name))
+  {}
+
+  std::u16string_view GetName() const { return name_; }
+
+ private:
+  std::u16string name_;
 };
 
 class AssignmentExpression : public Expression {

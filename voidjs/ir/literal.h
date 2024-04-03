@@ -20,7 +20,7 @@ class Literal : public Expression {
   bool GetBoolean() const;
   std::int32_t GetInt() const;
   double GetDouble() const;
-  std::string_view GetString() const;
+  std::u16string_view GetString() const;
 };
 
 class NullLiteral : public Literal {
@@ -58,15 +58,15 @@ class NumericLiteral : public Literal {
 
 class StringLiteral : public Literal {
  public:
-  explicit StringLiteral(std::string str)
+  explicit StringLiteral(std::u16string str)
     : Literal(AstNodeType::STRING_LITERAL),
       string_(std::move(str))
   {}
 
-  std::string_view GetString() const { return string_; }
+  std::u16string_view GetString() const { return string_; }
 
  private:
-  std::string string_;
+  std::u16string string_;
 };
 
 

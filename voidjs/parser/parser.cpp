@@ -5,7 +5,9 @@
 #include "voidjs/ir/program.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/ir/expression.h"
+#include "voidjs/ir/literal.h"
 #include "voidjs/utils/error.h"
+#include "voidjs/utils/helper.h"
 
 namespace voidjs {
 
@@ -103,14 +105,14 @@ Statement* Parser::ParseIfStatement() {
   NextToken();
   
   if (token_.type != TokenType::LEFT_PAREN) {
-    ThrowSyntaxError("expect '('");
+    ThrowSyntaxError("expects a '('");
   }
   NextToken();
   
   Expression* cond = ParseExpression();
   
   if (token_.type != TokenType::RIGHT_PAREN) {
-    ThrowSyntaxError("expect ')'");
+    ThrowSyntaxError("expects a ')'");
   }
   NextToken();
 
@@ -144,7 +146,51 @@ Expression* Parser::ParseExpression() {
 //    ObjectLiteral
 //    ( Expression )
 Expression* Parser::ParsePrimaryExpression() {
-  return nullptr;
+  switch (token_.type) {
+    case TokenType::KEYWORD_THIS: {
+      auto expr = new ThisExpression();
+      NextToken();
+      return expr;
+    }
+    case TokenType::IDENTIFIER: {
+      auto ident = new Identifier(token_.value);
+      NextToken();
+      return ident;
+    }
+    case TokenType::NULL_LITERAL: {
+      auto null = new NullLiteral();
+      NextToken();
+      return null;
+    }
+    case TokenType::BOOLEAN_LITERAL: {
+      auto boolean = new BooleanLiteral(token_.value == u"true");
+      NextToken();
+      return boolean;
+    }
+    case TokenType::NUMBER: {
+      auto num = new NumericLiteral(utils::ConvertToNumber(token_.value));
+      NextToken();
+      return num;
+    }
+    case TokenType::STRING: {
+      auto str = new StringLiteral(utils::ConvertToString(token_.value));
+      NextToken();
+      return str;
+    }
+    case TokenType::LEFT_PAREN: {
+      NextToken();
+      auto expr = ParseExpression();
+      if (token_.type != TokenType::RIGHT_PAREN) {
+        ThrowSyntaxError("expects a ')'");
+      }
+      NextToken();
+      return expr;
+    }
+    default: {
+      ThrowSyntaxError("parse error");
+      return nullptr;
+    }
+  }
 }
 
 

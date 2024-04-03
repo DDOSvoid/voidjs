@@ -22,16 +22,7 @@ class Parser {
   Parser(const Parser&) = delete;
   Parser& operator=(const Parser&) = delete;
 
- private:
-  Token NextToken();
-  Token PeekToken();
 
-  void ThrowSyntaxError(std::string msg); 
-
-  ast::Statements ParseStatementList(TokenType end_token_type);
-  ast::VariableDeclarations ParseVariableDeclarationList();
-  ast::VariableDeclaration* ParseVariableDeclaration(); 
-  
   ast::Program* ParseProgram();
 
   ast::Statement* ParseStatement();
@@ -43,6 +34,16 @@ class Parser {
 
   ast::Expression* ParseExpression();
   ast::Expression* ParsePrimaryExpression(); 
+
+ private:
+  Token NextToken();
+  Token PeekToken();
+
+  void ThrowSyntaxError(std::string msg); 
+
+  ast::Statements ParseStatementList(TokenType end_token_type);
+  ast::VariableDeclarations ParseVariableDeclarationList();
+  ast::VariableDeclaration* ParseVariableDeclaration(); 
 
  private:
   Lexer lexer_;

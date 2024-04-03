@@ -16,7 +16,7 @@ double Literal::GetDouble() const {
   return AsNumericLiteral()->GetNumber<double>();
 }
 
-std::string_view Literal::GetString() const {
+std::u16string_view Literal::GetString() const {
   return AsStringLiteral()->GetString();
 }
 

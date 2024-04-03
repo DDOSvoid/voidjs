@@ -390,11 +390,6 @@ TokenType Lexer::SkipMultiLineComment() {
 //   u HexDigit HexDigit HexDigit HexDigit
 // Defined in ECMAScript 5.1 7.8.4
 std::optional<char16_t> Lexer::SkipUnicodeEscapeSequence() {
-  if (ch_ != u'\\') {
-    NextChar();  // skip the illegal char
-    return std::nullopt;
-  }
-  NextChar();
   if (ch_ != u'u') {
     NextChar();  // skip the illegal char
     return std::nullopt;
@@ -538,7 +533,7 @@ bool Lexer::SkipEscapeSequence() {
     return true;
   } else if (ch_ == u'x' && SkipHexEscapeSequence()) {
     return true;
-  } else if (ch_ == u'\\' && SkipUnicodeEscapeSequence().has_value()) {
+  } else if (ch_ == u'u' && SkipUnicodeEscapeSequence().has_value()) {
     // UnicodeEscapeSequence is not escaped for now.
     return true;
   } else {

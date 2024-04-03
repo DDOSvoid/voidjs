@@ -156,6 +156,7 @@ TEST(Lexer, StringLiteral) {
 "
 "
 "😊"
+'\u1234'
 )";
 
   Lexer lexer(source);
@@ -164,10 +165,9 @@ TEST(Lexer, StringLiteral) {
     {TokenType::STRING, uR"('asd')"},
     {TokenType::STRING, uR"('')"},
     {TokenType::STRING, uR"("")"},
-    {TokenType::STRING, uR"("
-")"},
+    {TokenType::STRING, u"\"\n\""},
     {TokenType::STRING, uR"("😊")"},
-    // {TokenType::EOS},
+    {TokenType::STRING, uR"('\u1234')"},
   };
   
   for (auto& expect_token : expects) {
