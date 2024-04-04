@@ -82,7 +82,7 @@ inline double ConvertToNumber(std::u16string str) {
 }
 
 // Assume input string is always valid
-// Copy from 
+// Copy from https://github.com/zhuzilin/es/blob/67fb4d579bb142669acd8384ea34c62cd052945c/es/impl/base-impl.h#L121
 inline std::u16string ConvertToString(std::u16string source) {
   size_t pos = 1;
   std::u16string vals;

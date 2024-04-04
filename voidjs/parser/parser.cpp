@@ -177,6 +177,10 @@ Expression* Parser::ParsePrimaryExpression() {
       NextToken();
       return str;
     }
+    case TokenType::LEFT_BRACKET: {
+      auto arr = ParseArrayLiteral();
+      return arr; 
+    }
     case TokenType::LEFT_PAREN: {
       NextToken();
       auto expr = ParseExpression();
@@ -191,6 +195,11 @@ Expression* Parser::ParsePrimaryExpression() {
       return nullptr;
     }
   }
+}
+
+// Parse AssignmentExpression
+Expression* Parser::ParseAssignmentExpression() {
+  return nullptr;
 }
 
 
@@ -236,6 +245,42 @@ VariableDeclaration* Parser::ParseVariableDeclaration() {
 
   return new VariableDeclaration(ident, init); 
 }
+
+// Parse ArrayLiteral
+// Defined in ECMAScript 5.1 chapter 11.1.4
+//  ArrayLiteral :
+//    [ Elision_opt ]
+//    [ ElementList ]
+//    [ ElementList , Elision_opt ]
+//  ElementList :
+//    Elision_opt AssignmentExpression
+//    ElementList , Elision_opt AssignmentExpression
+//  Elision :
+//    ,
+//    Elision ,
+Expression* Parser::ParseArrayLiteral() {
+  // begin with [
+  NextToken();
+
+  Expressions exprs;
+  
+  while (token_.type != TokenType::RIGHT_BRACKET) {
+    if (token_.type == TokenType::COMMA) {
+      exprs.push_back(nullptr);
+      NextToken();
+    } else {
+      exprs.push_back(ParseAssignmentExpression());
+    }
+  }
+
+  if (token_.type != TokenType::RIGHT_BRACKET) {
+    ThrowSyntaxError("expects a ']'");
+  }
+  NextToken();
+
+  return new ArrayLiteral(std::move(exprs));
+}
+
 
 Token Parser::NextToken() {
   std::swap(token_, nxt_token_);

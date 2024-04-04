@@ -22,6 +22,9 @@ enum class AstNodeType {
   EXPRESSION,
   THIS_EXPRESSION,
   LEFT_HAND_SIDE_EXPRESSION,
+  NEW_EXPRESSION,
+  CALL_EXPRESSION,
+  MEMBER_EXPRESSION,
   ASSIGNMENT_EXPRESSION,
 
   // Literal
@@ -34,6 +37,7 @@ enum class AstNodeType {
   // Others
   IDENTIFIER,
   VARIABLE_DECLARATION,
+  ARRAY_LITERAL,
 };
 
 class AstNode;
@@ -47,6 +51,9 @@ class IfStatement;
 class Expression;
 class ThisExpression;
 class LeftHandSideExpression;
+class NewExpression;
+class CallExpression;
+class MemberExpression;
 class AssignmentExpression;
 class Literal;
 class NullLiteral;
@@ -55,9 +62,11 @@ class NumericLiteral;
 class StringLiteral;
 class Identifier;
 class VariableDeclaration;
+class ArrayLiteral;
 
 using Statements = std::vector<Statement*>;
 using VariableDeclarations = std::vector<VariableDeclaration*>;
+using Expressions = std::vector<Expression*>;
 
 class AstNode {
  public:
@@ -82,6 +91,9 @@ class AstNode {
   virtual bool IsExpression() const { return type_ == AstNodeType::EXPRESSION; }
   bool IsThisExpression() const { return type_ == AstNodeType::THIS_EXPRESSION; }
   bool IsLeftHandSideExpression() const { return type_ == AstNodeType::LEFT_HAND_SIDE_EXPRESSION; }
+  bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
+  bool IsCallExpression() const { return type_ == AstNodeType::CALL_EXPRESSION; }
+  bool IsMemberExpression() const { return type_ == AstNodeType::MEMBER_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
   virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
   bool IsNullLiteral() const { return type_ == AstNodeType::NULL_LITERAL; }
@@ -90,6 +102,7 @@ class AstNode {
   bool IsStringLiteral() const { return type_ == AstNodeType::STRING_LITERAL; }
   bool IsIdentifier() const { return type_ == AstNodeType::IDENTIFIER; }
   bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
+  bool IsArrayLiteral() const { return type_ == AstNodeType::ARRAY_LITERAL; }
 
   // As Cast
   Program* AsProgram() { return reinterpret_cast<Program*>(this); }
@@ -102,6 +115,9 @@ class AstNode {
   Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
   ThisExpression* AsThisExpression() { return reinterpret_cast<ThisExpression*>(this); }
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
+  NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
+  CallExpression* AsCallExpression() { return reinterpret_cast<CallExpression*>(this); }
+  MemberExpression* AsMemberExpression() { return reinterpret_cast<MemberExpression*>(this); }
   AssignmentExpression* AsAssignmentExpression() { return reinterpret_cast<AssignmentExpression*>(this); }
   Literal* AsLiteral() { return reinterpret_cast<Literal*>(this); }
   NullLiteral* AsNullLiteral() { return reinterpret_cast<NullLiteral*>(this); }
@@ -110,6 +126,7 @@ class AstNode {
   StringLiteral* AsStringLiteral() { return reinterpret_cast<StringLiteral*>(this); }
   Identifier* AsIdentifier() { return reinterpret_cast<Identifier*>(this); }
   VariableDeclaration* AsVariableDeclaration() { return reinterpret_cast<VariableDeclaration*>(this); }
+  ArrayLiteral* AsArrayLiteral() { return reinterpret_cast<ArrayLiteral*>(this); }
 
   // As Cast const-version
   const Program* AsProgram() const { return reinterpret_cast<const Program*>(this); }
@@ -122,6 +139,9 @@ class AstNode {
   const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
   const ThisExpression* AsThisExpression() const { return reinterpret_cast<const ThisExpression*>(this); }
   const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
+  const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }
+  const CallExpression* AsCallExpression() const { return reinterpret_cast<const CallExpression*>(this); }
+  const MemberExpression* AsMemberExpression() const { return reinterpret_cast<const MemberExpression*>(this); }
   const AssignmentExpression* AsAssignmentExpression() const { return reinterpret_cast<const AssignmentExpression*>(this); }
   const Literal* AsLiteral() const { return reinterpret_cast<const Literal*>(this); }
   const NullLiteral* AsNullLiteral() const { return reinterpret_cast<const NullLiteral*>(this); }
@@ -130,6 +150,7 @@ class AstNode {
   const StringLiteral* AsStringLiteral() const { return reinterpret_cast<const StringLiteral*>(this); }
   const Identifier* AsIdentifier() const { return reinterpret_cast<const Identifier*>(this); }
   const VariableDeclaration* AsVariableDeclaration() const { return reinterpret_cast<const VariableDeclaration*>(this); }
+  const ArrayLiteral* AsArrayLiteral() const { return reinterpret_cast<const ArrayLiteral*>(this); }
   
  private:
   AstNodeType type_;

@@ -38,6 +38,42 @@ class ThisExpression : public Expression {
   {}
 };
 
+class NewExpression : public Expression {
+ public:
+  NewExpression(Expression* expr, Expressions exprs)
+    : Expression(AstNodeType::NEW_EXPRESSION),
+      callee_(expr), arguments_(std::move(exprs))
+  {}
+  
+ private:
+  Expression* callee_;
+  Expressions arguments_;
+};
+
+class CallExpression : public Expression {
+ public:
+  CallExpression(Expression* callee, Expressions arguments)
+    : Expression(AstNodeType::CALL_EXPRESSION),
+      callee_(callee), arguments_(std::move(arguments))
+  {}
+
+ private:
+  Expression* callee_;
+  Expressions arguments_;
+};
+
+class MemberExpression : public Expression {
+ public:
+  MemberExpression(Expression* object, Expression* property)
+    : Expression(AstNodeType::MEMBER_EXPRESSION),
+      object_(object), property_(property)
+  {}
+
+ private:
+  Expression* object_;
+  Expression* property_;
+};
+
 class Identifier : public Expression {
  public:
   explicit Identifier(std::u16string name)
@@ -49,6 +85,17 @@ class Identifier : public Expression {
 
  private:
   std::u16string name_;
+};
+
+class ArrayLiteral : public Expression {
+ public:
+  explicit ArrayLiteral(Expressions elements)
+    : Expression(AstNodeType::ARRAY_LITERAL),
+      elements_(std::move(elements))
+  {}
+
+ private:
+  Expressions elements_;
 };
 
 class AssignmentExpression : public Expression {

@@ -33,17 +33,23 @@ class Parser {
   ast::Statement* ParseIfStatement();
 
   ast::Expression* ParseExpression();
-  ast::Expression* ParsePrimaryExpression(); 
+  ast::Expression* ParsePrimaryExpression();
+  ast::Expression* ParseLeftHandSideExpression();
+  ast::Expression* ParseNewExpression();
+  ast::Expression* ParseCallExpression();
+  ast::Expression* ParseMemberExpression();
+  ast::Expression* ParseAssignmentExpression();
+
+  ast::Statements ParseStatementList(TokenType end_token_type);
+  ast::VariableDeclarations ParseVariableDeclarationList();
+  ast::VariableDeclaration* ParseVariableDeclaration();
+  ast::Expression* ParseArrayLiteral();
 
  private:
   Token NextToken();
   Token PeekToken();
 
   void ThrowSyntaxError(std::string msg); 
-
-  ast::Statements ParseStatementList(TokenType end_token_type);
-  ast::VariableDeclarations ParseVariableDeclarationList();
-  ast::VariableDeclaration* ParseVariableDeclaration(); 
 
  private:
   Lexer lexer_;

@@ -108,5 +108,6 @@ TEST(parser, ParsePrimaryExpression) {
       EXPECT_EQ(expect, expr->AsLiteral()->GetString());
     }
   }
+
 }
 
