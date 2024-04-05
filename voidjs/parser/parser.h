@@ -35,8 +35,6 @@ class Parser {
   ast::Expression* ParseExpression();
   ast::Expression* ParsePrimaryExpression();
   ast::Expression* ParseLeftHandSideExpression();
-  ast::Expression* ParseNewExpression();
-  ast::Expression* ParseCallExpression();
   ast::Expression* ParseMemberExpression();
   ast::Expression* ParseAssignmentExpression();
 
@@ -44,6 +42,8 @@ class Parser {
   ast::VariableDeclarations ParseVariableDeclarationList();
   ast::VariableDeclaration* ParseVariableDeclaration();
   ast::Expression* ParseArrayLiteral();
+  ast::Expressions ParseArguments();
+  ast::Expressions ParseArgumentList(TokenType end_token_type);
 
  private:
   Token NextToken();

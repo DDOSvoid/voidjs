@@ -197,6 +197,82 @@ Expression* Parser::ParsePrimaryExpression() {
   }
 }
 
+// Parse LeftHandSideExpression
+// Defined in ECMAScript 5.1 chapter 11.2
+//  LeftHandSideExpression :
+//    NewExpression
+//    MemberExpression
+Expression* Parser::ParseLeftHandSideExpression() {
+  return ParseMemberExpression();
+}
+
+// Parse MemberExpression
+// Defined in ECMAScript 5.1 chapter 11.2
+//  MemberExpression :
+//    PrimaryExpression
+//    FunctionExpression
+//    MemberExpression [ Expression ]
+//    MemberExpression . IdentifierName
+//    new MemberExpression Arguments
+// 
+//  NewExpression :
+//    MemberExpression
+//    new NewExpression
+// 
+//  CallExpression :
+//    MemberExpression Arguments
+//    CallExpression Arguments
+//    CallExpression [ Expression ]
+//    CallExpression . IdentifierName
+// Note that one of the MemberExpression's Production is clearly wrong,
+// i.e., FunctionExpression or PrimaryExpression is followed by
+// FunctionExpression or PrimaryExpression, so I chose not to
+// Parse this case directly here.
+Expression* Parser::ParseMemberExpression() {
+  Expression* callee = nullptr;
+  bool has_new = false;
+  if (token_.type == TokenType::KEYWORD_NEW) {
+    NextToken();
+    has_new = true;
+    callee = ParseMemberExpression();
+  } else {
+    if (token_.type == TokenType::KEYWORD_FUNCTION) {
+      // callee = ParseFunctionExpression();
+    } else {
+      callee = ParsePrimaryExpression();
+    }
+  }
+
+  if (token_.type == TokenType::LEFT_BRACKET) {
+    NextToken();
+    auto expr = ParseExpression();
+    if (token_.type != TokenType::RIGHT_BRACKET) {
+      ThrowSyntaxError("expects a ']'");
+    }
+    NextToken();
+    return new MemberExpression(callee, expr);
+  } else if (token_.type == TokenType::DOT) {
+    NextToken();
+    if (token_.type == TokenType::IDENTIFIER) {
+      auto ident = new Identifier(token_.value);
+      return new MemberExpression(callee, ident);
+    } else {
+      ThrowSyntaxError("expects identifier");
+    }
+  } else if (token_.type == TokenType::LEFT_PAREN) {
+    auto args = ParseArguments();
+    if (has_new) {
+      return new NewExpression(callee, args);
+    } else {
+      return new CallExpression(callee, args);
+    }
+  } else {
+    ThrowSyntaxError("unexpected token");
+  }
+  return nullptr;
+}
+
+
 // Parse AssignmentExpression
 Expression* Parser::ParseAssignmentExpression() {
   return nullptr;
@@ -279,6 +355,49 @@ Expression* Parser::ParseArrayLiteral() {
   NextToken();
 
   return new ArrayLiteral(std::move(exprs));
+}
+
+// Parse Arguments
+// Defined in ECMASCript 5.1 chapter 11.2
+//  Arguments :
+//    ()
+//    ( ArgumentList )
+//
+Expressions Parser::ParseArguments() {
+  // begin with (
+  NextToken();
+
+  // () 
+  if (token_.type == TokenType::RIGHT_PAREN) {
+    return {}; 
+  }
+
+  auto args = ParseArgumentList(TokenType::RIGHT_PAREN);
+
+  if (token_.type != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  NextToken();
+
+  return args;
+}
+
+// Parse ArgumentList
+// Defined in ECMAScript 5.1 chapter 11.2
+//  ArgumentList :
+//    AssignmentExpression
+//    ArgumentList , AssignmentExpression
+Expressions Parser::ParseArgumentList(TokenType end_token_type) {
+  Expressions args;
+  args.push_back(ParseAssignmentExpression());
+  while (token_.type != end_token_type) {
+    if (token_.type != TokenType::COMMA) {
+      ThrowSyntaxError("expects a ','");
+    }
+    NextToken();
+    args.push_back(ParseAssignmentExpression());
+  }
+  return args;
 }
 
 
