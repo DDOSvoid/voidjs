@@ -1,8 +1,9 @@
 #ifndef VOIDJS_LEXER_TOKEN_H
 #define VOIDJS_LEXER_TOKEN_H
 
-#include "voidjs/lexer/token_type.h"
 #include <string>
+
+#include "voidjs/lexer/token_type.h"
 
 namespace voidjs {
 
@@ -24,8 +25,11 @@ class Token {
   void SetNumber(double number) { number_ = number; }
   double GetNumber() const { return number_; }
 
+  std::int32_t GetPrecedence() const;
+
   bool IsKeyword() const;
   bool IsIdentifierName() const;
+  bool IsBinaryOperator() const; 
 
   bool HasString() const;
   

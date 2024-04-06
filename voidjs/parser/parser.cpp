@@ -301,15 +301,13 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
 //    LeftHandSideExpression [no LineTerminator here] --
 Expression* Parser::ParsePostfixExpression() {
   auto lhs = ParseLeftHandSideExpression();
-  PostfixExpression::PostfixType type = PostfixExpression::PostfixType::NONE;
-  if (lexer_.GetToken().GetType() == TokenType::INC) {
-    type = PostfixExpression::PostfixType::INC;
+  if (lexer_.GetToken().GetType() == TokenType::INC ||
+      lexer_.GetToken().GetType() == TokenType::DEC) {
+    auto type = lexer_.GetToken().GetType();
     lexer_.NextToken();
-  } else if (lexer_.GetToken().GetType() == TokenType::DEC) {
-    type = PostfixExpression::PostfixType::DEC;
-    lexer_.NextToken();
+    return new PostfixExpression(type, lhs);
   }
-  return new PostfixExpression(type, lhs);
+  return lhs;
 }
 
 // Parse UnaryExpression
@@ -335,10 +333,84 @@ Expression* Parser::ParseUnaryExpression() {
       lexer_.GetToken().GetType() == TokenType::SUB            ||
       lexer_.GetToken().GetType() == TokenType::BIT_NOT        ||
       lexer_.GetToken().GetType() == TokenType::LOGICAL_NOT) {
-    return new UnaryExpression(lexer_.GetToken().GetType(), ParseUnaryExpression());
+    auto type = lexer_.GetToken().GetType();
+    lexer_.NextToken();
+    return new UnaryExpression(type, ParseUnaryExpression());
   } else {
     return ParsePostfixExpression();
   }
+}
+
+// Parse BinaryExpression
+// Here we don't use the traditional recursive descent method;
+// instead, we use Pratt Parsing to parse BinaryExpression,
+// which is a collection of the following kinds of Expression.
+//  MultiplicativeExpression :
+//    UnaryExpression
+//    MultiplicativeExpression * UnaryExpression
+//    MultiplicativeExpression / UnaryExpression
+//    MultiplicativeExpression % UnaryExpression
+// 
+//  AdditiveExpression :
+//    MultiplicativeExpression
+//    AdditiveExpression + MultiplicativeExpression
+//    AdditiveExpression - MultiplicativeExpression
+// 
+//  ShiftExpression :
+//    AdditiveExpression
+//    ShiftExpression << AdditiveExpression
+//    ShiftExpression >> AdditiveExpression
+//    ShiftExpression >>> AdditiveExpression
+// 
+//  RelationalExpression :
+//    ShiftExpression
+//    RelationalExpression < ShiftExpression
+//    RelationalExpression > ShiftExpression
+//    RelationalExpression <= ShiftExpression
+//    RelationalExpression >= ShiftExpression
+//    RelationalExpression instanceof ShiftExpression
+//    RelationalExpression in ShiftExpression
+// 
+//  EqualityExpression :
+//    RelationalExpression
+//    EqualityExpression == RelationalExpression
+//    EqualityExpression != RelationalExpression
+//    EqualityExpression === RelationalExpression
+//    EqualityExpression !== RelationalExpression
+// 
+//  BitwiseANDExpression :
+//    EqualityExpression
+//    BitwiseANDExpression & EqualityExpression
+// 
+//  BitwiseXORExpression :
+//    BitwiseANDExpression
+//    BitwiseXORExpression ^ BitwiseANDExpression
+// 
+//  BitwiseORExpression :
+//    BitwiseXORExpression
+//    BitwiseORExpression | BitwiseXORExpression
+
+//  LogicalANDExpression :
+//    BitwiseORExpression
+//    LogicalANDExpression && BitwiseORExpression
+
+//  LogicalORExpression :
+//    LogicalANDExpression
+//    LogicalORExpression || LogicalANDExpression
+Expression* Parser::ParseBinaryExpression(std::int32_t precedence) {
+  auto left = ParseUnaryExpression();
+
+  while (true) {
+    auto token = lexer_.GetToken();
+    if (!token.IsBinaryOperator() ||
+        token.GetPrecedence() <= precedence) {
+      break;
+    }
+    lexer_.NextToken();
+    auto right = ParseBinaryExpression(token.GetPrecedence());
+    left = new BinaryExpression(token.GetType(), left, right);
+  }
+  return left;
 }
 
 

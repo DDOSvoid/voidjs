@@ -27,6 +27,7 @@ enum class AstNodeType {
   MEMBER_EXPRESSION,
   POSTFIX_EXPRESSION,
   UNARY_EXPRESSION,
+  BINARY_EXPRESSION,
   ASSIGNMENT_EXPRESSION,
 
   // Literal
@@ -58,6 +59,7 @@ class CallExpression;
 class MemberExpression;
 class PostfixExpression;
 class UnaryExpression;
+class BinaryExpression;
 class AssignmentExpression;
 class Literal;
 class NullLiteral;
@@ -100,6 +102,7 @@ class AstNode {
   bool IsMemberExpression() const { return type_ == AstNodeType::MEMBER_EXPRESSION; }
   bool IsPostfixExpression() const { return type_ == AstNodeType::POSTFIX_EXPRESSION; }
   bool IsUnaryExpression() const { return type_ == AstNodeType::UNARY_EXPRESSION; }
+  bool IsBinaryExpression() const { return type_ == AstNodeType::BINARY_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
   virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
   bool IsNullLiteral() const { return type_ == AstNodeType::NULL_LITERAL; }
@@ -126,6 +129,7 @@ class AstNode {
   MemberExpression* AsMemberExpression() { return reinterpret_cast<MemberExpression*>(this); }
   PostfixExpression* AsPostfixExpression() { return reinterpret_cast<PostfixExpression*>(this); }
   UnaryExpression* AsUnaryExpression() { return reinterpret_cast<UnaryExpression*>(this); }
+  BinaryExpression* AsBinaryExpression() { return reinterpret_cast<BinaryExpression*>(this); }
   AssignmentExpression* AsAssignmentExpression() { return reinterpret_cast<AssignmentExpression*>(this); }
   Literal* AsLiteral() { return reinterpret_cast<Literal*>(this); }
   NullLiteral* AsNullLiteral() { return reinterpret_cast<NullLiteral*>(this); }
@@ -152,6 +156,7 @@ class AstNode {
   const MemberExpression* AsMemberExpression() const { return reinterpret_cast<const MemberExpression*>(this); }
   const PostfixExpression* AsPostfixExpression() const { return reinterpret_cast<const PostfixExpression*>(this); }
   const UnaryExpression* AsUnaryExpression() const { return reinterpret_cast<const UnaryExpression*>(this); }
+  const BinaryExpression* AsBinaryExpression() const { return reinterpret_cast<const BinaryExpression*>(this); }
   const AssignmentExpression* AsAssignmentExpression() const { return reinterpret_cast<const AssignmentExpression*>(this); }
   const Literal* AsLiteral() const { return reinterpret_cast<const Literal*>(this); }
   const NullLiteral* AsNullLiteral() const { return reinterpret_cast<const NullLiteral*>(this); }

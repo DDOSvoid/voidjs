@@ -82,22 +82,17 @@ class MemberExpression : public Expression {
 
 class PostfixExpression : public Expression {
  public:
-  
-  enum class PostfixType {
-    NONE,
-    INC,
-    DEC,
-  };
-  
-  PostfixExpression(PostfixType type, Expression* expr)
+  PostfixExpression(TokenType type, Expression* expr)
     : Expression(AstNodeType::POSTFIX_EXPRESSION),
-      type_(type), lhs_expression_(expr)
+      operator_(type), expression_(expr)
   {}
 
+  TokenType GetOperator() const { return operator_; }
+  Expression* GetExpression() const { return expression_; }
   
  private:
-  PostfixType type_;
-  Expression* lhs_expression_;
+  TokenType operator_;
+  Expression* expression_;
 };
 
 class UnaryExpression : public Expression {
@@ -106,10 +101,30 @@ class UnaryExpression : public Expression {
     : Expression(AstNodeType::UNARY_EXPRESSION),
       operator_(unary_op), expression_(expr)
   {}
+
+  TokenType GetOperator() const { return operator_; }
+  Expression* GetExpression() const { return expression_; }
   
  private:
   TokenType operator_;
   Expression* expression_;
+};
+
+class BinaryExpression : public Expression {
+ public:
+  BinaryExpression(TokenType type, Expression* left, Expression* right)
+    : Expression(AstNodeType::BINARY_EXPRESSION),
+      operator_(type), left_(left), right_(right)
+  {}
+
+  TokenType GetOperator() const { return operator_; }
+  Expression* GetLeft() const { return left_; }
+  Expression* GetRight() const { return right_; }
+
+ private:
+  TokenType operator_;
+  Expression* left_;
+  Expression* right_;
 };
 
 class Identifier : public Expression {

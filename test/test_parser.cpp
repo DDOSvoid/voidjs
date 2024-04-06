@@ -8,6 +8,7 @@
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/ir/literal.h"
+#include "voidjs/lexer/token_type.h"
 #include "voidjs/parser/parser.h"
 
 using namespace voidjs;
@@ -112,7 +113,6 @@ TEST(parser, ParsePrimaryExpression) {
 
 }
 
-
 TEST(parser, ParseLeftHandSideExpression) {
   // MemberExpression . IdentifierName
   {
@@ -194,3 +194,74 @@ TEST(parser, ParseLeftHandSideExpression) {
     EXPECT_EQ(u"ddos", mem_expr->GetProperty()->AsIdentifier()->GetName());
   }
 }
+
+TEST(parser, ParsePostfixExpression) {
+  // ++
+  {
+    Parser parser(u"Array.length++");
+
+    auto expr = parser.ParsePostfixExpression();
+    ASSERT_TRUE(expr->IsPostfixExpression());
+
+    auto post_expr = expr->AsPostfixExpression();
+    EXPECT_EQ(TokenType::INC, post_expr->GetOperator());
+    ASSERT_TRUE(post_expr->GetExpression()->IsMemberExpression());
+    
+    auto mem_expr = post_expr->GetExpression()->AsMemberExpression();
+    ASSERT_TRUE(mem_expr->GetObject()->IsIdentifier());
+    ASSERT_TRUE(mem_expr->GetProperty()->IsIdentifier());
+    EXPECT_EQ(u"Array", mem_expr->GetObject()->AsIdentifier()->GetName());
+    EXPECT_EQ(u"length", mem_expr->GetProperty()->AsIdentifier()->GetName());
+  }
+
+  // --
+  {
+    Parser parser(u"i--");
+
+    auto expr = parser.ParsePostfixExpression();
+    ASSERT_TRUE(expr->IsPostfixExpression());
+
+    auto post_expr = expr->AsPostfixExpression();
+    ASSERT_TRUE(post_expr->GetExpression()->IsIdentifier());
+    EXPECT_EQ(TokenType::DEC, post_expr->GetOperator());
+    EXPECT_EQ(u"i", post_expr->GetExpression()->AsIdentifier()->GetName());
+  }
+}
+
+TEST(parser, ParseUnaryExpression) {
+  // delete UnaryExpression
+  {
+    Parser parser(u"delete Array");
+
+    auto expr = parser.ParseUnaryExpression();
+    ASSERT_TRUE(expr->IsUnaryExpression());
+
+    auto unary_expr = expr->AsUnaryExpression();
+    ASSERT_TRUE(unary_expr->GetExpression()->IsIdentifier());
+    EXPECT_EQ(TokenType::KEYWORD_DELETE, unary_expr->GetOperator());
+    EXPECT_EQ(u"Array", unary_expr->GetExpression()->AsIdentifier()->GetName());
+  }
+}
+
+TEST(parser, ParseBinaryExpression) {
+  {
+    Parser parser(u"1 + 2 * 3");
+
+    auto expr = parser.ParseBinaryExpression();
+    ASSERT_TRUE(expr->IsBinaryExpression());
+
+    auto binary_expr1 = expr->AsBinaryExpression();
+    ASSERT_TRUE(binary_expr1->GetLeft()->IsNumericLiteral());
+    ASSERT_TRUE(binary_expr1->GetRight()->IsBinaryExpression());
+    EXPECT_EQ(TokenType::ADD, binary_expr1->GetOperator());
+    EXPECT_EQ(1, binary_expr1->GetLeft()->AsNumericLiteral()->GetNumber<std::int32_t>());
+
+    auto binary_expr2 = binary_expr1->GetRight()->AsBinaryExpression();
+    ASSERT_TRUE(binary_expr2->GetLeft()->IsNumericLiteral());
+    ASSERT_TRUE(binary_expr2->GetRight()->IsNumericLiteral());
+    EXPECT_EQ(TokenType::MUL, binary_expr2->GetOperator());
+    EXPECT_EQ(2, binary_expr2->GetLeft()->AsNumericLiteral()->GetNumber<std::int32_t>());
+    EXPECT_EQ(3, binary_expr2->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+  }
+}
+
