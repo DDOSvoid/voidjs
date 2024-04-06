@@ -36,6 +36,8 @@ class Parser {
   ast::Expression* ParsePrimaryExpression();
   ast::Expression* ParseLeftHandSideExpression();
   ast::Expression* ParseMemberExpression(bool has_new = false);
+  ast::Expression* ParsePostfixExpression();
+  ast::Expression* ParseUnaryExpression(); 
   ast::Expression* ParseAssignmentExpression();
 
   ast::Statements ParseStatementList(TokenType end_token_type);

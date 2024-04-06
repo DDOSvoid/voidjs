@@ -25,6 +25,8 @@ enum class AstNodeType {
   NEW_EXPRESSION,
   CALL_EXPRESSION,
   MEMBER_EXPRESSION,
+  POSTFIX_EXPRESSION,
+  UNARY_EXPRESSION,
   ASSIGNMENT_EXPRESSION,
 
   // Literal
@@ -54,6 +56,8 @@ class LeftHandSideExpression;
 class NewExpression;
 class CallExpression;
 class MemberExpression;
+class PostfixExpression;
+class UnaryExpression;
 class AssignmentExpression;
 class Literal;
 class NullLiteral;
@@ -94,6 +98,8 @@ class AstNode {
   bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
   bool IsCallExpression() const { return type_ == AstNodeType::CALL_EXPRESSION; }
   bool IsMemberExpression() const { return type_ == AstNodeType::MEMBER_EXPRESSION; }
+  bool IsPostfixExpression() const { return type_ == AstNodeType::POSTFIX_EXPRESSION; }
+  bool IsUnaryExpression() const { return type_ == AstNodeType::UNARY_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
   virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
   bool IsNullLiteral() const { return type_ == AstNodeType::NULL_LITERAL; }
@@ -118,6 +124,8 @@ class AstNode {
   NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
   CallExpression* AsCallExpression() { return reinterpret_cast<CallExpression*>(this); }
   MemberExpression* AsMemberExpression() { return reinterpret_cast<MemberExpression*>(this); }
+  PostfixExpression* AsPostfixExpression() { return reinterpret_cast<PostfixExpression*>(this); }
+  UnaryExpression* AsUnaryExpression() { return reinterpret_cast<UnaryExpression*>(this); }
   AssignmentExpression* AsAssignmentExpression() { return reinterpret_cast<AssignmentExpression*>(this); }
   Literal* AsLiteral() { return reinterpret_cast<Literal*>(this); }
   NullLiteral* AsNullLiteral() { return reinterpret_cast<NullLiteral*>(this); }
@@ -142,6 +150,8 @@ class AstNode {
   const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }
   const CallExpression* AsCallExpression() const { return reinterpret_cast<const CallExpression*>(this); }
   const MemberExpression* AsMemberExpression() const { return reinterpret_cast<const MemberExpression*>(this); }
+  const PostfixExpression* AsPostfixExpression() const { return reinterpret_cast<const PostfixExpression*>(this); }
+  const UnaryExpression* AsUnaryExpression() const { return reinterpret_cast<const UnaryExpression*>(this); }
   const AssignmentExpression* AsAssignmentExpression() const { return reinterpret_cast<const AssignmentExpression*>(this); }
   const Literal* AsLiteral() const { return reinterpret_cast<const Literal*>(this); }
   const NullLiteral* AsNullLiteral() const { return reinterpret_cast<const NullLiteral*>(this); }

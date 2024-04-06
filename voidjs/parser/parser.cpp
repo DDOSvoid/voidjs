@@ -203,7 +203,7 @@ Expression* Parser::ParsePrimaryExpression() {
 //    NewExpression
 //    MemberExpression
 Expression* Parser::ParseLeftHandSideExpression() {
-  return ParseMemberExpression(false);
+  return ParseMemberExpression();
 }
 
 // Parse MemberExpression
@@ -288,6 +288,55 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
     }
   }
 }
+
+// Parse PostfixExpression
+// Defined in ECMASCript 5.1 chapter 11.3
+//  PostfixExpression :
+//    LeftHandSideExpression
+//    LeftHandSideExpression [no LineTerminator here] ++
+//    LeftHandSideExpression [no LineTerminator here] --
+Expression* Parser::ParsePostfixExpression() {
+  auto lhs = ParseLeftHandSideExpression();
+  PostfixExpression::PostfixType type = PostfixExpression::PostfixType::NONE;
+  if (token_.type == TokenType::INC) {
+    type = PostfixExpression::PostfixType::INC;
+    NextToken();
+  } else if (token_.type == TokenType::DEC) {
+    type = PostfixExpression::PostfixType::DEC;
+    NextToken();
+  }
+  return new PostfixExpression(type, lhs);
+}
+
+// Parse UnaryExpression
+// Defined in ECMASCript 5.1 chapter 11.4
+//  UnaryExpression :
+//    PostfixExpression
+//    delete UnaryExpression
+//    void UnaryExpression
+//    typeof UnaryExpression
+//    ++ UnaryExpression
+//    -- UnaryExpression
+//    + UnaryExpression
+//    - UnaryExpression
+//    ~ UnaryExpression
+//    ! UnaryExpression
+Expression* Parser::ParseUnaryExpression() {
+  if (token_.type == TokenType::KEYWORD_DELETE ||
+      token_.type == TokenType::KEYWORD_VOID   ||
+      token_.type == TokenType::KEYWORD_TYPEOF ||
+      token_.type == TokenType::INC            ||
+      token_.type == TokenType::DEC            ||
+      token_.type == TokenType::ADD            ||
+      token_.type == TokenType::SUB            ||
+      token_.type == TokenType::BIT_NOT        ||
+      token_.type == TokenType::LOGICAL_NOT) {
+    return new UnaryExpression(token_.type, ParseUnaryExpression());
+  } else {
+    return ParsePostfixExpression();
+  }
+}
+
 
 
 // Parse AssignmentExpression

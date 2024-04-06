@@ -80,6 +80,38 @@ class MemberExpression : public Expression {
   Expression* property_;
 };
 
+class PostfixExpression : public Expression {
+ public:
+  
+  enum class PostfixType {
+    NONE,
+    INC,
+    DEC,
+  };
+  
+  PostfixExpression(PostfixType type, Expression* expr)
+    : Expression(AstNodeType::POSTFIX_EXPRESSION),
+      type_(type), lhs_expression_(expr)
+  {}
+
+  
+ private:
+  PostfixType type_;
+  Expression* lhs_expression_;
+};
+
+class UnaryExpression : public Expression {
+ public:
+  UnaryExpression(TokenType unary_op, Expression* expr)
+    : Expression(AstNodeType::UNARY_EXPRESSION),
+      operator_(unary_op), expression_(expr)
+  {}
+  
+ private:
+  TokenType operator_;
+  Expression* expression_;
+};
+
 class Identifier : public Expression {
  public:
   explicit Identifier(std::u16string name)
