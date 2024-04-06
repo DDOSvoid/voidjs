@@ -56,11 +56,11 @@ TEST(Lexer, Punctuator) {
     {TokenType::COLON},                 // :
     {TokenType::DIV},                   // /
     {TokenType::DIV_ASSIGN},            // /=
-    {TokenType::EOS},                   // EOS
   };
 
   for (auto& expect : expects) {
-    EXPECT_EQ(std::any_cast<TokenType>(expect), lexer.NextToken().type);
+    lexer.NextToken();
+    EXPECT_EQ(std::any_cast<TokenType>(expect), lexer.GetToken().GetType());
   }
 }
 
@@ -81,11 +81,11 @@ TEST(Lexer, Comment) {
     {TokenType::SUB},
     {TokenType::LOGICAL_OR},
     {TokenType::BIT_OR},
-    {TokenType::EOS},
   };
 
   for (auto& expect : expects) {
-    EXPECT_EQ(std::any_cast<TokenType>(expect), lexer.NextToken().type);
+    lexer.NextToken();
+    EXPECT_EQ(std::any_cast<TokenType>(expect), lexer.GetToken().GetType());
   }
 }
 
@@ -103,7 +103,7 @@ A.B.C
   std::vector<Token> expects = {
     {TokenType::IDENTIFIER, u"value"},
     {TokenType::IDENTIFIER, u"x"},
-    {TokenType::KEYWORD_VAR, u"var"},
+    {TokenType::KEYWORD_VAR},
     {TokenType::ASSIGN},
     {TokenType::FUTURE_RESERVED_WORD, u"enum"},
     {TokenType::STRICT_MODE_FUTURE_RESERVED_WORD, u"private"},
@@ -113,13 +113,15 @@ A.B.C
     {TokenType::IDENTIFIER, u"B"},
     {TokenType::DOT},
     {TokenType::IDENTIFIER, u"C"},
-    {TokenType::EOS},
   };
   
   for (auto& expect_token : expects) {
-    auto token = lexer.NextToken();
-    EXPECT_EQ(expect_token.type, token.type);
-    EXPECT_EQ(expect_token.value, token.value);
+    lexer.NextToken();
+    auto& token = lexer.GetToken();
+    EXPECT_EQ(expect_token.GetType(), token.GetType());
+    if (token.HasString()) {
+      EXPECT_EQ(expect_token.GetString(), token.GetString());
+    }
   }
 }
 
@@ -134,25 +136,25 @@ TEST(Lexer, NumericLiteral) {
   Lexer lexer(source);
 
   std::vector<Token> expects = {
-    {TokenType::NUMBER, u"0"},
-    {TokenType::NUMBER, u"101"},
-    {TokenType::NUMBER, u"0.01"},
-    {TokenType::NUMBER, u"12.05"},
-    {TokenType::NUMBER, u".8"},
-    {TokenType::NUMBER, u"0xAbC09"},
-    {TokenType::NUMBER, u"1e10"},
-    {TokenType::NUMBER, u"101E02"},
-    {TokenType::NUMBER, u"0.01E5"},
-    {TokenType::NUMBER, u".8E5"},
-    {TokenType::NUMBER, u"12.05e05"},
-    {TokenType::NUMBER, u"123e-1"},
-    {TokenType::EOS},
+    {TokenType::NUMBER, u"", 0},
+    {TokenType::NUMBER, u"", 101},
+    {TokenType::NUMBER, u"", 0.01},
+    {TokenType::NUMBER, u"", 12.05},
+    {TokenType::NUMBER, u"", 0.8},
+    {TokenType::NUMBER, u"", 703497},
+    {TokenType::NUMBER, u"", 1e10},
+    {TokenType::NUMBER, u"", 10100},
+    {TokenType::NUMBER, u"", 1000},
+    {TokenType::NUMBER, u"", 80000},
+    {TokenType::NUMBER, u"", 1205000},
+    {TokenType::NUMBER, u"", 12.3},
   };
   
   for (auto& expect_token : expects) {
-    auto token = lexer.NextToken();
-    EXPECT_EQ(expect_token.type, token.type);
-    EXPECT_EQ(expect_token.value, token.value);
+    lexer.NextToken();
+    auto& token = lexer.GetToken();
+    EXPECT_EQ(expect_token.GetType(), token.GetType());
+    EXPECT_DOUBLE_EQ(expect_token.GetNumber(), token.GetNumber());
   }
 }
 
@@ -168,18 +170,21 @@ TEST(Lexer, StringLiteral) {
   Lexer lexer(source);
 
   std::vector<Token> expects = {
-    {TokenType::STRING, uR"('asd')"},
-    {TokenType::STRING, uR"('')"},
-    {TokenType::STRING, uR"("")"},
-    {TokenType::STRING, u"\"\n\""},
-    {TokenType::STRING, uR"("😊")"},
-    {TokenType::STRING, uR"('\u1234')"},
+    {TokenType::STRING, uR"(asd)"},
+    {TokenType::STRING, uR"()"},
+    {TokenType::STRING, uR"()"},
+    {TokenType::STRING, u"\n"},
+    {TokenType::STRING, uR"(😊)"},
+    {TokenType::STRING, std::u16string(1, 4660)},
   };
   
   for (auto& expect_token : expects) {
-    auto token = lexer.NextToken();
-    EXPECT_EQ(expect_token.type, token.type);
-    EXPECT_EQ(expect_token.value, token.value);
+    lexer.NextToken();
+    auto& token = lexer.GetToken();
+    EXPECT_EQ(expect_token.GetType(), token.GetType());
+    if (token.HasString()) {
+      EXPECT_EQ(expect_token.GetString(), token.GetString());
+    }
   }
 }
 
@@ -199,31 +204,31 @@ function fnSupportsStrict() {
   Lexer lexer(source);
 
   std::vector<Token> expects = {
-    {TokenType::KEYWORD_FUNCTION, u"function"},
+    {TokenType::KEYWORD_FUNCTION},
     {TokenType::IDENTIFIER, u"fnSupportsStrict"},
     {TokenType::LEFT_PAREN},
     {TokenType::RIGHT_PAREN},
     {TokenType::LEFT_BRACE},
-    {TokenType::STRING, uR"("use strict")"},
+    {TokenType::STRING, uR"(use strict)"},
     {TokenType::SEMICOLON},
-    {TokenType::KEYWORD_TRY, u"try"},
+    {TokenType::KEYWORD_TRY},
     {TokenType::LEFT_BRACE},
     {TokenType::IDENTIFIER, u"eval"},
     {TokenType::LEFT_PAREN},
-    {TokenType::STRING, uR"('with ({}) {}')"},
+    {TokenType::STRING, uR"(with ({}) {})"},
     {TokenType::RIGHT_PAREN},
     {TokenType::SEMICOLON},
-    {TokenType::KEYWORD_RETURN, u"return"},
-    {TokenType::BOOLEAN_LITERAL, u"false"},
+    {TokenType::KEYWORD_RETURN},
+    {TokenType::FALSE, },
     {TokenType::SEMICOLON},
     {TokenType::RIGHT_BRACE},
-    {TokenType::KEYWORD_CATCH, u"catch"},
+    {TokenType::KEYWORD_CATCH},
     {TokenType::LEFT_PAREN},
     {TokenType::IDENTIFIER, u"e"},
     {TokenType::RIGHT_PAREN},
     {TokenType::LEFT_BRACE},
-    {TokenType::KEYWORD_RETURN, u"return"},
-    {TokenType::BOOLEAN_LITERAL, u"true"},
+    {TokenType::KEYWORD_RETURN},
+    {TokenType::TRUE},
     {TokenType::SEMICOLON},
     {TokenType::RIGHT_BRACE},
     {TokenType::RIGHT_BRACE},
@@ -231,8 +236,11 @@ function fnSupportsStrict() {
   };
   
   for (auto& expect_token : expects) {
-    auto token = lexer.NextToken();
-    EXPECT_EQ(expect_token.type, token.type);
-    EXPECT_EQ(expect_token.value, token.value);
+    lexer.NextToken();
+    auto& token = lexer.GetToken();
+    EXPECT_EQ(expect_token.GetType(), token.GetType());
+    if (token.HasString()) {
+      EXPECT_EQ(expect_token.GetString(), token.GetString());
+    }
   }
 }

@@ -11,8 +11,8 @@ namespace voidjs {
 
 class Lexer {
  public:
-  explicit Lexer(const std::u16string& src, bool use_strict = false)
-    : src_(src), cur_(0), nxt_(1), use_strict_(use_strict) {
+  explicit Lexer(const std::u16string& src)
+    : src_(src), cur_(0), nxt_(1) {
     if (!src_.empty()) {
       ch_ = src_.at(0);
     } else {
@@ -25,7 +25,11 @@ class Lexer {
   Lexer(const Lexer&) = delete;
   Lexer& operator=(const Lexer&) = delete;
 
-  Token NextToken();
+  void NextToken();
+  Token NextRewindToken();
+
+  Token& GetToken() { return token_; }
+  const Token& GetToken() const { return token_; }
 
  private:
   char16_t NextChar();
@@ -48,16 +52,19 @@ class Lexer {
   bool SkipSingleStringCharacter();
   bool SkipDoubleStringCharacter();
 
-  Token ScanIdentifier();
-  Token ScanNumericLiteral();
-  Token ScanStringLiteral();
+  void ScanIdentifier();
+  void ScanNumericLiteral();
+  void ScanStringLiteral();
+
+  double ConvertToNumber(std::u16string source);
+  std::u16string ConvertToString(std::u16string source);
   
  private:
   std::u16string src_;
+  Token token_;
   char16_t ch_ {};
   std::size_t cur_ {};
   std::size_t nxt_ {};
-  bool use_strict_ {};
 };
 
 }  // namespace voidjs

@@ -6,6 +6,7 @@
 #include "voidjs/ir/statement.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/literal.h"
+#include "voidjs/lexer/token_type.h"
 #include "voidjs/utils/error.h"
 #include "voidjs/utils/helper.h"
 
@@ -24,12 +25,13 @@ using namespace ast;
 //   Statement
 //   FunctionDeclaration
 Program* Parser::ParseProgram() {
-  if (token_.type == TokenType::STRING &&
-      (token_.value == uR"('use strict')" || token_.value == uR"("use strict")")) {
+  if (lexer_.GetToken().GetType() == TokenType::STRING &&
+      (lexer_.GetToken().GetString() == uR"('use strict')" ||
+       lexer_.GetToken().GetString() == uR"("use strict")")) {
     // use strict
   }
   Statements stmts;
-  while (token_.type != TokenType::EOS) {
+  while (lexer_.GetToken().GetType() != TokenType::EOS) {
     try {
       auto stmt = ParseStatement();
       stmts.push_back(stmt);
@@ -51,14 +53,14 @@ Statement* Parser::ParseStatement() {
 //   { StatementList_opt }
 Statement* Parser::ParseBlockStatement() {
   // begin with {
-  NextToken();
+  lexer_.NextToken();
   
   Statements stmts = ParseStatementList(TokenType::RIGHT_BRACE);
   
-  if (token_.type != TokenType::RIGHT_BRACE) {
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     ThrowSyntaxError("expects a '}'");
   }
-  NextToken();
+  lexer_.NextToken();
   
   return new BlockStatement(std::move(stmts));
 }
@@ -69,7 +71,7 @@ Statement* Parser::ParseBlockStatement() {
 //   var VariableDeclarationList ;
 Statement* Parser::ParseVariableStatement() {
   // begin with var
-  NextToken();
+  lexer_.NextToken();
   
   return new VariableStatement(ParseVariableDeclarationList());
 }
@@ -87,8 +89,9 @@ Statement* Parser::ParseEmptyStatement() {
 // ExpressionStatement :
 //   [lookahead ∉ {{, function}] Expression ;
 Statement* Parser::ParseExpressionStatement() {
-  if (nxt_token_.type == TokenType::COMMA ||
-      nxt_token_.type == TokenType::KEYWORD_FUNCTION) {
+  auto token = lexer_.NextRewindToken();
+  if (token.GetType() == TokenType::COMMA ||
+      token.GetType() == TokenType::KEYWORD_FUNCTION) {
     
   }
   Expression* expr = ParseExpression();
@@ -102,25 +105,25 @@ Statement* Parser::ParseExpressionStatement() {
 //   if ( Expression ) Statement
 Statement* Parser::ParseIfStatement() {
   // begin with if
-  NextToken();
+  lexer_.NextToken();
   
-  if (token_.type != TokenType::LEFT_PAREN) {
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
     ThrowSyntaxError("expects a '('");
   }
-  NextToken();
+  lexer_.NextToken();
   
   Expression* cond = ParseExpression();
   
-  if (token_.type != TokenType::RIGHT_PAREN) {
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
     ThrowSyntaxError("expects a ')'");
   }
-  NextToken();
+  lexer_.NextToken();
 
   Statement* cons = ParseStatement();
 
   Statement* alt = nullptr;
-  if (token_.type == TokenType::KEYWORD_ELSE) {
-    NextToken();
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_ELSE) {
+    lexer_.NextToken();
     alt = ParseStatement();
   }
 
@@ -146,35 +149,36 @@ Expression* Parser::ParseExpression() {
 //    ObjectLiteral
 //    ( Expression )
 Expression* Parser::ParsePrimaryExpression() {
-  switch (token_.type) {
+  switch (lexer_.GetToken().GetType()) {
     case TokenType::KEYWORD_THIS: {
       auto expr = new ThisExpression();
-      NextToken();
+      lexer_.NextToken();
       return expr;
     }
     case TokenType::IDENTIFIER: {
-      auto ident = new Identifier(token_.value);
-      NextToken();
+      auto ident = new Identifier(lexer_.GetToken().GetString());
+      lexer_.NextToken();
       return ident;
     }
     case TokenType::NULL_LITERAL: {
       auto null = new NullLiteral();
-      NextToken();
+      lexer_.NextToken();
       return null;
     }
-    case TokenType::BOOLEAN_LITERAL: {
-      auto boolean = new BooleanLiteral(token_.value == u"true");
-      NextToken();
+    case TokenType::TRUE:
+    case TokenType::FALSE: {
+      auto boolean = new BooleanLiteral(lexer_.GetToken().GetType() == TokenType::TRUE);
+      lexer_.NextToken();
       return boolean;
     }
     case TokenType::NUMBER: {
-      auto num = new NumericLiteral(utils::ConvertToNumber(token_.value));
-      NextToken();
+      auto num = new NumericLiteral(lexer_.GetToken().GetNumber());
+      lexer_.NextToken();
       return num;
     }
     case TokenType::STRING: {
-      auto str = new StringLiteral(utils::ConvertToString(token_.value));
-      NextToken();
+      auto str = new StringLiteral(lexer_.GetToken().GetString());
+      lexer_.NextToken();
       return str;
     }
     case TokenType::LEFT_BRACKET: {
@@ -182,12 +186,12 @@ Expression* Parser::ParsePrimaryExpression() {
       return arr; 
     }
     case TokenType::LEFT_PAREN: {
-      NextToken();
+      lexer_.NextToken();
       auto expr = ParseExpression();
-      if (token_.type != TokenType::RIGHT_PAREN) {
+      if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
         ThrowSyntaxError("expects a ')'");
       }
-      NextToken();
+      lexer_.NextToken();
       return expr;
     }
     default: {
@@ -232,17 +236,17 @@ Expression* Parser::ParseLeftHandSideExpression() {
 // like 'new MemberExpression Arguments'.
 Expression* Parser::ParseMemberExpression(bool has_new) {
   Expression* callee = nullptr;
-  if (token_.type == TokenType::KEYWORD_NEW) {
-    NextToken();
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_NEW) {
+    lexer_.NextToken();
     callee = ParseMemberExpression(true);
-    if (token_.type == TokenType::LEFT_PAREN) {
+    if (lexer_.GetToken().GetType() == TokenType::LEFT_PAREN) {
       auto args = ParseArguments();
       return new NewExpression(callee, std::move(args));
     } else {
       return new NewExpression(callee, {});
     }
   } else {
-    if (token_.type == TokenType::KEYWORD_FUNCTION) {
+    if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
       // callee = ParseFunctionExpression();
     } else {
       callee = ParsePrimaryExpression();
@@ -250,25 +254,25 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
   }
 
   while (true) {
-    switch (token_.type) {
+    switch (lexer_.GetToken().GetType()) {
       case TokenType::LEFT_BRACKET: {
-        NextToken();
+        lexer_.NextToken();
         auto expr = ParseExpression();
-        if (token_.type != TokenType::RIGHT_BRACKET) {
+        if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACKET) {
           ThrowSyntaxError("expects a ']'");
         }
-        NextToken();
+        lexer_.NextToken();
         callee = new MemberExpression(callee, expr);
         break;
       }
       case TokenType::DOT: {
-        NextToken();
-        if (token_.type == TokenType::IDENTIFIER) {
-          auto ident = new Identifier(token_.value);
-          NextToken();
+        lexer_.NextToken();
+        if (lexer_.GetToken().IsIdentifierName()) {
+          auto ident = new Identifier(lexer_.GetToken().GetString());
+          lexer_.NextToken();
           callee = new MemberExpression(callee, ident);
         } else {
-          ThrowSyntaxError("expects identifier");
+          ThrowSyntaxError("expects identifier_name");
         }
         break;
       }
@@ -298,12 +302,12 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
 Expression* Parser::ParsePostfixExpression() {
   auto lhs = ParseLeftHandSideExpression();
   PostfixExpression::PostfixType type = PostfixExpression::PostfixType::NONE;
-  if (token_.type == TokenType::INC) {
+  if (lexer_.GetToken().GetType() == TokenType::INC) {
     type = PostfixExpression::PostfixType::INC;
-    NextToken();
-  } else if (token_.type == TokenType::DEC) {
+    lexer_.NextToken();
+  } else if (lexer_.GetToken().GetType() == TokenType::DEC) {
     type = PostfixExpression::PostfixType::DEC;
-    NextToken();
+    lexer_.NextToken();
   }
   return new PostfixExpression(type, lhs);
 }
@@ -322,16 +326,16 @@ Expression* Parser::ParsePostfixExpression() {
 //    ~ UnaryExpression
 //    ! UnaryExpression
 Expression* Parser::ParseUnaryExpression() {
-  if (token_.type == TokenType::KEYWORD_DELETE ||
-      token_.type == TokenType::KEYWORD_VOID   ||
-      token_.type == TokenType::KEYWORD_TYPEOF ||
-      token_.type == TokenType::INC            ||
-      token_.type == TokenType::DEC            ||
-      token_.type == TokenType::ADD            ||
-      token_.type == TokenType::SUB            ||
-      token_.type == TokenType::BIT_NOT        ||
-      token_.type == TokenType::LOGICAL_NOT) {
-    return new UnaryExpression(token_.type, ParseUnaryExpression());
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_DELETE ||
+      lexer_.GetToken().GetType() == TokenType::KEYWORD_VOID   ||
+      lexer_.GetToken().GetType() == TokenType::KEYWORD_TYPEOF ||
+      lexer_.GetToken().GetType() == TokenType::INC            ||
+      lexer_.GetToken().GetType() == TokenType::DEC            ||
+      lexer_.GetToken().GetType() == TokenType::ADD            ||
+      lexer_.GetToken().GetType() == TokenType::SUB            ||
+      lexer_.GetToken().GetType() == TokenType::BIT_NOT        ||
+      lexer_.GetToken().GetType() == TokenType::LOGICAL_NOT) {
+    return new UnaryExpression(lexer_.GetToken().GetType(), ParseUnaryExpression());
   } else {
     return ParsePostfixExpression();
   }
@@ -353,7 +357,7 @@ Expression* Parser::ParseAssignmentExpression() {
 Statements Parser::ParseStatementList(TokenType end_type) {
   // Empty StatementList is permitted
   Statements stmts;
-  while (token_.type != end_type) {
+  while (lexer_.GetToken().GetType() != end_type) {
     stmts.push_back(ParseStatement());
   }
   return stmts;
@@ -367,8 +371,8 @@ Statements Parser::ParseStatementList(TokenType end_type) {
 VariableDeclarations Parser::ParseVariableDeclarationList() {
   VariableDeclarations var_decls;
   var_decls.push_back(ParseVariableDeclaration());
-  while (token_.type == TokenType::COMMA) {
-    NextToken();
+  while (lexer_.GetToken().GetType() == TokenType::COMMA) {
+    lexer_.NextToken();
     var_decls.push_back(ParseVariableDeclaration());
   }
   return var_decls;
@@ -402,23 +406,23 @@ VariableDeclaration* Parser::ParseVariableDeclaration() {
 //    Elision ,
 Expression* Parser::ParseArrayLiteral() {
   // begin with [
-  NextToken();
+  lexer_.NextToken();
 
   Expressions exprs;
   
-  while (token_.type != TokenType::RIGHT_BRACKET) {
-    if (token_.type == TokenType::COMMA) {
+  while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACKET) {
+    if (lexer_.GetToken().GetType() == TokenType::COMMA) {
       exprs.push_back(nullptr);
-      NextToken();
+      lexer_.NextToken();
     } else {
       exprs.push_back(ParseAssignmentExpression());
     }
   }
 
-  if (token_.type != TokenType::RIGHT_BRACKET) {
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACKET) {
     ThrowSyntaxError("expects a ']'");
   }
-  NextToken();
+  lexer_.NextToken();
 
   return new ArrayLiteral(std::move(exprs));
 }
@@ -431,20 +435,20 @@ Expression* Parser::ParseArrayLiteral() {
 //
 Expressions Parser::ParseArguments() {
   // begin with (
-  NextToken();
+  lexer_.NextToken();
 
   // () 
-  if (token_.type == TokenType::RIGHT_PAREN) {
-    NextToken();
+  if (lexer_.GetToken().GetType() == TokenType::RIGHT_PAREN) {
+    lexer_.NextToken();
     return {}; 
   }
 
   auto args = ParseArgumentList(TokenType::RIGHT_PAREN);
 
-  if (token_.type != TokenType::RIGHT_PAREN) {
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
     ThrowSyntaxError("expects a ')'");
   }
-  NextToken();
+  lexer_.NextToken();
 
   return args;
 }
@@ -457,21 +461,14 @@ Expressions Parser::ParseArguments() {
 Expressions Parser::ParseArgumentList(TokenType end_token_type) {
   Expressions args;
   args.push_back(ParseAssignmentExpression());
-  while (token_.type != end_token_type) {
-    if (token_.type != TokenType::COMMA) {
+  while (lexer_.GetToken().GetType() != end_token_type) {
+    if (lexer_.GetToken().GetType() != TokenType::COMMA) {
       ThrowSyntaxError("expects a ','");
     }
-    NextToken();
+    lexer_.NextToken();
     args.push_back(ParseAssignmentExpression());
   }
   return args;
-}
-
-
-Token Parser::NextToken() {
-  std::swap(token_, nxt_token_);
-  nxt_token_ = lexer_.NextToken();
-  return token_;
 }
 
 void Parser::ThrowSyntaxError(std::string msg) {
