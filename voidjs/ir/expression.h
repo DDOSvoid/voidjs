@@ -42,11 +42,14 @@ class NewExpression : public Expression {
  public:
   NewExpression(Expression* expr, Expressions exprs)
     : Expression(AstNodeType::NEW_EXPRESSION),
-      callee_(expr), arguments_(std::move(exprs))
+      constructor_(expr), arguments_(std::move(exprs))
   {}
-  
+
+  const Expression* GetConstructor() const { return constructor_; }
+  const Expressions& GetArguments() const { return arguments_; }
+
  private:
-  Expression* callee_;
+  Expression* constructor_;
   Expressions arguments_;
 };
 
@@ -68,6 +71,9 @@ class MemberExpression : public Expression {
     : Expression(AstNodeType::MEMBER_EXPRESSION),
       object_(object), property_(property)
   {}
+
+  const Expression* GetObject() const { return object_; }
+  const Expression* GetProperty() const { return property_; }
 
  private:
   Expression* object_;

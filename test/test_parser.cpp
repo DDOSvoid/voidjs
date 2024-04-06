@@ -1,5 +1,6 @@
 #include <vector>
 #include <any>
+#include <string>
 
 #include "gtest/gtest.h"
 #include "voidjs/lexer/token.h"
@@ -111,3 +112,85 @@ TEST(parser, ParsePrimaryExpression) {
 
 }
 
+
+TEST(parser, ParseLeftHandSideExpression) {
+  // MemberExpression . IdentifierName
+  {
+    Parser parser(u"Array.length");
+
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsMemberExpression());
+    
+    auto mem_expr = expr->AsMemberExpression();
+    ASSERT_TRUE(mem_expr->GetObject()->IsIdentifier());
+    ASSERT_TRUE(mem_expr->GetProperty()->IsIdentifier());
+    EXPECT_EQ(u"Array", mem_expr->GetObject()->AsIdentifier()->GetName());
+    EXPECT_EQ(u"length", mem_expr->GetProperty()->AsIdentifier()->GetName());
+  }
+
+  // MemberExpression . IdentifierName . IdentifierName
+  {
+    Parser parser(u"DDOSvoid.ZigZagZing.vid");
+
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsMemberExpression());
+    
+    auto mem_expr1 = expr->AsMemberExpression();
+    ASSERT_TRUE(mem_expr1->GetObject()->IsMemberExpression());
+    ASSERT_TRUE(mem_expr1->GetProperty()->IsIdentifier());
+    EXPECT_EQ(u"vid", mem_expr1->GetProperty()->AsIdentifier()->GetName());
+    
+    auto mem_expr2 = mem_expr1->GetObject()->AsMemberExpression();
+    ASSERT_TRUE(mem_expr2->GetObject()->IsIdentifier());
+    ASSERT_TRUE(mem_expr2->GetProperty()->IsIdentifier());
+    EXPECT_EQ(u"DDOSvoid", mem_expr2->GetObject()->AsIdentifier()->GetName());
+    EXPECT_EQ(u"ZigZagZing", mem_expr2->GetProperty()->AsIdentifier()->GetName());
+  }
+
+  // New MemberExpression
+  {
+    Parser parser(u"new A");
+
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsNewExpression());
+
+    auto new_expr = expr->AsNewExpression();
+    ASSERT_TRUE(new_expr->GetConstructor()->IsIdentifier());
+    EXPECT_EQ(u"A", new_expr->GetConstructor()->AsIdentifier()->GetName());
+  }
+
+  // New MemberExpression Arguments
+  {
+    Parser parser(u"new A()");
+
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsNewExpression());
+
+    auto new_expr = expr->AsNewExpression();
+    ASSERT_TRUE(new_expr->GetConstructor()->IsIdentifier());
+    EXPECT_EQ(u"A", new_expr->GetConstructor()->AsIdentifier()->GetName());
+    EXPECT_EQ(0, new_expr->GetArguments().size());
+  }
+
+  // New New MemberExpression . IdentifierName Arguments Arguments
+  {
+    Parser parser(u"new new DDOSvoid.ddos()()");
+
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsNewExpression());
+
+    auto new_expr1 = expr->AsNewExpression();
+    ASSERT_TRUE(new_expr1->GetConstructor()->IsNewExpression());
+    EXPECT_EQ(0, new_expr1->GetArguments().size());
+
+    auto new_expr2 = new_expr1->GetConstructor()->AsNewExpression();
+    ASSERT_TRUE(new_expr2->GetConstructor()->IsMemberExpression());
+    EXPECT_EQ(0, new_expr1->GetArguments().size());
+
+    auto mem_expr = new_expr2->GetConstructor()->AsMemberExpression();
+    ASSERT_TRUE(mem_expr->GetObject()->IsIdentifier());
+    ASSERT_TRUE(mem_expr->GetProperty()->IsIdentifier());
+    EXPECT_EQ(u"DDOSvoid", mem_expr->GetObject()->AsIdentifier()->GetName());
+    EXPECT_EQ(u"ddos", mem_expr->GetProperty()->AsIdentifier()->GetName());
+  }
+}

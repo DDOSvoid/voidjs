@@ -203,7 +203,7 @@ Expression* Parser::ParsePrimaryExpression() {
 //    NewExpression
 //    MemberExpression
 Expression* Parser::ParseLeftHandSideExpression() {
-  return ParseMemberExpression();
+  return ParseMemberExpression(false);
 }
 
 // Parse MemberExpression
@@ -228,13 +228,19 @@ Expression* Parser::ParseLeftHandSideExpression() {
 // i.e., FunctionExpression or PrimaryExpression is followed by
 // FunctionExpression or PrimaryExpression, so I chose not to
 // Parse this case directly here.
-Expression* Parser::ParseMemberExpression() {
+// We use boolean has_new here to deal with expressions
+// like 'new MemberExpression Arguments'.
+Expression* Parser::ParseMemberExpression(bool has_new) {
   Expression* callee = nullptr;
-  bool has_new = false;
   if (token_.type == TokenType::KEYWORD_NEW) {
     NextToken();
-    has_new = true;
-    callee = ParseMemberExpression();
+    callee = ParseMemberExpression(true);
+    if (token_.type == TokenType::LEFT_PAREN) {
+      auto args = ParseArguments();
+      return new NewExpression(callee, std::move(args));
+    } else {
+      return new NewExpression(callee, {});
+    }
   } else {
     if (token_.type == TokenType::KEYWORD_FUNCTION) {
       // callee = ParseFunctionExpression();
@@ -243,33 +249,44 @@ Expression* Parser::ParseMemberExpression() {
     }
   }
 
-  if (token_.type == TokenType::LEFT_BRACKET) {
-    NextToken();
-    auto expr = ParseExpression();
-    if (token_.type != TokenType::RIGHT_BRACKET) {
-      ThrowSyntaxError("expects a ']'");
+  while (true) {
+    switch (token_.type) {
+      case TokenType::LEFT_BRACKET: {
+        NextToken();
+        auto expr = ParseExpression();
+        if (token_.type != TokenType::RIGHT_BRACKET) {
+          ThrowSyntaxError("expects a ']'");
+        }
+        NextToken();
+        callee = new MemberExpression(callee, expr);
+        break;
+      }
+      case TokenType::DOT: {
+        NextToken();
+        if (token_.type == TokenType::IDENTIFIER) {
+          auto ident = new Identifier(token_.value);
+          NextToken();
+          callee = new MemberExpression(callee, ident);
+        } else {
+          ThrowSyntaxError("expects identifier");
+        }
+        break;
+      }
+      case TokenType::LEFT_PAREN: {
+        if (!has_new) {
+          auto args = ParseArguments();
+          callee = new CallExpression(callee, args);
+        } else {
+          return callee;
+        }
+        break;
+      }
+      default: {
+        return callee;
+        break;
+      }
     }
-    NextToken();
-    return new MemberExpression(callee, expr);
-  } else if (token_.type == TokenType::DOT) {
-    NextToken();
-    if (token_.type == TokenType::IDENTIFIER) {
-      auto ident = new Identifier(token_.value);
-      return new MemberExpression(callee, ident);
-    } else {
-      ThrowSyntaxError("expects identifier");
-    }
-  } else if (token_.type == TokenType::LEFT_PAREN) {
-    auto args = ParseArguments();
-    if (has_new) {
-      return new NewExpression(callee, args);
-    } else {
-      return new CallExpression(callee, args);
-    }
-  } else {
-    ThrowSyntaxError("unexpected token");
   }
-  return nullptr;
 }
 
 
@@ -369,6 +386,7 @@ Expressions Parser::ParseArguments() {
 
   // () 
   if (token_.type == TokenType::RIGHT_PAREN) {
+    NextToken();
     return {}; 
   }
 

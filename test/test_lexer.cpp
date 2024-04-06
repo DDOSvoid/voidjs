@@ -95,6 +95,7 @@ value x
 var = // dsdsfdf
 enum private
 /* public */ test
+A.B.C
 )";
 
   Lexer lexer(source);
@@ -106,7 +107,12 @@ enum private
     {TokenType::ASSIGN},
     {TokenType::FUTURE_RESERVED_WORD, u"enum"},
     {TokenType::STRICT_MODE_FUTURE_RESERVED_WORD, u"private"},
-    {TokenType::IDENTIFIER, u"test"}, 
+    {TokenType::IDENTIFIER, u"test"},
+    {TokenType::IDENTIFIER, u"A"},
+    {TokenType::DOT},
+    {TokenType::IDENTIFIER, u"B"},
+    {TokenType::DOT},
+    {TokenType::IDENTIFIER, u"C"},
     {TokenType::EOS},
   };
   
