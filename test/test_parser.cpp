@@ -40,7 +40,7 @@ TEST(parser, ParsePrimaryExpression) {
     for (auto& expect : expects) {
       auto expr = parser.ParsePrimaryExpression();
       EXPECT_EQ(ast::AstNodeType::BOOLEAN_LITERAL, expr->GetType());
-      EXPECT_EQ(expect, expr->AsLiteral()->GetBoolean());
+      EXPECT_EQ(expect, expr->AsBooleanLiteral()->GetBoolean());
     }
   }
 
@@ -84,8 +84,8 @@ TEST(parser, ParsePrimaryExpression) {
     for (auto& expect : expects) {
       auto expr = parser.ParsePrimaryExpression();
       EXPECT_EQ(ast::AstNodeType::NUMERIC_LITERAL, expr->GetType());
-      EXPECT_DOUBLE_EQ(expect, expr->AsLiteral()->GetDouble());
-      EXPECT_EQ(static_cast<std::int32_t>(expect), expr->AsLiteral()->GetInt());
+      EXPECT_DOUBLE_EQ(expect, expr->AsNumericLiteral()->GetNumber<double>());
+      EXPECT_EQ(static_cast<std::int32_t>(expect), expr->AsNumericLiteral()->GetNumber<std::int32_t>());
     }
   }
 
@@ -108,7 +108,7 @@ TEST(parser, ParsePrimaryExpression) {
     for (auto& expect : expects) {
       auto expr = parser.ParsePrimaryExpression();
       EXPECT_EQ(ast::AstNodeType::STRING_LITERAL, expr->GetType());
-      EXPECT_EQ(expect, expr->AsLiteral()->GetString());
+      EXPECT_EQ(expect, expr->AsStringLiteral()->GetString());
     }
   }
 
@@ -348,38 +348,36 @@ TEST(parser, ParseAssignmentExpression) {
   EXPECT_EQ(u"ddos", mem_expr->GetProperty()->AsIdentifier()->GetName());
 }
 
-// TEST(parser, ParseExpression) {
-//   Parser parser(u"x = 0, y = x + 1");
+TEST(parser, ParseExpression) {
+  Parser parser(u"x = 0, y = x + 1");
 
-//   auto expr = parser.ParseExpression();
-//   std::cout << static_cast<std::int32_t>(expr->GetType()) << std::endl;
-//   ASSERT_TRUE(expr->IsSequenceExpression());
-//   return ;
+  auto expr = parser.ParseExpression();
+  ASSERT_TRUE(expr->IsSequenceExpression());
 
-//   const auto& exprs = expr->AsSequenceExpression()->GetExpressions();
+  const auto& exprs = expr->AsSequenceExpression()->GetExpressions();
 
-//   auto expr1 = exprs[0];
-//   ASSERT_TRUE(expr1->IsAssignmentExpression());
+  auto expr1 = exprs[0];
+  ASSERT_TRUE(expr1->IsAssignmentExpression());
 
-//   auto assign_expr1 = expr1->AsAssignmentExpression();
-//   ASSERT_TRUE(assign_expr1->GetLeft()->IsIdentifier());
-//   ASSERT_TRUE(assign_expr1->GetRight()->IsNumericLiteral());
-//   EXPECT_EQ(TokenType::ASSIGN, assign_expr1->GetOperator());
-//   EXPECT_EQ(u"x", assign_expr1->GetLeft()->AsIdentifier()->GetName());
-//   EXPECT_EQ(0, assign_expr1->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+  auto assign_expr1 = expr1->AsAssignmentExpression();
+  ASSERT_TRUE(assign_expr1->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(assign_expr1->GetRight()->IsNumericLiteral());
+  EXPECT_EQ(TokenType::ASSIGN, assign_expr1->GetOperator());
+  EXPECT_EQ(u"x", assign_expr1->GetLeft()->AsIdentifier()->GetName());
+  EXPECT_EQ(0, assign_expr1->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
 
-//   auto expr2 = exprs[1];
+  auto expr2 = exprs[1];
 
-//   auto assign_expr2 = expr2->AsAssignmentExpression();
-//   ASSERT_TRUE(assign_expr1->GetLeft()->IsIdentifier());
-//   ASSERT_TRUE(assign_expr1->GetRight()->IsBinaryExpression());
-//   EXPECT_EQ(TokenType::ASSIGN, assign_expr1->GetOperator());
-//   EXPECT_EQ(u"y", assign_expr1->GetLeft()->AsIdentifier()->GetName());
+  auto assign_expr2 = expr2->AsAssignmentExpression();
+  ASSERT_TRUE(assign_expr2->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(assign_expr2->GetRight()->IsBinaryExpression());
+  EXPECT_EQ(TokenType::ASSIGN, assign_expr2->GetOperator());
+  EXPECT_EQ(u"y", assign_expr2->GetLeft()->AsIdentifier()->GetName());
 
-//   auto binary_expr = assign_expr2->GetRight()->AsBinaryExpression();
-//   ASSERT_TRUE(binary_expr->GetLeft()->IsIdentifier());
-//   ASSERT_TRUE(binary_expr->GetRight()->IsNumericLiteral());
-//   EXPECT_EQ(TokenType::ADD, binary_expr->GetOperator());
-//   EXPECT_EQ(u"x", binary_expr->GetLeft()->AsIdentifier()->GetName());
-//   EXPECT_EQ(1, binary_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
-// }
+  auto binary_expr = assign_expr2->GetRight()->AsBinaryExpression();
+  ASSERT_TRUE(binary_expr->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(binary_expr->GetRight()->IsNumericLiteral());
+  EXPECT_EQ(TokenType::ADD, binary_expr->GetOperator());
+  EXPECT_EQ(u"x", binary_expr->GetLeft()->AsIdentifier()->GetName());
+  EXPECT_EQ(1, binary_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+}

@@ -165,7 +165,7 @@ Expression* Parser::ParseExpression() {
 Expression* Parser::ParsePrimaryExpression() {
   switch (lexer_.GetToken().GetType()) {
     case TokenType::KEYWORD_THIS: {
-      auto expr = new ThisExpression();
+      auto expr = new This();
       lexer_.NextToken();
       return expr;
     }
@@ -460,21 +460,26 @@ Expression* Parser::ParseConditionalExpression() {
 //    LeftHandSideExpression AssignmentOperator AssignmentExpression
 Expression* Parser::ParseAssignmentExpression() {
   auto left = ParseConditionalExpression();
-  if (left->IsMemberExpression() ||
-      left->IsNewExpression()    ||
-      left->IsCallExpression()) {
-    auto type = lexer_.GetToken().GetType();
-    if (!lexer_.GetToken().IsAssignmentOperator()) {
-      ThrowSyntaxError("expects an assigment operator");
-    }
-    lexer_.NextToken();
-    
-    auto right = ParseAssignmentExpression();
 
-    return new AssignmentExpression(type, left, right);
-  } else {
+  if (!lexer_.GetToken().IsAssignmentOperator()) {
     return left;
+  } else {
+    if (!left->IsLeftHandSideExpression()) {
+      ThrowSyntaxError("invalid assignment left-hand side");
+    } else {
+      auto type = lexer_.GetToken().GetType();
+    
+      if (!lexer_.GetToken().IsAssignmentOperator()) {
+        ThrowSyntaxError("expects an assignment operator");
+      }
+      lexer_.NextToken();
+    
+      auto right = ParseAssignmentExpression();
+
+      return new AssignmentExpression(type, left, right);
+    }
   }
+  return nullptr;
 }
 
 

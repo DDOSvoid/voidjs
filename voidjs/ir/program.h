@@ -11,8 +11,6 @@ class Program : public AstNode {
   explicit Program(Statements statements)
     : AstNode(AstNodeType::PROGRAM), statements_(std::move(statements))
   {}
-
-  bool IsProgram() const override { return true; }
   
  private:
   Statements statements_;

@@ -27,15 +27,6 @@ class Expression : public AstNode {
   explicit Expression(AstNodeType type)
     : AstNode(type)
   {}
-
-  bool IsExpression() const override { return true; }
-};
-
-class ThisExpression : public Expression {
- public:
-  ThisExpression()
-    : Expression(AstNodeType::THIS_EXPRESSION)
-  {}
 };
 
 class NewExpression : public Expression {
@@ -178,6 +169,12 @@ class SequenceExpression : public Expression {
   Expressions expressions_;
 };
 
+class This: public Expression {
+ public:
+  This()
+    : Expression(AstNodeType::THIS)
+  {}
+};
 
 class Identifier : public Expression {
  public:

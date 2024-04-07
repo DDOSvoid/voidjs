@@ -10,30 +10,17 @@
 namespace voidjs {
 namespace ast {
 
-class Literal : public Expression {
- public:
-  explicit Literal(AstNodeType type)
-    : Expression(type) {}
-
-  bool IsLiteral() const override { return true; }
-
-  bool GetBoolean() const;
-  std::int32_t GetInt() const;
-  double GetDouble() const;
-  std::u16string_view GetString() const;
-};
-
-class NullLiteral : public Literal {
+class NullLiteral : public Expression {
  public:
   NullLiteral()
-    : Literal(AstNodeType::NULL_LITERAL)
+    : Expression(AstNodeType::NULL_LITERAL)
   {}
 };
 
-class BooleanLiteral : public Literal {
+class BooleanLiteral : public Expression {
  public:
   explicit BooleanLiteral(bool boolean)
-    : Literal(AstNodeType::BOOLEAN_LITERAL),
+    : Expression(AstNodeType::BOOLEAN_LITERAL),
       boolean_(boolean)
   {}
 
@@ -43,10 +30,11 @@ class BooleanLiteral : public Literal {
   bool boolean_;
 };
 
-class NumericLiteral : public Literal {
+class NumericLiteral : public Expression {
  public:
   explicit NumericLiteral(double number)
-    : Literal(AstNodeType::NUMERIC_LITERAL), number_(number)
+    : Expression(AstNodeType::NUMERIC_LITERAL),
+      number_(number)
   {}
 
   template <typename T, typename = std::is_arithmetic<T>>
@@ -56,10 +44,10 @@ class NumericLiteral : public Literal {
   double number_; 
 };
 
-class StringLiteral : public Literal {
+class StringLiteral : public Expression {
  public:
   explicit StringLiteral(std::u16string str)
-    : Literal(AstNodeType::STRING_LITERAL),
+    : Expression(AstNodeType::STRING_LITERAL),
       string_(std::move(str))
   {}
 

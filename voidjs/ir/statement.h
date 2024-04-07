@@ -30,8 +30,6 @@ class Statement : public AstNode {
   explicit Statement(AstNodeType type)
     : AstNode(type)
   {}
-
-  bool IsStatement() const override { return true; }
 };
 
 class BlockStatement : public Statement {

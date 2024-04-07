@@ -11,7 +11,7 @@ enum class AstNodeType {
   PROGRAM,
 
   // Statement
-  STATEMENT,
+  STATEMENT,                   // not used
   BLOCK_STATEMENT,
   VARIABLE_STATEMENT,
   EMPTY_STATEMENT,
@@ -19,9 +19,8 @@ enum class AstNodeType {
   IF_STATEMENT,
 
   // Expression
-  EXPRESSION,
-  THIS_EXPRESSION,
-  LEFT_HAND_SIDE_EXPRESSION,
+  EXPRESSION,                  // not used
+  LEFT_HAND_SIDE_EXPRESSION,   // not used
   NEW_EXPRESSION,
   CALL_EXPRESSION,
   MEMBER_EXPRESSION,
@@ -32,15 +31,15 @@ enum class AstNodeType {
   ASSIGNMENT_EXPRESSION,
   SEQUENCE_EXPRESSION,
 
-
   // Literal
-  LITERAL,
+  LITERAL,                     // not used
   NULL_LITERAL,
   BOOLEAN_LITERAL,
   NUMERIC_LITERAL,
   STRING_LITERAL,
 
   // Others
+  THIS,
   IDENTIFIER,
   VARIABLE_DECLARATION,
   ARRAY_LITERAL,
@@ -55,7 +54,6 @@ class EmptyStatement;
 class ExpressionStatement;
 class IfStatement;
 class Expression;
-class ThisExpression;
 class LeftHandSideExpression;
 class NewExpression;
 class CallExpression;
@@ -66,6 +64,7 @@ class BinaryExpression;
 class ConditionalExpression;
 class AssignmentExpression;
 class SequenceExpression;
+class This;
 class Literal;
 class NullLiteral;
 class BooleanLiteral;
@@ -92,16 +91,15 @@ class AstNode {
   AstNodeType GetType() const { return type_; }
 
   // Is Check
-  virtual bool IsProgram() const { return type_ == AstNodeType::PROGRAM; }
-  virtual bool IsStatement() const { return type_ == AstNodeType::STATEMENT; }
+  bool IsProgram() const { return type_ == AstNodeType::PROGRAM; }
+  bool IsStatement() const;
   bool IsBlockStatement() const { return type_ == AstNodeType::BLOCK_STATEMENT; }
   bool IsVariableStatement() const { return type_ == AstNodeType::VARIABLE_STATEMENT; }
   bool IsEmptyStatement() const { return type_ == AstNodeType::EMPTY_STATEMENT; }
   bool IsExpressionStatement() const { return type_ == AstNodeType::EXPRESSION_STATEMENT; }
   bool IsIfStatement() const { return type_ == AstNodeType::IF_STATEMENT; }
-  virtual bool IsExpression() const { return type_ == AstNodeType::EXPRESSION; }
-  bool IsThisExpression() const { return type_ == AstNodeType::THIS_EXPRESSION; }
-  bool IsLeftHandSideExpression() const { return type_ == AstNodeType::LEFT_HAND_SIDE_EXPRESSION; }
+  bool IsExpression() const;
+  bool IsLeftHandSideExpression() const;
   bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
   bool IsCallExpression() const { return type_ == AstNodeType::CALL_EXPRESSION; }
   bool IsMemberExpression() const { return type_ == AstNodeType::MEMBER_EXPRESSION; }
@@ -111,11 +109,11 @@ class AstNode {
   bool IsConditionalExpression() const { return type_ == AstNodeType::CONDITIONAL_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
   bool IsSequenceExpression() const { return type_ == AstNodeType::SEQUENCE_EXPRESSION; }
-  virtual bool IsLiteral() const { return type_ == AstNodeType::LITERAL; }
   bool IsNullLiteral() const { return type_ == AstNodeType::NULL_LITERAL; }
   bool IsBooleanLiteral() const { return type_ == AstNodeType::BOOLEAN_LITERAL; }
   bool IsNumericLiteral() const { return type_ == AstNodeType::NUMERIC_LITERAL; }
   bool IsStringLiteral() const { return type_ == AstNodeType::STRING_LITERAL; }
+  bool IsThis() const { return type_ == AstNodeType::THIS; }
   bool IsIdentifier() const { return type_ == AstNodeType::IDENTIFIER; }
   bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
   bool IsArrayLiteral() const { return type_ == AstNodeType::ARRAY_LITERAL; }
@@ -129,7 +127,6 @@ class AstNode {
   ExpressionStatement* AsExpressionStatement() { return reinterpret_cast<ExpressionStatement*>(this); }
   IfStatement* AsIfStatement() { return reinterpret_cast<IfStatement*>(this); }
   Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
-  ThisExpression* AsThisExpression() { return reinterpret_cast<ThisExpression*>(this); }
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
   NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
   CallExpression* AsCallExpression() { return reinterpret_cast<CallExpression*>(this); }
@@ -145,6 +142,7 @@ class AstNode {
   BooleanLiteral* AsBooleanLiteral() { return reinterpret_cast<BooleanLiteral*>(this); }
   NumericLiteral* AsNumericLiteral() { return reinterpret_cast<NumericLiteral*>(this); }
   StringLiteral* AsStringLiteral() { return reinterpret_cast<StringLiteral*>(this); }
+  This* AsThisExpression() { return reinterpret_cast<This*>(this); }
   Identifier* AsIdentifier() { return reinterpret_cast<Identifier*>(this); }
   VariableDeclaration* AsVariableDeclaration() { return reinterpret_cast<VariableDeclaration*>(this); }
   ArrayLiteral* AsArrayLiteral() { return reinterpret_cast<ArrayLiteral*>(this); }
@@ -158,7 +156,6 @@ class AstNode {
   const ExpressionStatement* AsExpressionStatement() const { return reinterpret_cast<const ExpressionStatement*>(this); }
   const IfStatement* AsIfStatement() const { return reinterpret_cast<const IfStatement*>(this); }
   const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
-  const ThisExpression* AsThisExpression() const { return reinterpret_cast<const ThisExpression*>(this); }
   const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
   const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }
   const CallExpression* AsCallExpression() const { return reinterpret_cast<const CallExpression*>(this); }
@@ -174,6 +171,7 @@ class AstNode {
   const BooleanLiteral* AsBooleanLiteral() const { return reinterpret_cast<const BooleanLiteral*>(this); }
   const NumericLiteral* AsNumericLiteral() const { return reinterpret_cast<const NumericLiteral*>(this); }
   const StringLiteral* AsStringLiteral() const { return reinterpret_cast<const StringLiteral*>(this); }
+  const This* AsThis() const { return reinterpret_cast<const This*>(this); }
   const Identifier* AsIdentifier() const { return reinterpret_cast<const Identifier*>(this); }
   const VariableDeclaration* AsVariableDeclaration() const { return reinterpret_cast<const VariableDeclaration*>(this); }
   const ArrayLiteral* AsArrayLiteral() const { return reinterpret_cast<const ArrayLiteral*>(this); }
