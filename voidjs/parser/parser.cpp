@@ -306,8 +306,9 @@ Expression* Parser::ParsePostfixExpression() {
     auto type = lexer_.GetToken().GetType();
     lexer_.NextToken();
     return new PostfixExpression(type, lhs);
+  } else {
+    return lhs;
   }
-  return lhs;
 }
 
 // Parse UnaryExpression

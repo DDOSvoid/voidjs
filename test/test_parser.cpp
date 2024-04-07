@@ -241,6 +241,23 @@ TEST(parser, ParseUnaryExpression) {
     EXPECT_EQ(TokenType::KEYWORD_DELETE, unary_expr->GetOperator());
     EXPECT_EQ(u"Array", unary_expr->GetExpression()->AsIdentifier()->GetName());
   }
+
+  // ! ! UnaryExpression
+  {
+    Parser parser(u"!!true");
+
+    auto expr = parser.ParseUnaryExpression();
+    ASSERT_TRUE(expr->IsUnaryExpression());
+
+    auto unary_expr1 = expr->AsUnaryExpression();
+    ASSERT_TRUE(unary_expr1->GetExpression()->IsUnaryExpression());
+    EXPECT_EQ(TokenType::LOGICAL_NOT, unary_expr1->GetOperator());
+
+    auto unary_expr2 = unary_expr1->GetExpression()->AsUnaryExpression();
+    ASSERT_TRUE(unary_expr2->GetExpression()->IsBooleanLiteral());
+    EXPECT_EQ(TokenType::LOGICAL_NOT, unary_expr2->GetOperator());
+    EXPECT_EQ(true, unary_expr2->GetExpression()->AsBooleanLiteral()->GetBoolean());
+  }
 }
 
 TEST(parser, ParseBinaryExpression) {
@@ -262,6 +279,36 @@ TEST(parser, ParseBinaryExpression) {
     EXPECT_EQ(TokenType::MUL, binary_expr2->GetOperator());
     EXPECT_EQ(2, binary_expr2->GetLeft()->AsNumericLiteral()->GetNumber<std::int32_t>());
     EXPECT_EQ(3, binary_expr2->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+  }
+
+  {
+    Parser parser(u"1 + 2 % 3 <= ++4");
+
+    auto expr = parser.ParseBinaryExpression();
+    ASSERT_TRUE(expr->IsBinaryExpression());
+
+    auto binary_expr1 = expr->AsBinaryExpression();
+    ASSERT_TRUE(binary_expr1->GetLeft()->IsBinaryExpression());
+    ASSERT_TRUE(binary_expr1->GetRight()->IsUnaryExpression());
+    EXPECT_EQ(TokenType::LESS_EQUAL, binary_expr1->GetOperator());
+
+    auto binary_expr2 = binary_expr1->GetLeft()->AsBinaryExpression();
+    ASSERT_TRUE(binary_expr2->GetLeft()->IsNumericLiteral());
+    ASSERT_TRUE(binary_expr2->GetRight()->IsBinaryExpression());
+    EXPECT_EQ(TokenType::ADD, binary_expr2->GetOperator());
+    EXPECT_EQ(1, binary_expr2->GetLeft()->AsNumericLiteral()->GetNumber<std::int32_t>());
+
+    auto unary_expr = binary_expr1->GetRight()->AsUnaryExpression();
+    ASSERT_TRUE(unary_expr->GetExpression()->IsNumericLiteral());
+    EXPECT_EQ(TokenType::INC, unary_expr->GetOperator());
+    EXPECT_EQ(4, unary_expr->GetExpression()->AsNumericLiteral()->GetNumber<std::int32_t>());
+
+    auto binary_expr3 = binary_expr2->GetRight()->AsBinaryExpression();
+    ASSERT_TRUE(binary_expr3->GetLeft()->IsNumericLiteral());
+    ASSERT_TRUE(binary_expr3->GetRight()->IsNumericLiteral());
+    EXPECT_EQ(TokenType::MOD, binary_expr3->GetOperator());
+    EXPECT_EQ(2, binary_expr3->GetLeft()->AsNumericLiteral()->GetNumber<std::int32_t>());
+    EXPECT_EQ(3, binary_expr3->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
   }
 }
 
