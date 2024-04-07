@@ -546,8 +546,11 @@ Expression* Parser::ParseArrayLiteral() {
   
   while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACKET) {
     if (lexer_.GetToken().GetType() == TokenType::COMMA) {
-      exprs.push_back(nullptr);
       lexer_.NextToken();
+      
+      if (lexer_.GetToken().GetType() == TokenType::COMMA) {
+        exprs.push_back(nullptr);
+      }
     } else {
       exprs.push_back(ParseAssignmentExpression());
     }

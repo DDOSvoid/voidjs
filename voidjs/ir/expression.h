@@ -196,6 +196,8 @@ class ArrayLiteral : public Expression {
       elements_(std::move(elements))
   {}
 
+  const Expressions& GetElements() const { return elements_; }
+
  private:
   Expressions elements_;
 };

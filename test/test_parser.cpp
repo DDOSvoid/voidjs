@@ -112,6 +112,48 @@ TEST(parser, ParsePrimaryExpression) {
     }
   }
 
+  // ArrayLiteral
+  {
+    Parser parser(u"[]");
+
+    auto expr = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(expr->IsArrayLiteral());
+
+    auto arr = expr->AsArrayLiteral();
+    const auto& elems = arr->GetElements();
+    EXPECT_EQ(0, elems.size());
+  }
+
+  // ArrayLiteral
+  {
+    Parser parser(u"[1, 2]");
+
+    auto expr = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(expr->IsArrayLiteral());
+
+    auto arr = expr->AsArrayLiteral();
+    const auto& elems = arr->GetElements();
+    ASSERT_TRUE(elems[0]->IsNumericLiteral());
+    ASSERT_TRUE(elems[1]->IsNumericLiteral());
+    EXPECT_EQ(1, elems[0]->AsNumericLiteral()->GetNumber<std::int32_t>());
+    EXPECT_EQ(2, elems[1]->AsNumericLiteral()->GetNumber<std::int32_t>());
+  }
+
+  {
+    Parser parser(u"['Hello', , 'World',]");
+
+    auto expr = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(expr->IsArrayLiteral());
+
+    auto arr = expr->AsArrayLiteral();
+    const auto& elems = arr->GetElements();
+    ASSERT_TRUE(elems[0]->IsStringLiteral());
+    ASSERT_TRUE(elems[1] == nullptr);
+    ASSERT_TRUE(elems[2]->IsStringLiteral());
+    EXPECT_EQ(u"Hello", elems[0]->AsStringLiteral()->GetString());
+    EXPECT_EQ(u"World", elems[2]->AsStringLiteral()->GetString());
+  }
+
 }
 
 TEST(parser, ParseLeftHandSideExpression) {
