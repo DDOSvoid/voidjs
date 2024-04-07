@@ -127,6 +127,58 @@ class BinaryExpression : public Expression {
   Expression* right_;
 };
 
+class ConditionalExpression : public Expression {
+ public:
+  ConditionalExpression(Expression* condition,
+                        Expression* consequent,
+                        Expression* alternate)
+    : Expression(AstNodeType::CONDITIONAL_EXPRESSION),
+      condition_(condition),
+      consequent_(consequent),
+      alternate_(alternate)
+  {}
+
+  Expression* GetConditional() const { return condition_; }
+  Expression* GetConsequent() const { return consequent_; }
+  Expression* GetAlternate() const { return alternate_; }
+  
+ private:
+  Expression* condition_;
+  Expression* consequent_;
+  Expression* alternate_;
+};
+
+class AssignmentExpression : public Expression {
+ public:
+  AssignmentExpression(TokenType op, Expression* left, Expression* right)
+    : Expression(AstNodeType::ASSIGNMENT_EXPRESSION),
+      left_(left), right_(right), operator_(op)
+  {}
+
+  TokenType GetOperator() const { return operator_; }
+  Expression* GetLeft() const { return left_; }
+  Expression* GetRight() const { return right_; }
+  
+ private:
+  TokenType operator_;
+  Expression* left_;
+  Expression* right_;
+};
+
+class SequenceExpression : public Expression {
+ public:
+  explicit SequenceExpression(Expressions exprs)
+    : Expression(AstNodeType::SEQUENCE_EXPRESSION),
+      expressions_(std::move(exprs))
+  {}
+
+  const Expressions& GetExpressions() const { return expressions_; }
+
+ private:
+  Expressions expressions_;
+};
+
+
 class Identifier : public Expression {
  public:
   explicit Identifier(std::u16string name)
@@ -150,20 +202,6 @@ class ArrayLiteral : public Expression {
  private:
   Expressions elements_;
 };
-
-class AssignmentExpression : public Expression {
- public:
-  AssignmentExpression(Expression* left, Expression* right, TokenType op)
-    : Expression(AstNodeType::ASSIGNMENT_EXPRESSION),
-      left_(left), right_(right), operator_(op)
-  {}
-  
- private:
-  Expression* left_;
-  Expression* right_;
-  TokenType operator_;
-};
-
 
 }  // namespace voidjs
 }  // namespace ast

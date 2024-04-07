@@ -136,7 +136,21 @@ Statement* Parser::ParseIfStatement() {
 //   AssignmentExpression
 //   Expression , AssignmentExpression
 Expression* Parser::ParseExpression() {
-  return nullptr;
+  auto expr = ParseAssignmentExpression();
+  if (lexer_.GetToken().GetType() == TokenType::COMMA) {
+    Expressions exprs;
+    exprs.push_back(expr);
+
+    while (lexer_.GetToken().GetType() == TokenType::COMMA) {
+      lexer_.NextToken();
+
+      exprs.push_back(ParseAssignmentExpression());
+    }
+
+    return new SequenceExpression(std::move(exprs));
+  } else {
+    return expr;
+  }
 }
 
 // Parse PrimaryExpression
@@ -414,11 +428,53 @@ Expression* Parser::ParseBinaryExpression(std::int32_t precedence) {
   return left;
 }
 
-
+// Parse ConditionalExpression
+// Defined in ECMAScript 5.1 Chapter 11.12
+//  ConditionalExpression :
+//    LogicalORExpression
+//    LogicalORExpression ? AssignmentExpression : AssignmentExpression
+Expression* Parser::ParseConditionalExpression() {
+  auto cond = ParseBinaryExpression();
+  if (lexer_.GetToken().GetType() == TokenType::QUESTION) {
+    lexer_.NextToken();
+    
+    auto cons = ParseAssignmentExpression();
+    
+    if (lexer_.GetToken().GetType() != TokenType::COLON) {
+      ThrowSyntaxError("expects a ':'");
+    }
+    lexer_.NextToken();
+    
+    auto alt = ParseAssignmentExpression();
+    
+    return new ConditionalExpression(cond, cons, alt);
+  } else {
+    return cond;
+  }
+}
 
 // Parse AssignmentExpression
+// Defined in ECMAScript 5.1 Chapter 11.13
+//  AssignmentExpression :
+//    ConditionalExpression
+//    LeftHandSideExpression AssignmentOperator AssignmentExpression
 Expression* Parser::ParseAssignmentExpression() {
-  return nullptr;
+  auto left = ParseConditionalExpression();
+  if (left->IsMemberExpression() ||
+      left->IsNewExpression()    ||
+      left->IsCallExpression()) {
+    auto type = lexer_.GetToken().GetType();
+    if (!lexer_.GetToken().IsAssignmentOperator()) {
+      ThrowSyntaxError("expects an assigment operator");
+    }
+    lexer_.NextToken();
+    
+    auto right = ParseAssignmentExpression();
+
+    return new AssignmentExpression(type, left, right);
+  } else {
+    return left;
+  }
 }
 
 

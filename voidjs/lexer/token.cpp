@@ -134,6 +134,28 @@ bool Token::IsBinaryOperator() const {
   }
 }
 
+bool Token::IsAssignmentOperator() const {
+  switch (type_) {
+    case TokenType::ASSIGN:
+    case TokenType::MUL_ASSIGN:
+    case TokenType::DIV_ASSIGN:
+    case TokenType::MOD_ASSIGN:
+    case TokenType::ADD_ASSIGN:
+    case TokenType::SUB_ASSIGN:
+    case TokenType::LEFT_SHIFT_ASSIGN:
+    case TokenType::RIGHT_SHIFT_ASSIGN:
+    case TokenType::U_RIGHT_SHIFT_ASSIGN:
+    case TokenType::BIT_AND_ASSIGN:
+    case TokenType::BIT_XOR_ASSIGN:
+    case TokenType::BIT_OR_ASSIGN: {
+      return true;
+    }
+    default: {
+      return false;
+    }
+  }
+}
+
 bool Token::HasString() const {
   return
     type_ == TokenType::IDENTIFIER ||

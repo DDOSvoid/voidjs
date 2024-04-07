@@ -39,6 +39,7 @@ class Parser {
   ast::Expression* ParsePostfixExpression();
   ast::Expression* ParseUnaryExpression();
   ast::Expression* ParseBinaryExpression(std::int32_t precedence = 0);
+  ast::Expression* ParseConditionalExpression();
   ast::Expression* ParseAssignmentExpression();
 
   ast::Statements ParseStatementList(TokenType end_token_type);
