@@ -43,6 +43,8 @@ enum class AstNodeType {
   IDENTIFIER,
   VARIABLE_DECLARATION,
   ARRAY_LITERAL,
+  OBJECT_LITERAL,
+  PROPERTY,
 };
 
 class AstNode;
@@ -73,6 +75,8 @@ class StringLiteral;
 class Identifier;
 class VariableDeclaration;
 class ArrayLiteral;
+class ObjectLiteral;
+class Property;
 
 using Statements = std::vector<Statement*>;
 using VariableDeclarations = std::vector<VariableDeclaration*>;
@@ -117,6 +121,8 @@ class AstNode {
   bool IsIdentifier() const { return type_ == AstNodeType::IDENTIFIER; }
   bool IsVariableDeclaraion() const { return type_ == AstNodeType::VARIABLE_DECLARATION; }
   bool IsArrayLiteral() const { return type_ == AstNodeType::ARRAY_LITERAL; }
+  bool IsObjectLiteral() const { return type_ == AstNodeType::OBJECT_LITERAL; }
+  bool IsProperty() const { return type_ == AstNodeType::PROPERTY; }
 
   // As Cast
   Program* AsProgram() { return reinterpret_cast<Program*>(this); }
@@ -146,6 +152,8 @@ class AstNode {
   Identifier* AsIdentifier() { return reinterpret_cast<Identifier*>(this); }
   VariableDeclaration* AsVariableDeclaration() { return reinterpret_cast<VariableDeclaration*>(this); }
   ArrayLiteral* AsArrayLiteral() { return reinterpret_cast<ArrayLiteral*>(this); }
+  ObjectLiteral* AsObjectLiteral() { return reinterpret_cast<ObjectLiteral*>(this); }
+  Property* AsProperty() { return reinterpret_cast<Property*>(this); }
 
   // As Cast const-version
   const Program* AsProgram() const { return reinterpret_cast<const Program*>(this); }
@@ -175,6 +183,8 @@ class AstNode {
   const Identifier* AsIdentifier() const { return reinterpret_cast<const Identifier*>(this); }
   const VariableDeclaration* AsVariableDeclaration() const { return reinterpret_cast<const VariableDeclaration*>(this); }
   const ArrayLiteral* AsArrayLiteral() const { return reinterpret_cast<const ArrayLiteral*>(this); }
+  const ObjectLiteral* AsObjectLiteral() const { return reinterpret_cast<const ObjectLiteral*>(this); }
+  const Property* AsProperty() const { return reinterpret_cast<const Property*>(this); }
   
  private:
   AstNodeType type_;

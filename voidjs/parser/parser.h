@@ -42,12 +42,14 @@ class Parser {
   ast::Expression* ParseConditionalExpression();
   ast::Expression* ParseAssignmentExpression();
 
+  ast::Expression* ParseIdentifier();
   ast::Statements ParseStatementList(TokenType end_token_type);
   ast::VariableDeclarations ParseVariableDeclarationList();
   ast::VariableDeclaration* ParseVariableDeclaration();
   ast::Expression* ParseArrayLiteral();
   ast::Expressions ParseArguments();
   ast::Expressions ParseArgumentList(TokenType end_token_type);
+  ast::Expression* ParseObjectLiteral(); 
 
  private:
   void ThrowSyntaxError(std::string msg); 

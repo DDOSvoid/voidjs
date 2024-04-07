@@ -202,6 +202,42 @@ class ArrayLiteral : public Expression {
   Expressions elements_;
 };
 
+class ObjectLiteral : public Expression {
+ public:
+  explicit ObjectLiteral(Expressions properties)
+    : Expression(AstNodeType::OBJECT_LITERAL),
+      properties_(std::move(properties))
+  {}
+
+  const Expressions& GetProperties() const { return properties_; }
+
+ private:
+  Expressions properties_;
+};
+
+enum class PropertyType {
+  INIT,
+  GET,
+  SET,
+};
+
+class Property : public Expression {
+ public:
+  Property(PropertyType type, Expression* key, Expression* value)
+    : Expression(AstNodeType::PROPERTY),
+      type_(type), key_(key), value_(value)
+  {}
+
+  PropertyType GetType() const { return type_; }
+  Expression* GetKey() const { return key_; }
+  Expression* Getvalue() const { return value_; }
+  
+ private:
+  PropertyType type_;
+  Expression* key_;
+  Expression* value_;
+};
+
 }  // namespace voidjs
 }  // namespace ast
 

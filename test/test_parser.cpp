@@ -423,3 +423,54 @@ TEST(parser, ParseExpression) {
   EXPECT_EQ(u"x", binary_expr->GetLeft()->AsIdentifier()->GetName());
   EXPECT_EQ(1, binary_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
 }
+
+
+TEST(parser, ParseBlockStatement) {
+  // {}
+  {
+    Parser parser(u"{ }");
+
+    auto stmt = parser.ParseBlockStatement();
+    ASSERT_TRUE(stmt->IsBlockStatement());
+
+    auto block_stmt = stmt->AsBlockStatement();
+    EXPECT_EQ(0, block_stmt->GetStatements().size());
+  }
+}
+
+TEST(parser, ParseVariableStatement) {
+  Parser parser(u"var i = 'test', j = i + 1;");
+
+  auto stmt = parser.ParseVariableStatement();
+  ASSERT_TRUE(stmt->IsVariableStatement());
+
+  auto var_stmt = stmt->AsVariableStatement();
+  EXPECT_EQ(2, var_stmt->GetVariableDeclarations().size());
+
+  const auto& decls = var_stmt->GetVariableDeclarations();
+    
+  auto decl1 = decls[0];
+  ASSERT_TRUE(decl1->GetIdentifier()->IsIdentifier());
+  ASSERT_TRUE(decl1->GetInitializer()->IsStringLiteral());
+  EXPECT_EQ(u"i", decl1->GetIdentifier()->AsIdentifier()->GetName());
+  EXPECT_EQ(u"test", decl1->GetInitializer()->AsStringLiteral()->GetString());
+
+  auto decl2 = decls[1];
+  ASSERT_TRUE(decl2->GetIdentifier()->IsIdentifier());
+  ASSERT_TRUE(decl2->GetInitializer()->IsBinaryExpression());
+  EXPECT_EQ(u"j", decl2->GetIdentifier()->AsIdentifier()->GetName());
+
+  auto binary_expr = decl2->GetInitializer()->AsBinaryExpression();
+  ASSERT_TRUE(binary_expr->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(binary_expr->GetRight()->IsNumericLiteral());
+  EXPECT_EQ(TokenType::ADD, binary_expr->GetOperator());
+  EXPECT_EQ(u"i", binary_expr->GetLeft()->AsIdentifier()->GetName());
+  EXPECT_EQ(1, binary_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+}
+
+TEST(parser, ParseEmptyStatement) {
+  Parser parser(u"  ;  ");
+  
+  auto stmt = parser.ParseEmptyStatement();
+  ASSERT_TRUE(stmt->IsEmptyStatement());
+}

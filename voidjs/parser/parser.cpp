@@ -17,7 +17,7 @@ using namespace ast;
 // Parse Program
 // Defined in ECMAScript 5.1 Chapter 14
 // Program :
-//   SourceElementsopt
+//   SourceElements_opt
 // SourceElements :
 //   SourceElement
 //   SourceElements SourceElement
@@ -44,7 +44,17 @@ Program* Parser::ParseProgram() {
 }
 
 Statement* Parser::ParseStatement() {
-  return nullptr;
+  switch (lexer_.GetToken().GetType()) {
+    case TokenType::LEFT_BRACE: {
+      return ParseBlockStatement();
+    }
+    case TokenType::KEYWORD_VAR: {
+      return ParseVariableStatement();
+    }
+    default: {
+      return nullptr;
+    }
+  }
 }
 
 // Parse BlockStatement
@@ -72,8 +82,15 @@ Statement* Parser::ParseBlockStatement() {
 Statement* Parser::ParseVariableStatement() {
   // begin with var
   lexer_.NextToken();
-  
-  return new VariableStatement(ParseVariableDeclarationList());
+
+  auto var_stmt = new VariableStatement(ParseVariableDeclarationList());
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return var_stmt;
 }
 
 // Parse EmptyStatement
@@ -81,7 +98,14 @@ Statement* Parser::ParseVariableStatement() {
 // EmptyStatement :
 //   ;
 Statement* Parser::ParseEmptyStatement() {
-  return new EmptyStatement();
+  auto empty_stmt = new EmptyStatement();
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return empty_stmt;
 }
 
 // Parse ExpressionStatement
@@ -170,8 +194,7 @@ Expression* Parser::ParsePrimaryExpression() {
       return expr;
     }
     case TokenType::IDENTIFIER: {
-      auto ident = new Identifier(lexer_.GetToken().GetString());
-      lexer_.NextToken();
+      auto ident = ParseIdentifier();
       return ident;
     }
     case TokenType::NULL_LITERAL: {
@@ -282,8 +305,7 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
       case TokenType::DOT: {
         lexer_.NextToken();
         if (lexer_.GetToken().IsIdentifierName()) {
-          auto ident = new Identifier(lexer_.GetToken().GetString());
-          lexer_.NextToken();
+          auto ident = ParseIdentifier();
           callee = new MemberExpression(callee, ident);
         } else {
           ThrowSyntaxError("expects identifier_name");
@@ -482,6 +504,12 @@ Expression* Parser::ParseAssignmentExpression() {
   return nullptr;
 }
 
+// Parse Identifier
+Expression* Parser::ParseIdentifier() {
+  auto ident = new Identifier(lexer_.GetToken().GetString());
+  lexer_.NextToken();
+  return ident;
+}
 
 // Parse StatementList
 // Defined in ECMAScript 5.1 Chapter 12.1
@@ -514,14 +542,24 @@ VariableDeclarations Parser::ParseVariableDeclarationList() {
 
 // Parse VariableDeclaration
 // Defined in ECMAScript 5.1 chapter 12.2
-// VariableDeclaration :
-//   Identifier Initialiser_opt
+// 
+//  VariableDeclaration :
+//    Identifier Initialiser_opt
+//
+//  Initialiser :
+//    = AssignmentExpression
 VariableDeclaration* Parser::ParseVariableDeclaration() {
-  Expression* ident = ParseExpression();
-  // need to test if ident is Identifier
+  if (lexer_.GetToken().GetType() != TokenType::IDENTIFIER) {
+    ThrowSyntaxError("expects an identifier");
+  }  
+  auto ident = ParseIdentifier();
 
-  Expression* init = ParseExpression();
-  // need to test if init is valid
+  if (lexer_.GetToken().GetType() != TokenType::ASSIGN) {
+    ThrowSyntaxError("expects a '='");
+  }
+  lexer_.NextToken();
+
+  auto init = ParseAssignmentExpression();
 
   return new VariableDeclaration(ident, init); 
 }
@@ -606,6 +644,34 @@ Expressions Parser::ParseArgumentList(TokenType end_token_type) {
     args.push_back(ParseAssignmentExpression());
   }
   return args;
+}
+
+// Parse ObjectLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1.5
+//  ObjectLiteral :
+//    { }
+//    { PropertyNameAndValueList }
+//    { PropertyNameAndValueList , }
+
+//  PropertyNameAndValueList :
+//    PropertyAssignment
+//    PropertyNameAndValueList , PropertyAssignment
+
+//  PropertyAssignment :
+//    PropertyName : AssignmentExpression
+//    get PropertyName ( ) { FunctionBody }
+//    set PropertyName ( PropertySetParameterList ) { FunctionBody }
+
+//  PropertyName :
+//    IdentifierName
+//    StringLiteral
+//    NumericLiteral
+
+//  PropertySetParameterList :
+//    Identifier
+Expression* Parser::ParseObjectLiteral() {
+  // todo
+  return nullptr;
 }
 
 void Parser::ThrowSyntaxError(std::string msg) {

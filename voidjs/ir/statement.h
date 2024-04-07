@@ -38,6 +38,8 @@ class BlockStatement : public Statement {
     : Statement(AstNodeType::BLOCK_STATEMENT), statements_(std::move(statements))
   {}
 
+  const Statements& GetStatements() const { return statements_; }
+
  private:
   Statements statements_;
 };
@@ -48,6 +50,8 @@ class VariableStatement : public Statement {
     : Statement(AstNodeType::VARIABLE_STATEMENT),
       declarations_(std::move(declarations))
   {}
+
+  const VariableDeclarations& GetVariableDeclarations() const { return declarations_; }
 
  private:
   VariableDeclarations declarations_;
@@ -95,7 +99,10 @@ class VariableDeclaration : public Statement {
     : Statement(AstNodeType::VARIABLE_DECLARATION),
       identifier_(identifier),
       initializer_(initializer)
-  {} 
+  {}
+
+  Expression* GetIdentifier() const { return identifier_; }
+  Expression* GetInitializer() const { return initializer_;} 
   
  private:
   Expression* identifier_;
