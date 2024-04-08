@@ -54,6 +54,24 @@ Statement* Parser::ParseStatement() {
     case TokenType::SEMICOLON: {
       return ParseEmptyStatement();
     }
+    case TokenType::KEYWORD_DO: {
+      return ParseDoWhileStatement();
+    }
+    case TokenType::KEYWORD_WHILE: {
+      return ParseWhileStatement();
+    }
+    case TokenType::KEYWORD_FOR: {
+      return ParseForStatement();
+    }
+    case TokenType::KEYWORD_CONTINUE: {
+      return ParseContinueStatement();
+    }
+    case TokenType::KEYWORD_BREAK: {
+      return ParseBreakStatement();
+    }
+    case TokenType::KEYWORD_RETURN: {
+      return ParseReturnStatement();
+    }
     default: {
       return ParseExpressionStatement();
     }
@@ -298,7 +316,7 @@ Statement* Parser::ParseForStatement() {
     AstNode* init = nullptr;
     
     if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
-      auto expr = ParseExpression();
+      auto expr = ParseExpression(false);  // allow_in = false
 
       const auto& exprs = expr->AsSequenceExpression()->GetExpressions();
       
@@ -360,8 +378,61 @@ Statement* Parser::ParseForStatement() {
   }
 }
 
-Statement* Parser::ParseForInStatement() {
-  return nullptr;
+Statement* Parser::ParseContinueStatement() {
+  // begin with continue
+  lexer_.NextToken();
+
+  Expression* ident = nullptr;
+
+  if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
+      !lexer_.HasLineTerminator()) {
+    ident = ParseIdentifier();
+  }
+  
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return new ContinueStatement(ident);
+}
+
+Statement* Parser::ParseBreakStatement() {
+  // begin with break
+  lexer_.NextToken();
+
+  Expression* ident = nullptr;
+
+  if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
+      !lexer_.HasLineTerminator()) {
+    ident = ParseIdentifier();
+  }
+  
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return new BreakStatement(ident);
+}
+
+Statement* Parser::ParseReturnStatement() {
+  // begin with return
+  lexer_.NextToken();
+
+  Expression* expr = nullptr;
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON &&
+      !lexer_.HasLineTerminator()) {
+    expr = ParseExpression();
+  }
+  
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return new BreakStatement(expr);
 }
 
 // Parse Expression

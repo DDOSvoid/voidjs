@@ -34,7 +34,9 @@ class Parser {
   ast::Statement* ParseDoWhileStatement();
   ast::Statement* ParseWhileStatement();
   ast::Statement* ParseForStatement();
-  ast::Statement* ParseForInStatement();
+  ast::Statement* ParseContinueStatement();
+  ast::Statement* ParseBreakStatement();
+  ast::Statement* ParseReturnStatement();
 
   ast::Expression* ParseExpression(bool allow_in = true);
   ast::Expression* ParsePrimaryExpression();

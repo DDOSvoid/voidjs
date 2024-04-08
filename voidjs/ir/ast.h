@@ -21,6 +21,9 @@ enum class AstNodeType {
   WHILE_STATEMENT,
   FOR_STATEMENT,
   FOR_IN_STATEMENT,
+  CONTINUE_STATEMENT,
+  BREAK_STATEMENT,
+  RETURN_STATEMENT,
 
   // Expression
   EXPRESSION,                  // not used
@@ -63,6 +66,9 @@ class DoWhileStatement;
 class WhileStatement;
 class ForStatement;
 class ForInStatement;
+class ContinueStatement;
+class BreakStatement;
+class ReturnStatement;
 class Expression;
 class LeftHandSideExpression;
 class NewExpression;
@@ -114,6 +120,9 @@ class AstNode {
   bool IsWhileStatement() const { return type_ == AstNodeType::WHILE_STATEMENT; }
   bool IsForStatement() const { return type_ == AstNodeType::FOR_STATEMENT; }
   bool IsForInStatement() const { return type_ == AstNodeType::FOR_IN_STATEMENT; }
+  bool IsContinueStatement() const { return type_ == AstNodeType::CONTINUE_STATEMENT; }
+  bool IsBreakStatement() const { return type_ == AstNodeType::BREAK_STATEMENT; }
+  bool IsReturnStatement() const { return type_ == AstNodeType::RETURN_STATEMENT; }
   bool IsExpression() const;
   bool IsLeftHandSideExpression() const;
   bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
@@ -148,6 +157,9 @@ class AstNode {
   WhileStatement* AsWhileStatement() { return reinterpret_cast<WhileStatement*>(this); }
   ForStatement* AsForStatement() { return reinterpret_cast<ForStatement*>(this); }
   ForInStatement* AsForInStatement() { return reinterpret_cast<ForInStatement*>(this); }
+  ContinueStatement* AsContinueStatement() { return reinterpret_cast<ContinueStatement*>(this); }
+  BreakStatement* AsBreakStatement() { return reinterpret_cast<BreakStatement*>(this); }
+  ReturnStatement* AsReturnStatement() { return reinterpret_cast<ReturnStatement*>(this); }
   Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
   NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
@@ -183,6 +195,9 @@ class AstNode {
   const WhileStatement* AsWhileStatement() const { return reinterpret_cast<const WhileStatement*>(this); }
   const ForStatement* AsForStatement() const { return reinterpret_cast<const ForStatement*>(this); }
   const ForInStatement* AsForInStatement() const { return reinterpret_cast<const ForInStatement*>(this); }
+  const ContinueStatement* AsContinueStatement() const { return reinterpret_cast<const ContinueStatement*>(this); }
+  const BreakStatement* AsBreakStatement() const { return reinterpret_cast<const BreakStatement*>(this); }
+  const ReturnStatement* AsReturnStatement() const { return reinterpret_cast<const ReturnStatement*>(this); }
   const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
   const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
   const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }

@@ -151,6 +151,39 @@ class ForInStatement : public Statement {
   Statement* body_;
 };
 
+class ContinueStatement : public Statement {
+ public:
+  explicit ContinueStatement(Expression* identifier)
+    : Statement(AstNodeType::CONTINUE_STATEMENT),
+      identifier_(identifier)
+  {}
+
+ private:
+  Expression* identifier_;
+};
+
+class BreakStatement : public Statement {
+ public:
+  explicit BreakStatement(Expression* identifier)
+    : Statement(AstNodeType::BREAK_STATEMENT),
+      identifier_(identifier)
+  {}
+
+ private:
+  Expression* identifier_;
+};
+
+class ReturnStatement : public Statement {
+ public:
+  explicit ReturnStatement(Expression* expression)
+    : Statement(AstNodeType::RETURN_STATEMENT),
+      expression_(expression)
+  {}
+
+ private:
+  Expression* expression_;
+};
+
 class VariableDeclaration : public Statement {
  public:
   VariableDeclaration(Expression* identifier,
