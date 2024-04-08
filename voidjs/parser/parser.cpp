@@ -51,8 +51,11 @@ Statement* Parser::ParseStatement() {
     case TokenType::KEYWORD_VAR: {
       return ParseVariableStatement();
     }
+    case TokenType::SEMICOLON: {
+      return ParseEmptyStatement();
+    }
     default: {
-      return nullptr;
+      return ParseExpressionStatement();
     }
   }
 }
@@ -113,12 +116,19 @@ Statement* Parser::ParseEmptyStatement() {
 // ExpressionStatement :
 //   [lookahead ∉ {{, function}] Expression ;
 Statement* Parser::ParseExpressionStatement() {
-  auto token = lexer_.NextRewindToken();
-  if (token.GetType() == TokenType::COMMA ||
+  if (auto token = lexer_.NextRewindToken();
+      token.GetType() == TokenType::COMMA ||
       token.GetType() == TokenType::KEYWORD_FUNCTION) {
-    
+    ThrowSyntaxError("current token should not be ',' or function");
   }
+  
   Expression* expr = ParseExpression();
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+  
   return new ExpressionStatement(expr);
 }
 
@@ -337,8 +347,8 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
 //    LeftHandSideExpression [no LineTerminator here] --
 Expression* Parser::ParsePostfixExpression() {
   auto lhs = ParseLeftHandSideExpression();
-  if (lexer_.GetToken().GetType() == TokenType::INC ||
-      lexer_.GetToken().GetType() == TokenType::DEC) {
+  if (!lexer_.HasLineTerminator() &&
+      (lexer_.GetToken().GetType() == TokenType::INC || lexer_.GetToken().GetType() == TokenType::DEC)) {
     auto type = lexer_.GetToken().GetType();
     lexer_.NextToken();
     return new PostfixExpression(type, lhs);

@@ -28,6 +28,8 @@ class Lexer {
   void NextToken();
   Token NextRewindToken();
 
+  bool HasLineTerminator(); 
+
   Token& GetToken() { return token_; }
   const Token& GetToken() const { return token_; }
 
@@ -65,6 +67,7 @@ class Lexer {
   char16_t ch_ {};
   std::size_t cur_ {};
   std::size_t nxt_ {};
+  bool has_line_terminator_ {};
 };
 
 }  // namespace voidjs

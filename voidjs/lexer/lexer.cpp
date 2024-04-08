@@ -18,6 +18,7 @@ namespace voidjs {
 // Defined in ECMAScript 5.1 Chapter 7.5
 void Lexer::NextToken() {
   token_.SetType(TokenType::EOS);
+  has_line_terminator_ = false;
   
   // go back to start when encounter Line Terminator
  start:
@@ -284,6 +285,7 @@ void Lexer::NextToken() {
         ScanStringLiteral();
       } else if (character::IsLineTerminator(ch_)) {
         SkipLineTerminatorSequence();
+        has_line_terminator_ = true;
         goto start;
       } else if (ch_ == character::EOS) {
         token_.SetType(TokenType::EOS);
@@ -298,7 +300,11 @@ void Lexer::NextToken() {
 
 Token Lexer::NextRewindToken() {
   std::size_t start = cur_;
+  auto token = token_;
+  
   NextToken();
+  auto ret = token_;
+  
   cur_ = start;
   nxt_ = cur_ + 1;
   if (cur_ < src_.size()) {
@@ -306,7 +312,14 @@ Token Lexer::NextRewindToken() {
   } else {
     ch_ = character::EOS;
   }
-  return token_;
+  has_line_terminator_ = false;
+  token_ = token;
+  
+  return ret;
+}
+
+bool Lexer::HasLineTerminator() {
+  return has_line_terminator_;
 }
 
 char16_t Lexer::NextChar() {

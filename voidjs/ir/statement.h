@@ -70,6 +70,8 @@ class ExpressionStatement : public Statement {
     : Statement(AstNodeType::EXPRESSION_STATEMENT),
       expression_(expression)
   {}
+
+  Expression* GetExpression() const { return expression_; }
   
  private:
   Expression* expression_;
@@ -85,6 +87,10 @@ class IfStatement : public Statement {
       consequent_(consequent),
       alternate_(alternate)
   {}
+
+  Expression* GetCondition() const { return condition_; }
+  Statement* GetConsequent() const { return consequent_; }
+  Statement* GetAlternate() const { return alternate_; }
 
  private:
   Expression* condition_;

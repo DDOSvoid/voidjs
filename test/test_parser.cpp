@@ -445,7 +445,7 @@ TEST(parser, ParseVariableStatement) {
   ASSERT_TRUE(stmt->IsVariableStatement());
 
   auto var_stmt = stmt->AsVariableStatement();
-  EXPECT_EQ(2, var_stmt->GetVariableDeclarations().size());
+  ASSERT_TRUE(var_stmt->GetVariableDeclarations().size() == 2);
 
   const auto& decls = var_stmt->GetVariableDeclarations();
     
@@ -473,4 +473,96 @@ TEST(parser, ParseEmptyStatement) {
   
   auto stmt = parser.ParseEmptyStatement();
   ASSERT_TRUE(stmt->IsEmptyStatement());
+}
+
+TEST(parser, ParseExpressionStatement) {
+  Parser parser(u"str + 'Hello';");
+  
+  auto stmt = parser.ParseExpressionStatement();
+  ASSERT_TRUE(stmt->IsExpressionStatement());
+
+  auto expr_stmt = stmt->AsExpressionStatement();
+  ASSERT_TRUE(expr_stmt->GetExpression()->IsBinaryExpression());
+
+  auto binary_expr = expr_stmt->GetExpression()->AsBinaryExpression();
+  ASSERT_TRUE(binary_expr->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(binary_expr->GetRight()->IsStringLiteral());
+  EXPECT_EQ(TokenType::ADD, binary_expr->GetOperator());
+  EXPECT_EQ(u"str", binary_expr->GetLeft()->AsIdentifier()->GetName());
+  EXPECT_EQ(u"Hello", binary_expr->GetRight()->AsStringLiteral()->GetString());
+}
+
+TEST(parser, ParseIfStatement) {
+  std::u16string source = uR"(
+if (true) {
+  i += 2;
+} else {
+  var j = i;
+  j *= 2;
+}
+)";
+
+  Parser parser(source);
+
+  auto stmt = parser.ParseIfStatement();
+  ASSERT_TRUE(stmt->IsIfStatement());
+
+  auto if_stmt = stmt->AsIfStatement();
+  ASSERT_TRUE(if_stmt->GetCondition()->IsBooleanLiteral());
+  ASSERT_TRUE(if_stmt->GetConsequent()->IsBlockStatement());
+  ASSERT_TRUE(if_stmt->GetConsequent()->IsBlockStatement());
+  EXPECT_EQ(true, if_stmt->GetCondition()->AsBooleanLiteral()->GetBoolean());
+
+  auto block_stmt1 = if_stmt->GetConsequent()->AsBlockStatement();
+  ASSERT_TRUE(block_stmt1->GetStatements().size() == 1);
+
+  {
+    const auto& stmts = block_stmt1->GetStatements();
+
+    auto stmt = stmts[0];
+    ASSERT_TRUE(stmt->IsExpressionStatement());
+
+    auto expr_stmt = stmt->AsExpressionStatement();
+    ASSERT_TRUE(expr_stmt->GetExpression()->IsAssignmentExpression());
+
+    auto assign_expr = expr_stmt->GetExpression()->AsAssignmentExpression();
+    ASSERT_TRUE(assign_expr->GetLeft()->IsIdentifier());
+    ASSERT_TRUE(assign_expr->GetRight()->IsNumericLiteral());
+    EXPECT_EQ(TokenType::ADD_ASSIGN, assign_expr->GetOperator());
+    EXPECT_EQ(u"i", assign_expr->GetLeft()->AsIdentifier()->GetName());
+    EXPECT_EQ(2, assign_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+  }
+
+  auto block_stmt2 = if_stmt->GetAlternate()->AsBlockStatement();
+  ASSERT_TRUE(block_stmt2->GetStatements().size() == 2);
+
+  {
+    const auto& stmts = block_stmt2->GetStatements();
+
+    auto stmt1 = stmts[0];
+    ASSERT_TRUE(stmt1->IsVariableStatement());
+
+    auto var_stmt = stmt1->AsVariableStatement();
+    ASSERT_TRUE(var_stmt->GetVariableDeclarations().size() == 1);
+
+    const auto& decls = var_stmt->GetVariableDeclarations();
+
+    auto decl = decls[0];
+    ASSERT_TRUE(decl->GetIdentifier()->IsIdentifier());
+    ASSERT_TRUE(decl->GetInitializer()->IsIdentifier());
+    EXPECT_EQ(u"j", decl->GetIdentifier()->AsIdentifier()->GetName());
+    EXPECT_EQ(u"i", decl->GetInitializer()->AsIdentifier()->GetName());
+
+    auto stmt2 = stmts[1];
+    
+    auto expr_stmt = stmt2->AsExpressionStatement();
+    ASSERT_TRUE(expr_stmt->GetExpression()->IsAssignmentExpression());
+
+    auto assign_expr = expr_stmt->GetExpression()->AsAssignmentExpression();
+    ASSERT_TRUE(assign_expr->GetLeft()->IsIdentifier());
+    ASSERT_TRUE(assign_expr->GetRight()->IsNumericLiteral());
+    EXPECT_EQ(TokenType::MUL_ASSIGN, assign_expr->GetOperator());
+    EXPECT_EQ(u"j", assign_expr->GetLeft()->AsIdentifier()->GetName());
+    EXPECT_EQ(2, assign_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
+  }
 }
