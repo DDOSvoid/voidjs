@@ -31,6 +31,10 @@ class Parser {
   ast::Statement* ParseEmptyStatement();
   ast::Statement* ParseExpressionStatement();
   ast::Statement* ParseIfStatement();
+  ast::Statement* ParseDoWhileStatement();
+  ast::Statement* ParseWhileStatement();
+  ast::Statement* ParseForStatement();
+  ast::Statement* ParseForInStatement();
 
   ast::Expression* ParseExpression(bool allow_in = true);
   ast::Expression* ParsePrimaryExpression();

@@ -164,6 +164,206 @@ Statement* Parser::ParseIfStatement() {
   return new IfStatement(cond, cons, alt); 
 }
 
+// ParseDoWhileStatement
+// Defined in ECMAScript 5.1 Chapter 12.6
+//  IterationStatement :
+//    do Statement while ( Expression );
+Statement* Parser::ParseDoWhileStatement() {
+  // begin with do
+  lexer_.NextToken();
+
+  auto body = ParseStatement();
+
+  if (lexer_.GetToken().GetType() != TokenType::KEYWORD_WHILE) {
+    ThrowSyntaxError("expects 'while' here");
+  }
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  auto cond = ParseExpression();
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  return new DoWhileStatement(cond, body);
+}
+
+// ParseWhileStatement
+// Defined in ECMAScript 5.1 Chapter 12.6
+//  IterationStatement :
+//    while ( Expression ) Statement
+Statement* Parser::ParseWhileStatement() {
+  // begin with while
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  auto cond = ParseExpression();
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  lexer_.NextToken();
+
+  auto body = ParseStatement();
+
+  return new WhileStatement(cond, body);
+}
+
+// ParseForStatement
+// Defined in ECMAScript 5.1 Chapter 12.6
+//  IterationStatement :
+//    for ( ExpressionNoIn_opt; Expression_opt ; Expression_opt ) Statement
+//    for ( var VariableDeclarationListNoIn; Expression_opt ; Expression_opt ) Statement
+//    for ( LeftHandSideExpression in Expression ) Statement
+//    for ( var VariableDeclarationNoIn in Expression ) Statement
+Statement* Parser::ParseForStatement() {
+  // begin with for
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_VAR) {
+    auto decls = ParseVariableDeclarationList(false);  // allow_in = false
+
+    if (lexer_.GetToken().GetType() == TokenType::KEYWORD_IN) {
+      lexer_.NextToken();
+      
+      if (decls.size() != 1) {
+        ThrowSyntaxError("invalid declartion in for-in statement");
+      }
+      
+      auto left = decls[0];
+
+      auto right = ParseExpression();
+
+      if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+        ThrowSyntaxError("expects a ')'");
+      }
+      lexer_.NextToken();
+
+      auto body = ParseStatement();
+
+      return new ForInStatement(left, right, body);
+    } else {
+      auto init = new VariableStatement(decls);
+
+      if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+        ThrowSyntaxError("expects a ';'");
+      }
+      lexer_.NextToken();
+
+      Expression* cond = nullptr;
+      if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+        cond = ParseExpression();
+      }
+
+      if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+        ThrowSyntaxError("expects a ';'");
+      }
+      lexer_.NextToken();
+
+      Expression* update = nullptr;
+      if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+        update = ParseExpression();
+      }
+
+      if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+        ThrowSyntaxError("expects a ')'");
+      }
+      lexer_.NextToken();
+
+      auto body = ParseStatement();
+
+      return new ForStatement(init, cond, update, body);
+    }
+  } else {
+    AstNode* init = nullptr;
+    
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      auto expr = ParseExpression();
+
+      const auto& exprs = expr->AsSequenceExpression()->GetExpressions();
+      
+      if (lexer_.GetToken().GetType() == TokenType::KEYWORD_IN) {
+        lexer_.NextToken();
+      
+        if (exprs.size() != 1) {
+          ThrowSyntaxError("invalid declartion in for-in statement");
+        }
+        
+        auto left = exprs[0];
+        if (!left->IsLeftHandSideExpression()) {
+          ThrowSyntaxError("need to be LeftHandSideExpression");
+        }
+
+        auto right = ParseExpression();
+
+        if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+          ThrowSyntaxError("expects a ')'");
+        }
+        lexer_.NextToken();
+
+        auto body = ParseStatement();
+
+        return new ForInStatement(left, right, body);
+      } else {
+        init = expr;
+      }
+    }
+    
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      ThrowSyntaxError("expects a ';'");
+    }
+    lexer_.NextToken();
+
+    Expression* cond = nullptr;
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      cond = ParseExpression();
+    }
+
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      ThrowSyntaxError("expects a ';'");
+    }
+    lexer_.NextToken();
+
+    Expression* update = nullptr;
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+      update = ParseExpression();
+    }
+
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+      ThrowSyntaxError("expects a ')'");
+    }
+    lexer_.NextToken();
+
+    auto body = ParseStatement();
+
+    return new ForStatement(init, cond, update, body);
+  }
+}
+
+Statement* Parser::ParseForInStatement() {
+  return nullptr;
+}
+
 // Parse Expression
 // Defined in ECMAScript 5.1 chapter 11.14
 // Expression :

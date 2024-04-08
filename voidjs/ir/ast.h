@@ -17,6 +17,10 @@ enum class AstNodeType {
   EMPTY_STATEMENT,
   EXPRESSION_STATEMENT,
   IF_STATEMENT,
+  DO_WHILE_STATEMENT,
+  WHILE_STATEMENT,
+  FOR_STATEMENT,
+  FOR_IN_STATEMENT,
 
   // Expression
   EXPRESSION,                  // not used
@@ -55,6 +59,10 @@ class VariableStatement;
 class EmptyStatement;
 class ExpressionStatement;
 class IfStatement;
+class DoWhileStatement;
+class WhileStatement;
+class ForStatement;
+class ForInStatement;
 class Expression;
 class LeftHandSideExpression;
 class NewExpression;
@@ -102,6 +110,10 @@ class AstNode {
   bool IsEmptyStatement() const { return type_ == AstNodeType::EMPTY_STATEMENT; }
   bool IsExpressionStatement() const { return type_ == AstNodeType::EXPRESSION_STATEMENT; }
   bool IsIfStatement() const { return type_ == AstNodeType::IF_STATEMENT; }
+  bool IsDoWhileStatement() const { return type_ == AstNodeType::DO_WHILE_STATEMENT; }
+  bool IsWhileStatement() const { return type_ == AstNodeType::WHILE_STATEMENT; }
+  bool IsForStatement() const { return type_ == AstNodeType::FOR_STATEMENT; }
+  bool IsForInStatement() const { return type_ == AstNodeType::FOR_IN_STATEMENT; }
   bool IsExpression() const;
   bool IsLeftHandSideExpression() const;
   bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
@@ -132,6 +144,10 @@ class AstNode {
   EmptyStatement* AsEmptyStatement() { return reinterpret_cast<EmptyStatement*>(this); }
   ExpressionStatement* AsExpressionStatement() { return reinterpret_cast<ExpressionStatement*>(this); }
   IfStatement* AsIfStatement() { return reinterpret_cast<IfStatement*>(this); }
+  DoWhileStatement* AsDoWhileStatement() { return reinterpret_cast<DoWhileStatement*>(this); }
+  WhileStatement* AsWhileStatement() { return reinterpret_cast<WhileStatement*>(this); }
+  ForStatement* AsForStatement() { return reinterpret_cast<ForStatement*>(this); }
+  ForInStatement* AsForInStatement() { return reinterpret_cast<ForInStatement*>(this); }
   Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
   NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
@@ -163,6 +179,10 @@ class AstNode {
   const EmptyStatement* AsEmptyStatement() const { return reinterpret_cast<const EmptyStatement*>(this); }
   const ExpressionStatement* AsExpressionStatement() const { return reinterpret_cast<const ExpressionStatement*>(this); }
   const IfStatement* AsIfStatement() const { return reinterpret_cast<const IfStatement*>(this); }
+  const DoWhileStatement* AsDoWhileStatement() const { return reinterpret_cast<const DoWhileStatement*>(this); }
+  const WhileStatement* AsWhileStatement() const { return reinterpret_cast<const WhileStatement*>(this); }
+  const ForStatement* AsForStatement() const { return reinterpret_cast<const ForStatement*>(this); }
+  const ForInStatement* AsForInStatement() const { return reinterpret_cast<const ForInStatement*>(this); }
   const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
   const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
   const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }

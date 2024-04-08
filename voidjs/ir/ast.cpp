@@ -10,7 +10,11 @@ bool AstNode::IsStatement() const {
     case AstNodeType::VARIABLE_STATEMENT:
     case AstNodeType::EMPTY_STATEMENT:
     case AstNodeType::EXPRESSION_STATEMENT:
-    case AstNodeType::IF_STATEMENT: {
+    case AstNodeType::IF_STATEMENT:
+    case AstNodeType::DO_WHILE_STATEMENT:
+    case AstNodeType::WHILE_STATEMENT:
+    case AstNodeType::FOR_STATEMENT:
+    case AstNodeType::FOR_IN_STATEMENT: {
       return true;
     }
     default: {

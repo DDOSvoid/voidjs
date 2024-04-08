@@ -98,6 +98,59 @@ class IfStatement : public Statement {
   Statement* alternate_;
 };
 
+class DoWhileStatement : public Statement {
+ public:
+  DoWhileStatement(Expression* condition, Statement* body)
+    : Statement(AstNodeType::DO_WHILE_STATEMENT),
+      condition_(condition), body_(body)
+  {}
+
+ private:
+  Expression* condition_;
+  Statement* body_;
+};
+
+class WhileStatement : public Statement {
+ public:
+  WhileStatement(Expression* condition, Statement* body)
+    : Statement(AstNodeType::WHILE_STATEMENT),
+      condition_(condition), body_(body)
+  {}
+
+ private:
+  Expression* condition_;
+  Statement* body_;
+};
+
+class ForStatement : public Statement {
+ public:
+  ForStatement(AstNode* initializer, Expression* condition,
+               Expression* update, Statement* body)
+    : Statement(AstNodeType::FOR_STATEMENT),
+      initializer_(initializer), condition_(condition),
+      update_(update), body_(body)
+  {}
+
+ private:
+  AstNode* initializer_;  // VariableStatement or Expression
+  Expression* condition_;
+  Expression* update_;
+  Statement* body_;
+};
+
+class ForInStatement : public Statement {
+ public:
+  ForInStatement(AstNode* left, Expression* right, Statement* body)
+    : Statement(AstNodeType::FOR_IN_STATEMENT),
+      left_(left), right_(right), body_(body)
+  {}
+
+ private:
+  AstNode* left_;  // VariableDeclaration or LeftHandSideExpression
+  Expression* right_;
+  Statement* body_;
+};
+
 class VariableDeclaration : public Statement {
  public:
   VariableDeclaration(Expression* identifier,
