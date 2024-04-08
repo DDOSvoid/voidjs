@@ -29,7 +29,7 @@ class Token {
 
   bool IsKeyword() const;
   bool IsIdentifierName() const;
-  bool IsBinaryOperator() const;
+  bool IsBinaryOperator(bool allow_in = true) const;
   bool IsAssignmentOperator() const;
 
   bool HasString() const;

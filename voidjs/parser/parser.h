@@ -32,20 +32,20 @@ class Parser {
   ast::Statement* ParseExpressionStatement();
   ast::Statement* ParseIfStatement();
 
-  ast::Expression* ParseExpression();
+  ast::Expression* ParseExpression(bool allow_in = true);
   ast::Expression* ParsePrimaryExpression();
   ast::Expression* ParseLeftHandSideExpression();
   ast::Expression* ParseMemberExpression(bool has_new = false);
   ast::Expression* ParsePostfixExpression();
   ast::Expression* ParseUnaryExpression();
-  ast::Expression* ParseBinaryExpression(std::int32_t precedence = 0);
-  ast::Expression* ParseConditionalExpression();
-  ast::Expression* ParseAssignmentExpression();
+  ast::Expression* ParseBinaryExpression(bool allow_in = true, std::int32_t precedence = 0);
+  ast::Expression* ParseConditionalExpression(bool allow_in = true);
+  ast::Expression* ParseAssignmentExpression(bool allow_in = true);
 
   ast::Expression* ParseIdentifier();
   ast::Statements ParseStatementList(TokenType end_token_type);
-  ast::VariableDeclarations ParseVariableDeclarationList();
-  ast::VariableDeclaration* ParseVariableDeclaration();
+  ast::VariableDeclarations ParseVariableDeclarationList(bool allow_in = true);
+  ast::VariableDeclaration* ParseVariableDeclaration(bool aloow_in = true);
   ast::Expression* ParseArrayLiteral();
   ast::Expressions ParseArguments();
   ast::Expressions ParseArgumentList(TokenType end_token_type);

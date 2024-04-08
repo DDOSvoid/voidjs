@@ -169,8 +169,8 @@ Statement* Parser::ParseIfStatement() {
 // Expression :
 //   AssignmentExpression
 //   Expression , AssignmentExpression
-Expression* Parser::ParseExpression() {
-  auto expr = ParseAssignmentExpression();
+Expression* Parser::ParseExpression(bool allow_in) {
+  auto expr = ParseAssignmentExpression(allow_in);
   if (lexer_.GetToken().GetType() == TokenType::COMMA) {
     Expressions exprs;
     exprs.push_back(expr);
@@ -178,7 +178,7 @@ Expression* Parser::ParseExpression() {
     while (lexer_.GetToken().GetType() == TokenType::COMMA) {
       lexer_.NextToken();
 
-      exprs.push_back(ParseAssignmentExpression());
+      exprs.push_back(ParseAssignmentExpression(allow_in));
     }
 
     return new SequenceExpression(std::move(exprs));
@@ -444,17 +444,17 @@ Expression* Parser::ParseUnaryExpression() {
 //  LogicalORExpression :
 //    LogicalANDExpression
 //    LogicalORExpression || LogicalANDExpression
-Expression* Parser::ParseBinaryExpression(std::int32_t precedence) {
+Expression* Parser::ParseBinaryExpression(bool allow_in, std::int32_t precedence) {
   auto left = ParseUnaryExpression();
 
   while (true) {
     auto token = lexer_.GetToken();
-    if (!token.IsBinaryOperator() ||
+    if (!token.IsBinaryOperator(allow_in) ||
         token.GetPrecedence() <= precedence) {
       break;
     }
     lexer_.NextToken();
-    auto right = ParseBinaryExpression(token.GetPrecedence());
+    auto right = ParseBinaryExpression(allow_in, token.GetPrecedence());
     left = new BinaryExpression(token.GetType(), left, right);
   }
   return left;
@@ -465,19 +465,19 @@ Expression* Parser::ParseBinaryExpression(std::int32_t precedence) {
 //  ConditionalExpression :
 //    LogicalORExpression
 //    LogicalORExpression ? AssignmentExpression : AssignmentExpression
-Expression* Parser::ParseConditionalExpression() {
-  auto cond = ParseBinaryExpression();
+Expression* Parser::ParseConditionalExpression(bool allow_in) {
+  auto cond = ParseBinaryExpression(allow_in);
   if (lexer_.GetToken().GetType() == TokenType::QUESTION) {
     lexer_.NextToken();
     
-    auto cons = ParseAssignmentExpression();
+    auto cons = ParseAssignmentExpression(allow_in);
     
     if (lexer_.GetToken().GetType() != TokenType::COLON) {
       ThrowSyntaxError("expects a ':'");
     }
     lexer_.NextToken();
     
-    auto alt = ParseAssignmentExpression();
+    auto alt = ParseAssignmentExpression(allow_in);
     
     return new ConditionalExpression(cond, cons, alt);
   } else {
@@ -490,8 +490,8 @@ Expression* Parser::ParseConditionalExpression() {
 //  AssignmentExpression :
 //    ConditionalExpression
 //    LeftHandSideExpression AssignmentOperator AssignmentExpression
-Expression* Parser::ParseAssignmentExpression() {
-  auto left = ParseConditionalExpression();
+Expression* Parser::ParseAssignmentExpression(bool allow_in) {
+  auto left = ParseConditionalExpression(allow_in);
 
   if (!lexer_.GetToken().IsAssignmentOperator()) {
     return left;
@@ -506,7 +506,7 @@ Expression* Parser::ParseAssignmentExpression() {
       }
       lexer_.NextToken();
     
-      auto right = ParseAssignmentExpression();
+      auto right = ParseAssignmentExpression(allow_in);
 
       return new AssignmentExpression(type, left, right);
     }
@@ -540,9 +540,9 @@ Statements Parser::ParseStatementList(TokenType end_type) {
 // VariableDeclarationList :
 //   VariableDeclaration
 //   VariableDeclarationList , VariableDeclaration
-VariableDeclarations Parser::ParseVariableDeclarationList() {
+VariableDeclarations Parser::ParseVariableDeclarationList(bool allow_in) {
   VariableDeclarations var_decls;
-  var_decls.push_back(ParseVariableDeclaration());
+  var_decls.push_back(ParseVariableDeclaration(allow_in));
   while (lexer_.GetToken().GetType() == TokenType::COMMA) {
     lexer_.NextToken();
     var_decls.push_back(ParseVariableDeclaration());
@@ -558,7 +558,7 @@ VariableDeclarations Parser::ParseVariableDeclarationList() {
 //
 //  Initialiser :
 //    = AssignmentExpression
-VariableDeclaration* Parser::ParseVariableDeclaration() {
+VariableDeclaration* Parser::ParseVariableDeclaration(bool allow_in) {
   if (lexer_.GetToken().GetType() != TokenType::IDENTIFIER) {
     ThrowSyntaxError("expects an identifier");
   }  
@@ -569,7 +569,7 @@ VariableDeclaration* Parser::ParseVariableDeclaration() {
   }
   lexer_.NextToken();
 
-  auto init = ParseAssignmentExpression();
+  auto init = ParseAssignmentExpression(allow_in);
 
   return new VariableDeclaration(ident, init); 
 }

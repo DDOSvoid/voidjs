@@ -101,7 +101,7 @@ bool Token::IsIdentifierName() const {
     IsKeyword();
 }
 
-bool Token::IsBinaryOperator() const {
+bool Token::IsBinaryOperator(bool allow_in) const {
   switch (type_) {
     case TokenType::LOGICAL_OR:
     case TokenType::LOGICAL_AND:
@@ -117,7 +117,6 @@ bool Token::IsBinaryOperator() const {
     case TokenType::GREATER_THAN:
     case TokenType::GREATER_EQUAL:
     case TokenType::KEYWORD_INSTANCEOF:
-    case TokenType::KEYWORD_IN:
     case TokenType::LEFT_SHIFT:
     case TokenType::RIGHT_SHIFT:
     case TokenType::U_RIGHT_SHIFT:
@@ -127,6 +126,9 @@ bool Token::IsBinaryOperator() const {
     case TokenType::DIV:
     case TokenType::MOD: {
       return true;
+    }
+    case TokenType::KEYWORD_IN: {
+      return allow_in;
     }
     default: {
       return false;
