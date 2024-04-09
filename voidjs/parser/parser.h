@@ -39,7 +39,11 @@ class Parser {
   ast::Statement* ParseBreakStatement();
   ast::Statement* ParseReturnStatement();
   ast::Statement* ParseWithStatement();
-  ast::Statement* ParseSwitchStatement(); 
+  ast::Statement* ParseSwitchStatement();
+  ast::Statement* ParseLabelledStatement();
+  ast::Statement* ParseThrowStatement();
+  ast::Statement* ParseTryStatement();
+  ast::Statement* ParseDebuggerStatement();
 
   ast::Expression* ParseExpression(bool allow_in = true);
   ast::Expression* ParsePrimaryExpression();

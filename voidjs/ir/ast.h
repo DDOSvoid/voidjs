@@ -26,6 +26,10 @@ enum class AstNodeType {
   RETURN_STATEMENT,
   WITH_STATEMENT,
   SWITCH_STATEMENT,
+  LABELLED_STATEMENT,
+  THROW_STATEMENT,
+  TRY_STATEMENT,
+  DEBUGGER_STATEMENT,
 
   // Expression
   EXPRESSION,                  // not used
@@ -74,6 +78,10 @@ class BreakStatement;
 class ReturnStatement;
 class WithStatement;
 class SwitchStatement;
+class LabelledStatement;
+class ThrowStatement;
+class TryStatement;
+class DebuggerStatement;
 class Expression;
 class LeftHandSideExpression;
 class NewExpression;
@@ -132,6 +140,10 @@ class AstNode {
   bool IsReturnStatement() const { return type_ == AstNodeType::RETURN_STATEMENT; }
   bool IsWithStatement() const { return type_ == AstNodeType::WITH_STATEMENT; }
   bool IsSwitchStatment() const { return type_ == AstNodeType::SWITCH_STATEMENT; }
+  bool IsLabelledStatement() const { return type_ == AstNodeType::LABELLED_STATEMENT; }
+  bool IsThrowStatement() const { return type_ == AstNodeType::THROW_STATEMENT; }
+  bool IsTryStatement() const { return type_ == AstNodeType::TRY_STATEMENT; }
+  bool IsDebuggerStatement() const { return type_ == AstNodeType::DEBUGGER_STATEMENT; }
   bool IsExpression() const;
   bool IsLeftHandSideExpression() const;
   bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
@@ -172,6 +184,10 @@ class AstNode {
   ReturnStatement* AsReturnStatement() { return reinterpret_cast<ReturnStatement*>(this); }
   WithStatement* AsWithStatement() { return reinterpret_cast<WithStatement*>(this); }
   SwitchStatement* AsSwitchStatement() { return reinterpret_cast<SwitchStatement*>(this); }
+  LabelledStatement* AsLabelledStatement() { return reinterpret_cast<LabelledStatement*>(this); }
+  ThrowStatement* AsThrowStatement() { return reinterpret_cast<ThrowStatement*>(this); }
+  TryStatement* AsTryStatement() { return reinterpret_cast<TryStatement*>(this); }
+  DebuggerStatement* AsDebuggerStatement() { return reinterpret_cast<DebuggerStatement*>(this); }
   Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
   NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
@@ -213,6 +229,10 @@ class AstNode {
   const ReturnStatement* AsReturnStatement() const { return reinterpret_cast<const ReturnStatement*>(this); }
   const WithStatement* AsWithStatement() const { return reinterpret_cast<const WithStatement*>(this); }
   const SwitchStatement* AsSwitchStatement() const { return reinterpret_cast<const SwitchStatement*>(this); }
+  const LabelledStatement* AsLabelledStatement() const { return reinterpret_cast<const LabelledStatement*>(this); }
+  const ThrowStatement* AsThrowStatement() const { return reinterpret_cast<const ThrowStatement*>(this); }
+  const TryStatement* AsTryStatement() const { return reinterpret_cast<const TryStatement*>(this); }
+  const DebuggerStatement* AsDebuggerStatement() const { return reinterpret_cast<const DebuggerStatement*>(this); }
   const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
   const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
   const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }

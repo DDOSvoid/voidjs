@@ -19,7 +19,11 @@ bool AstNode::IsStatement() const {
     case AstNodeType::BREAK_STATEMENT:
     case AstNodeType::RETURN_STATEMENT:
     case AstNodeType::WITH_STATEMENT:
-    case AstNodeType::SWITCH_STATEMENT: {
+    case AstNodeType::SWITCH_STATEMENT:
+    case AstNodeType::LABELLED_STATEMENT:
+    case AstNodeType::THROW_STATEMENT:
+    case AstNodeType::TRY_STATEMENT:
+    case AstNodeType::DEBUGGER_STATEMENT: {
       return true;
     }
     default: {

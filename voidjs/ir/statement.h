@@ -233,6 +233,52 @@ class SwitchStatement : public Statement {
   CaseClauses case_clauses_;
 };
 
+class LabelledStatement : public Statement {
+ public:
+  LabelledStatement(Expression* label, Statement* body)
+    : Statement(AstNodeType::LABELLED_STATEMENT),
+      label_(label), body_(body)
+  {}
+  
+ private:
+  Expression* label_;
+  Statement* body_;
+};
+
+class ThrowStatement : public Statement {
+ public:
+  explicit ThrowStatement(Expression* expression)
+    : Statement(AstNodeType::THROW_STATEMENT),
+      expression_(expression)
+  {}
+
+ private:
+  Expression* expression_;
+};
+
+class TryStatement : public Statement {
+ public:
+  TryStatement(Statement* body, Expression* catch_name,
+               Statement* catch_block, Statement* finally_block)
+    : Statement(AstNodeType::TRY_STATEMENT),
+      body_(body), catch_name_(catch_name),
+      catch_block_(catch_block), finally_block_(finally_block)
+  {}
+  
+ private:
+  Statement* body_;
+  Expression* catch_name_;
+  Statement* catch_block_;
+  Statement* finally_block_;
+};
+
+class DebuggerStatement : public Statement {
+ public:
+  DebuggerStatement()
+    : Statement(AstNodeType::DEBUGGER_STATEMENT)
+  {}
+};
+
 class VariableDeclaration : public Statement {
  public:
   VariableDeclaration(Expression* identifier,

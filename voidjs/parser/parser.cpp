@@ -79,6 +79,18 @@ Statement* Parser::ParseStatement() {
     case TokenType::KEYWORD_SWITCH: {
       return ParseSwitchStatement();
     }
+    case TokenType::IDENTIFIER: {
+      return ParseLabelledStatement();
+    }
+    case TokenType::KEYWORD_THROW: {
+      return ParseThrowStatement();
+    }
+    case TokenType::KEYWORD_TRY: {
+      return ParseTryStatement();
+    }
+    case TokenType::KEYWORD_DEBUGGER: {
+      return ParseDebuggerStatement();
+    }
     default: {
       return ParseExpressionStatement();
     }
@@ -509,6 +521,122 @@ Statement* Parser::ParseSwitchStatement() {
   auto cases = ParseCaseBlock();
 
   return new SwitchStatement(expr, std::move(cases));
+}
+
+// Parse LabelledStatement
+// Defined in ECMAScript 5.1 Chapter 12.12
+//  LabelledStatement :
+//    Identifier : Statement
+Statement* Parser::ParseLabelledStatement() {
+  // begin with Identifier
+  auto label = ParseIdentifier();
+
+  if (lexer_.GetToken().GetType() != TokenType::COLON) {
+    ThrowSyntaxError("expects a ':'"); 
+  }
+  lexer_.NextToken();
+
+  auto body = ParseStatement();
+
+  return new LabelledStatement(label, body);
+}
+
+// Parse ThrowStatement
+// Defined in ECMAScript 5.1 Chapter 12.13
+//  ThrowStatement :
+//    throw [no LineTerminator here] Expression ;
+Statement* Parser::ParseThrowStatement() {
+  // begin with throw
+  lexer_.NextToken();
+
+  if (lexer_.HasLineTerminator()) {
+    ThrowSyntaxError("expects no line terminator here");
+  }
+  auto expr = ParseExpression();
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return new ThrowStatement(expr);
+}
+
+// Parse TryStatement
+// Defined in ECMAScript 5.1 Chapter 12.14
+//  TryStatement :
+//    try Block Catch
+//    try Block Finally
+//    try Block Catch Finally
+// 
+//  Catch :
+//    catch ( Identifier ) Block
+
+//  Finally :
+//    finally Block
+Statement* Parser::ParseTryStatement() {
+  // begin with try
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+    ThrowSyntaxError("expects a '}'");
+  }
+  auto body = ParseBlockStatement();
+
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_CATCH) {
+    lexer_.NextToken();
+
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+      ThrowSyntaxError("expects a '('");
+    }
+    lexer_.NextToken();
+
+    if (lexer_.GetToken().GetType() != TokenType::IDENTIFIER) {
+      ThrowSyntaxError("expects an identifier");
+    }
+    auto catch_name = ParseIdentifier();
+
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+      ThrowSyntaxError("expects a ')'");
+    }
+    lexer_.NextToken();
+    
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+      ThrowSyntaxError("expects a '}'");
+    }
+    auto catch_block = ParseBlockStatement();
+
+    if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FINALLY) {
+      lexer_.NextToken();
+
+      if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+        ThrowSyntaxError("expects a '}'");
+      }
+      auto finally_block = ParseBlockStatement();
+
+      return new TryStatement(body, catch_name, catch_block, finally_block);
+    } else {
+      return new TryStatement(body, catch_name, catch_block, nullptr);
+    }
+  } else {
+    return new TryStatement(body, nullptr, nullptr, nullptr);
+  }
+}
+
+// Parse DebuggerStatement
+// Defined in ECMAScript 5.1 Chapter 12.15
+//  DebuggerStatement :
+//    debugger ;
+Statement* Parser::ParseDebuggerStatement() {
+  // begin with debugger
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    ThrowSyntaxError("expects a ';'");
+  }
+  lexer_.NextToken();
+
+  return new DebuggerStatement();
 }
 
 // Parse Expression
@@ -1017,6 +1145,11 @@ Expression* Parser::ParseObjectLiteral() {
   return nullptr;
 }
 
+// Parse CaseBlock
+// Defined in ECMAScript 5.1 Chapter 12.11
+//  CaseBlock :
+//    { CaseClausesopt }
+//    { CaseClausesoptDefaultClause CaseClausesopt }
 CaseClauses Parser::ParseCaseBlock() {
   if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
     ThrowSyntaxError("expects a '{'");
@@ -1038,6 +1171,11 @@ CaseClauses Parser::ParseCaseBlock() {
   return cases;
 }
 
+// Parse CaseClauses
+// Defined in ECMAScript 5.1 Chapter 12.11
+//  CaseClauses :
+//    CaseClause
+//    CaseClauses CaseClause
 CaseClauses Parser::ParseCaseClauses() {
   CaseClauses cases;
   while (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE ||
@@ -1047,6 +1185,12 @@ CaseClauses Parser::ParseCaseClauses() {
   return cases;
 }
 
+// ParseCaseClause
+// Defined in ECMAScript 5.1 Chapter 12.11
+//  CaseClause :
+//    case Expression : StatementListopt
+//  DefaultClause :
+//    default : StatementListopt
 CaseClause* Parser::ParseCaseClause() {
   if (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE) {
     lexer_.NextToken();
