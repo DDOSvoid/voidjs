@@ -9,6 +9,7 @@
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/utils/error.h"
 #include "voidjs/utils/helper.h"
+#include <initializer_list>
 
 namespace voidjs {
 
@@ -72,6 +73,12 @@ Statement* Parser::ParseStatement() {
     case TokenType::KEYWORD_RETURN: {
       return ParseReturnStatement();
     }
+    case TokenType::KEYWORD_WITH: {
+      return ParseWithStatement();
+    }
+    case TokenType::KEYWORD_SWITCH: {
+      return ParseSwitchStatement();
+    }
     default: {
       return ParseExpressionStatement();
     }
@@ -85,8 +92,12 @@ Statement* Parser::ParseStatement() {
 Statement* Parser::ParseBlockStatement() {
   // begin with {
   lexer_.NextToken();
-  
-  Statements stmts = ParseStatementList(TokenType::RIGHT_BRACE);
+
+  Statements stmts;
+
+  while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    stmts.push_back(ParseStatement());
+  }
   
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     ThrowSyntaxError("expects a '}'");
@@ -378,6 +389,11 @@ Statement* Parser::ParseForStatement() {
   }
 }
 
+// Parse ContinueStatement
+// Defined in ECMAScript 5.1 Chapter 12.7
+//  ContinueStatement :
+//    continue ;
+//    continue [no LineTerminator here] Identifier;
 Statement* Parser::ParseContinueStatement() {
   // begin with continue
   lexer_.NextToken();
@@ -397,6 +413,11 @@ Statement* Parser::ParseContinueStatement() {
   return new ContinueStatement(ident);
 }
 
+// Parse BreakStatement
+// Defined in ECMAScript 5.1 Chapter 12.8
+//  BreakStatement :
+//    break ;
+//    break [no LineTerminator here] Identifier ;
 Statement* Parser::ParseBreakStatement() {
   // begin with break
   lexer_.NextToken();
@@ -416,6 +437,11 @@ Statement* Parser::ParseBreakStatement() {
   return new BreakStatement(ident);
 }
 
+// Parse ReturnStatement
+// Defined in ECMAScript 5.1 Chapter 12.9
+//  ReturnStatement :
+//    return ;
+//    return [no LineTerminator here] Expression ;
 Statement* Parser::ParseReturnStatement() {
   // begin with return
   lexer_.NextToken();
@@ -433,6 +459,56 @@ Statement* Parser::ParseReturnStatement() {
   lexer_.NextToken();
 
   return new ReturnStatement(expr);
+}
+
+// Parse WithStatemnet
+// Defined in ECMAScript 5.1 Chapter 12.10
+//  WithStatement :
+//    with ( Expression ) Statement
+Statement* Parser::ParseWithStatement() {
+  // begin with with
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  auto ctx = ParseExpression();
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  lexer_.NextToken();
+
+  auto body = ParseStatement();
+
+  return new WithStatement(ctx, body);
+}
+
+// Parse SwitchStatement
+// Defined in ECMAScript 5.1 Chapter 12.11
+//  SwitchStatement :
+//    switch ( Expression ) CaseBlock
+Statement* Parser::ParseSwitchStatement() {
+  // begin with switch
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  auto expr = ParseExpression();
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  lexer_.NextToken();
+
+  auto cases = ParseCaseBlock();
+
+  return new SwitchStatement(expr, std::move(cases));
 }
 
 // Parse Expression
@@ -792,20 +868,6 @@ Expression* Parser::ParseIdentifier() {
   return ident;
 }
 
-// Parse StatementList
-// Defined in ECMAScript 5.1 Chapter 12.1
-// StatementList :
-//   Statement
-//   StatementList Statement
-Statements Parser::ParseStatementList(TokenType end_type) {
-  // Empty StatementList is permitted
-  Statements stmts;
-  while (lexer_.GetToken().GetType() != end_type) {
-    stmts.push_back(ParseStatement());
-  }
-  return stmts;
-}
-
 // Parse VariableDeclarationList
 // Defined in ECMAScript 5.1 chapter 12.2
 // VariableDeclarationList :
@@ -952,6 +1014,77 @@ Expressions Parser::ParseArgumentList(TokenType end_token_type) {
 //    Identifier
 Expression* Parser::ParseObjectLiteral() {
   // todo
+  return nullptr;
+}
+
+CaseClauses Parser::ParseCaseBlock() {
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+    ThrowSyntaxError("expects a '{'");
+  }
+  lexer_.NextToken();
+
+  CaseClauses cases;
+
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE ||
+      lexer_.GetToken().GetType() == TokenType::KEYWORD_DEFAULT) {
+    cases = ParseCaseBlock();
+  }
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    ThrowSyntaxError("expects a '}'");
+  }
+  lexer_.NextToken();
+
+  return cases;
+}
+
+CaseClauses Parser::ParseCaseClauses() {
+  CaseClauses cases;
+  while (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE ||
+         lexer_.GetToken().GetType() == TokenType::KEYWORD_DEFAULT) {
+    cases.push_back(ParseCaseClause());
+  }
+  return cases;
+}
+
+CaseClause* Parser::ParseCaseClause() {
+  if (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE) {
+    lexer_.NextToken();
+
+    auto cond = ParseExpression();
+
+    if (lexer_.GetToken().GetType() != TokenType::COLON) {
+      ThrowSyntaxError("expects a ':'");
+    }
+    lexer_.NextToken();
+
+    Statements stmts;
+
+    while (lexer_.GetToken().GetType() != TokenType::KEYWORD_CASE ||
+           lexer_.GetToken().GetType() != TokenType::KEYWORD_DEFAULT ||
+           lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+      stmts.push_back(ParseStatement());
+    }
+
+    return new CaseClause(false, cond, std::move(stmts));
+  } else if (lexer_.GetToken().GetType() == TokenType::KEYWORD_DEFAULT) {
+    lexer_.NextToken();
+
+    if (lexer_.GetToken().GetType() != TokenType::COLON) {
+      ThrowSyntaxError("expects a ':'");
+    }
+    lexer_.NextToken();
+
+    Statements stmts;
+
+    while (lexer_.GetToken().GetType() != TokenType::KEYWORD_CASE ||
+           lexer_.GetToken().GetType() != TokenType::KEYWORD_DEFAULT ||
+           lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+      stmts.push_back(ParseStatement());
+    }
+
+    return new CaseClause(true, nullptr, std::move(stmts));
+  }
   return nullptr;
 }
 

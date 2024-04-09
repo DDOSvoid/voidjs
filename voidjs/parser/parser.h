@@ -6,6 +6,7 @@
 #include "voidjs/lexer/lexer.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/utils/error.h"
+#include <initializer_list>
 
 namespace voidjs {
 
@@ -37,6 +38,8 @@ class Parser {
   ast::Statement* ParseContinueStatement();
   ast::Statement* ParseBreakStatement();
   ast::Statement* ParseReturnStatement();
+  ast::Statement* ParseWithStatement();
+  ast::Statement* ParseSwitchStatement(); 
 
   ast::Expression* ParseExpression(bool allow_in = true);
   ast::Expression* ParsePrimaryExpression();
@@ -49,13 +52,15 @@ class Parser {
   ast::Expression* ParseAssignmentExpression(bool allow_in = true);
 
   ast::Expression* ParseIdentifier();
-  ast::Statements ParseStatementList(TokenType end_token_type);
   ast::VariableDeclarations ParseVariableDeclarationList(bool allow_in = true);
   ast::VariableDeclaration* ParseVariableDeclaration(bool aloow_in = true);
   ast::Expression* ParseArrayLiteral();
   ast::Expressions ParseArguments();
   ast::Expressions ParseArgumentList(TokenType end_token_type);
-  ast::Expression* ParseObjectLiteral(); 
+  ast::Expression* ParseObjectLiteral();
+  ast::CaseClauses ParseCaseBlock();
+  ast::CaseClauses ParseCaseClauses();
+  ast::CaseClause* ParseCaseClause();
 
  private:
   void ThrowSyntaxError(std::string msg); 

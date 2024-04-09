@@ -24,6 +24,8 @@ enum class AstNodeType {
   CONTINUE_STATEMENT,
   BREAK_STATEMENT,
   RETURN_STATEMENT,
+  WITH_STATEMENT,
+  SWITCH_STATEMENT,
 
   // Expression
   EXPRESSION,                  // not used
@@ -52,6 +54,7 @@ enum class AstNodeType {
   ARRAY_LITERAL,
   OBJECT_LITERAL,
   PROPERTY,
+  CASE_CLAUSE,
 };
 
 class AstNode;
@@ -69,6 +72,8 @@ class ForInStatement;
 class ContinueStatement;
 class BreakStatement;
 class ReturnStatement;
+class WithStatement;
+class SwitchStatement;
 class Expression;
 class LeftHandSideExpression;
 class NewExpression;
@@ -91,10 +96,12 @@ class VariableDeclaration;
 class ArrayLiteral;
 class ObjectLiteral;
 class Property;
+class CaseClause;
 
 using Statements = std::vector<Statement*>;
-using VariableDeclarations = std::vector<VariableDeclaration*>;
 using Expressions = std::vector<Expression*>;
+using VariableDeclarations = std::vector<VariableDeclaration*>;
+using CaseClauses = std::vector<CaseClause*>;
 
 class AstNode {
  public:
@@ -123,6 +130,8 @@ class AstNode {
   bool IsContinueStatement() const { return type_ == AstNodeType::CONTINUE_STATEMENT; }
   bool IsBreakStatement() const { return type_ == AstNodeType::BREAK_STATEMENT; }
   bool IsReturnStatement() const { return type_ == AstNodeType::RETURN_STATEMENT; }
+  bool IsWithStatement() const { return type_ == AstNodeType::WITH_STATEMENT; }
+  bool IsSwitchStatment() const { return type_ == AstNodeType::SWITCH_STATEMENT; }
   bool IsExpression() const;
   bool IsLeftHandSideExpression() const;
   bool IsNewExpression() const { return type_ == AstNodeType::NEW_EXPRESSION; }
@@ -144,6 +153,7 @@ class AstNode {
   bool IsArrayLiteral() const { return type_ == AstNodeType::ARRAY_LITERAL; }
   bool IsObjectLiteral() const { return type_ == AstNodeType::OBJECT_LITERAL; }
   bool IsProperty() const { return type_ == AstNodeType::PROPERTY; }
+  bool IsCaseClause() const { return type_ == AstNodeType::CASE_CLAUSE; }
 
   // As Cast
   Program* AsProgram() { return reinterpret_cast<Program*>(this); }
@@ -160,6 +170,8 @@ class AstNode {
   ContinueStatement* AsContinueStatement() { return reinterpret_cast<ContinueStatement*>(this); }
   BreakStatement* AsBreakStatement() { return reinterpret_cast<BreakStatement*>(this); }
   ReturnStatement* AsReturnStatement() { return reinterpret_cast<ReturnStatement*>(this); }
+  WithStatement* AsWithStatement() { return reinterpret_cast<WithStatement*>(this); }
+  SwitchStatement* AsSwitchStatement() { return reinterpret_cast<SwitchStatement*>(this); }
   Expression* AsExpression() { return reinterpret_cast<Expression*>(this); }
   LeftHandSideExpression* AsLeftHandSideExpression() { return reinterpret_cast<LeftHandSideExpression*>(this); }
   NewExpression* AsNewExpression() { return reinterpret_cast<NewExpression*>(this); }
@@ -182,6 +194,7 @@ class AstNode {
   ArrayLiteral* AsArrayLiteral() { return reinterpret_cast<ArrayLiteral*>(this); }
   ObjectLiteral* AsObjectLiteral() { return reinterpret_cast<ObjectLiteral*>(this); }
   Property* AsProperty() { return reinterpret_cast<Property*>(this); }
+  CaseClause* AsCaseClause() { return reinterpret_cast<CaseClause*>(this); }
 
   // As Cast const-version
   const Program* AsProgram() const { return reinterpret_cast<const Program*>(this); }
@@ -198,6 +211,8 @@ class AstNode {
   const ContinueStatement* AsContinueStatement() const { return reinterpret_cast<const ContinueStatement*>(this); }
   const BreakStatement* AsBreakStatement() const { return reinterpret_cast<const BreakStatement*>(this); }
   const ReturnStatement* AsReturnStatement() const { return reinterpret_cast<const ReturnStatement*>(this); }
+  const WithStatement* AsWithStatement() const { return reinterpret_cast<const WithStatement*>(this); }
+  const SwitchStatement* AsSwitchStatement() const { return reinterpret_cast<const SwitchStatement*>(this); }
   const Expression* AsExpression() const { return reinterpret_cast<const Expression*>(this); }
   const LeftHandSideExpression* AsLeftHandSideExpression() const { return reinterpret_cast<const LeftHandSideExpression*>(this); }
   const NewExpression* AsNewExpression() const { return reinterpret_cast<const NewExpression*>(this); }
@@ -220,6 +235,7 @@ class AstNode {
   const ArrayLiteral* AsArrayLiteral() const { return reinterpret_cast<const ArrayLiteral*>(this); }
   const ObjectLiteral* AsObjectLiteral() const { return reinterpret_cast<const ObjectLiteral*>(this); }
   const Property* AsProperty() const { return reinterpret_cast<const Property*>(this); }
+  const CaseClause* AsCaseClause() const { return reinterpret_cast<const CaseClause*>(this); }
   
  private:
   AstNodeType type_;

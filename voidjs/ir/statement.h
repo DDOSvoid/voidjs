@@ -206,6 +206,33 @@ class ReturnStatement : public Statement {
   Expression* expression_;
 };
 
+class WithStatement : public Statement {
+ public:
+  WithStatement(Expression* context, Statement* body)
+    : Statement(AstNodeType::WITH_STATEMENT),
+      context_(context), body_(body)
+  {}
+
+  Expression* GetContext() const { return context_; }
+  Statement* GetBody() const { return body_; }
+
+ private:
+  Expression* context_;
+  Statement* body_;
+};
+
+class SwitchStatement : public Statement {
+ public:
+  SwitchStatement(Expression* discriminant, CaseClauses case_clauses)
+    : Statement(AstNodeType::SWITCH_STATEMENT),
+      discriminant_(discriminant), case_clauses_(case_clauses)
+  {}
+
+ private:
+  Expression* discriminant_;
+  CaseClauses case_clauses_;
+};
+
 class VariableDeclaration : public Statement {
  public:
   VariableDeclaration(Expression* identifier,
@@ -221,6 +248,19 @@ class VariableDeclaration : public Statement {
  private:
   Expression* identifier_;
   Expression* initializer_;
+};
+
+class CaseClause : public Statement {
+ public:
+  CaseClause(bool is_default, Expression* condition, Statements statements)
+    : Statement(AstNodeType::CASE_CLAUSE), is_default_(is_default),
+      condition_(condition), statements_(std::move(statements))
+  {}
+      
+ private:
+  bool is_default_;
+  Expression* condition_;
+  Statements statements_;
 };
 
 }  // namespace voidjs

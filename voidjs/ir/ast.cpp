@@ -17,7 +17,9 @@ bool AstNode::IsStatement() const {
     case AstNodeType::FOR_IN_STATEMENT:
     case AstNodeType::CONTINUE_STATEMENT:
     case AstNodeType::BREAK_STATEMENT:
-    case AstNodeType::RETURN_STATEMENT: {
+    case AstNodeType::RETURN_STATEMENT:
+    case AstNodeType::WITH_STATEMENT:
+    case AstNodeType::SWITCH_STATEMENT: {
       return true;
     }
     default: {
