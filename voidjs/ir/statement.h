@@ -3,6 +3,7 @@
 
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
+#include <initializer_list>
 
 namespace voidjs {
 namespace ast {
@@ -105,6 +106,9 @@ class DoWhileStatement : public Statement {
       condition_(condition), body_(body)
   {}
 
+  Expression* GetCondition() const { return condition_; }
+  Statement* GetBody() const { return body_; }
+
  private:
   Expression* condition_;
   Statement* body_;
@@ -116,6 +120,9 @@ class WhileStatement : public Statement {
     : Statement(AstNodeType::WHILE_STATEMENT),
       condition_(condition), body_(body)
   {}
+
+  Expression* GetCondition() const { return condition_; }
+  Statement* GetBody() const { return body_; }
 
  private:
   Expression* condition_;
@@ -131,6 +138,11 @@ class ForStatement : public Statement {
       update_(update), body_(body)
   {}
 
+  AstNode* GetInitializer() const { return initializer_; }
+  Expression* GetCondition() const { return condition_; }
+  Expression* GetUpdate() const { return update_; }
+  Statement* GetBody() const { return body_; }
+
  private:
   AstNode* initializer_;  // VariableStatement or Expression
   Expression* condition_;
@@ -145,6 +157,10 @@ class ForInStatement : public Statement {
       left_(left), right_(right), body_(body)
   {}
 
+  AstNode* GetLeft() const { return left_; }
+  Expression* GetRight() const { return right_; }
+  Statement* GetBody() const { return body_; }
+
  private:
   AstNode* left_;  // VariableDeclaration or LeftHandSideExpression
   Expression* right_;
@@ -158,6 +174,8 @@ class ContinueStatement : public Statement {
       identifier_(identifier)
   {}
 
+  Expression* GetIdentifier() const { return identifier_; }
+
  private:
   Expression* identifier_;
 };
@@ -169,6 +187,8 @@ class BreakStatement : public Statement {
       identifier_(identifier)
   {}
 
+  Expression* GetIdentifier() const { return identifier_; }
+
  private:
   Expression* identifier_;
 };
@@ -179,6 +199,8 @@ class ReturnStatement : public Statement {
     : Statement(AstNodeType::RETURN_STATEMENT),
       expression_(expression)
   {}
+
+  Expression* GetExpression() const { return expression_; }
 
  private:
   Expression* expression_;

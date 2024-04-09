@@ -566,3 +566,212 @@ if (true) {
     EXPECT_EQ(2, assign_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
   }
 }
+
+TEST(parser, ParseDoWhileStatement) {
+  std::u16string source = uR"(
+do {
+    ++i;
+} while (i <= n);
+)";
+
+  Parser parser(source);
+
+  auto stmt = parser.ParseDoWhileStatement();
+  ASSERT_TRUE(stmt->IsDoWhileStatement());
+
+  auto while_stmt = stmt->AsDoWhileStatement();
+  ASSERT_TRUE(while_stmt->GetCondition()->IsBinaryExpression());
+  ASSERT_TRUE(while_stmt->GetBody()->IsBlockStatement());
+
+  auto binary_expr = while_stmt->GetCondition()->AsBinaryExpression();
+  ASSERT_TRUE(binary_expr->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(binary_expr->GetRight()->IsIdentifier());
+  EXPECT_EQ(TokenType::LESS_EQUAL, binary_expr->GetOperator());
+  EXPECT_EQ(u"i", binary_expr->GetLeft()->AsIdentifier()->GetName());
+  EXPECT_EQ(u"n", binary_expr->GetRight()->AsIdentifier()->GetName());
+
+  auto block_stmt = while_stmt->GetBody()->AsBlockStatement();
+  ASSERT_TRUE(block_stmt->GetStatements().size() == 1);
+
+  {
+    const auto& stmts = block_stmt->GetStatements();
+
+    auto stmt = stmts[0];
+    ASSERT_TRUE(stmt->IsExpressionStatement());
+
+    auto expr_stmt = stmt->AsExpressionStatement();
+    ASSERT_TRUE(expr_stmt->GetExpression()->IsUnaryExpression());
+
+    auto unary_expr = expr_stmt->GetExpression()->AsUnaryExpression();
+    ASSERT_TRUE(unary_expr->GetExpression()->IsIdentifier());
+    EXPECT_EQ(TokenType::INC, unary_expr->GetOperator());
+    EXPECT_EQ(u"i", unary_expr->GetExpression()->AsIdentifier()->GetName());
+  }
+}
+
+TEST(parser, ParseWhileStatement) {
+  std::u16string source = uR"(
+while (i <= n) ++i;
+)";
+
+  Parser parser(source);
+
+  auto stmt = parser.ParseWhileStatement();
+  ASSERT_TRUE(stmt->IsWhileStatement());
+
+  auto while_stmt = stmt->AsWhileStatement();
+  ASSERT_TRUE(while_stmt->GetCondition()->IsBinaryExpression());
+  ASSERT_TRUE(while_stmt->GetBody()->IsExpressionStatement());
+
+  auto binary_expr = while_stmt->GetCondition()->AsBinaryExpression();
+  ASSERT_TRUE(binary_expr->GetLeft()->IsIdentifier());
+  ASSERT_TRUE(binary_expr->GetRight()->IsIdentifier());
+  EXPECT_EQ(TokenType::LESS_EQUAL, binary_expr->GetOperator());
+  EXPECT_EQ(u"i", binary_expr->GetLeft()->AsIdentifier()->GetName());
+  EXPECT_EQ(u"n", binary_expr->GetRight()->AsIdentifier()->GetName());
+
+  auto expr_stmt = while_stmt->GetBody()->AsExpressionStatement();
+  ASSERT_TRUE(expr_stmt->GetExpression()->IsUnaryExpression());
+
+  auto unary_expr = expr_stmt->GetExpression()->AsUnaryExpression();
+  ASSERT_TRUE(unary_expr->GetExpression()->IsIdentifier());
+  EXPECT_EQ(TokenType::INC, unary_expr->GetOperator());
+  EXPECT_EQ(u"i", unary_expr->GetExpression()->AsIdentifier()->GetName());
+}
+
+TEST(parser, ParseForStatement) {
+  // for ( ExpressionNoIn ; Expression ; Expression ) Statement
+  {
+    std::u16string source = uR"(
+for (i; i <= n; i++) {
+    console.log(i);
+}
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseForStatement();
+    ASSERT_TRUE(stmt->IsForStatement());
+
+    auto for_stmt = stmt->AsForStatement();
+    ASSERT_TRUE(for_stmt->GetInitializer()->IsIdentifier());
+    ASSERT_TRUE(for_stmt->GetCondition()->IsBinaryExpression());
+    ASSERT_TRUE(for_stmt->GetUpdate()->IsPostfixExpression());
+    ASSERT_TRUE(for_stmt->GetBody()->IsBlockStatement());
+  }
+
+  // for ( ; Expression_opt ; Expression_opt ) Statement
+  {
+    std::u16string source = uR"(
+for (; i <= n; i++) ;
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseForStatement();
+    ASSERT_TRUE(stmt->IsForStatement());
+
+    auto for_stmt = stmt->AsForStatement();
+    ASSERT_TRUE(for_stmt->GetInitializer() == nullptr);
+    ASSERT_TRUE(for_stmt->GetCondition()->IsBinaryExpression());
+    ASSERT_TRUE(for_stmt->GetUpdate()->IsPostfixExpression());
+    ASSERT_TRUE(for_stmt->GetBody()->IsEmptyStatement());
+  }
+
+  // for ( var VariableDeclarationListNoIn; Expressionopt ; Expressionopt ) Statement
+  {
+    std::u16string source = uR"(
+for (var i = 1; (i << 1) < n; i <<= 1)
+    for (; ;) ;
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseForStatement();
+    ASSERT_TRUE(stmt->IsForStatement());
+
+    auto for_stmt = stmt->AsForStatement();
+    ASSERT_TRUE(for_stmt->GetInitializer()->IsVariableStatement());
+    ASSERT_TRUE(for_stmt->GetCondition()->IsBinaryExpression());
+    ASSERT_TRUE(for_stmt->GetUpdate()->IsAssignmentExpression());
+    ASSERT_TRUE(for_stmt->GetBody()->IsForStatement());
+  }
+
+  // for ( LeftHandSideExpression in Expression ) Statement
+  {
+    std::u16string source = uR"(
+for (item in arr) {
+    console.log(item);
+}
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseForStatement();
+    ASSERT_TRUE(stmt->IsForInStatement());
+
+    auto for_stmt = stmt->AsForInStatement();
+    ASSERT_TRUE(for_stmt->GetLeft()->IsIdentifier());
+    ASSERT_TRUE(for_stmt->GetRight()->IsIdentifier());
+    ASSERT_TRUE(for_stmt->GetBody()->IsBlockStatement());
+  }
+
+  // for ( var VariableDeclarationNoIn in Expression ) Statement
+  {
+    std::u16string source = uR"(
+for (var item = 0 in arr) {
+    console.log(item);
+}
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseForStatement();
+    ASSERT_TRUE(stmt->IsForInStatement());
+
+    auto for_stmt = stmt->AsForInStatement();
+    ASSERT_TRUE(for_stmt->GetLeft()->IsVariableDeclaraion());
+    ASSERT_TRUE(for_stmt->GetRight()->IsIdentifier());
+    ASSERT_TRUE(for_stmt->GetBody()->IsBlockStatement());
+  }
+}
+
+TEST(parser, ParseContinueStatement) {
+  Parser parser(u"conitnue;");
+
+  auto stmt = parser.ParseContinueStatement();
+  ASSERT_TRUE(stmt->IsContinueStatement());
+}
+
+TEST(parser, ParseBreakStatement) {
+  Parser parser(u"break label0;");
+
+  auto stmt = parser.ParseBreakStatement();
+  ASSERT_TRUE(stmt->IsBreakStatement());
+  
+  auto break_stmt = stmt->AsBreakStatement();
+  ASSERT_TRUE(break_stmt->GetIdentifier()->IsIdentifier());
+  EXPECT_EQ(u"label0", break_stmt->GetIdentifier()->AsIdentifier()->GetName());
+}
+
+TEST(parser, ParseReturnStatement) {
+  Parser parser(u"return i, j;");
+
+  auto stmt = parser.ParseReturnStatement();
+  ASSERT_TRUE(stmt->IsReturnStatement());
+  
+  auto ret_stmt = stmt->AsReturnStatement();
+  ASSERT_TRUE(ret_stmt->GetExpression()->IsSequenceExpression());
+
+  {  
+    const auto& exprs = ret_stmt->GetExpression()->AsSequenceExpression()->GetExpressions();
+    
+    auto expr1 = exprs[0];
+    ASSERT_TRUE(expr1->IsIdentifier());
+    EXPECT_EQ(u"i", expr1->AsIdentifier()->GetName());
+
+    auto expr2 = exprs[1];
+    ASSERT_TRUE(expr2->IsIdentifier());
+    EXPECT_EQ(u"j", expr2->AsIdentifier()->GetName());
+  }
+}

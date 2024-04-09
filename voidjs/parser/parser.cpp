@@ -259,6 +259,8 @@ Statement* Parser::ParseForStatement() {
   lexer_.NextToken();
 
   if (lexer_.GetToken().GetType() == TokenType::KEYWORD_VAR) {
+    lexer_.NextToken();
+    
     auto decls = ParseVariableDeclarationList(false);  // allow_in = false
 
     if (lexer_.GetToken().GetType() == TokenType::KEYWORD_IN) {
@@ -317,17 +319,15 @@ Statement* Parser::ParseForStatement() {
     
     if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
       auto expr = ParseExpression(false);  // allow_in = false
-
-      const auto& exprs = expr->AsSequenceExpression()->GetExpressions();
       
       if (lexer_.GetToken().GetType() == TokenType::KEYWORD_IN) {
         lexer_.NextToken();
       
-        if (exprs.size() != 1) {
-          ThrowSyntaxError("invalid declartion in for-in statement");
+        if (expr->IsSequenceExpression()) {
+          ThrowSyntaxError("invalid expression in for-in statement");
         }
         
-        auto left = exprs[0];
+        auto left = expr;
         if (!left->IsLeftHandSideExpression()) {
           ThrowSyntaxError("need to be LeftHandSideExpression");
         }
@@ -432,7 +432,7 @@ Statement* Parser::ParseReturnStatement() {
   }
   lexer_.NextToken();
 
-  return new BreakStatement(expr);
+  return new ReturnStatement(expr);
 }
 
 // Parse Expression
