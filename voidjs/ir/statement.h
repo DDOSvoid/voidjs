@@ -326,6 +326,19 @@ class CaseClause : public Statement {
   Statements statements_;
 };
 
+class FunctionDeclaration : public Statement {
+ public:
+  FunctionDeclaration(Expression* name, Expressions parameters, Statements statements)
+    : Statement(AstNodeType::FUNCTION_DECLARATION),
+      name_(name), parameters_(parameters), statements_(std::move(statements))
+  {}
+
+ private:
+  Expression* name_;
+  Expressions parameters_;
+  Statements statements_;
+};
+
 }  // namespace voidjs
 }  // namespace ast
 

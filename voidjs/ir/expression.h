@@ -176,6 +176,19 @@ class This: public Expression {
   {}
 };
 
+class FunctionExpression : public Expression {
+  public:
+  FunctionExpression(Expression* name, Expressions parameters, Statements statements)
+    : Expression(AstNodeType::FUNCTION_EXPRESSION),
+      name_(name), parameters_(parameters), statements_(statements)
+  {}
+
+ private:
+  Expression* name_;
+  Expressions parameters_;
+  Statements statements_;
+};
+
 class Identifier : public Expression {
  public:
   explicit Identifier(std::u16string name)
@@ -204,15 +217,15 @@ class ArrayLiteral : public Expression {
 
 class ObjectLiteral : public Expression {
  public:
-  explicit ObjectLiteral(Expressions properties)
+  explicit ObjectLiteral(Properties properties)
     : Expression(AstNodeType::OBJECT_LITERAL),
       properties_(std::move(properties))
   {}
 
-  const Expressions& GetProperties() const { return properties_; }
+  const Properties& GetProperties() const { return properties_; }
 
  private:
-  Expressions properties_;
+  Properties properties_;
 };
 
 enum class PropertyType {

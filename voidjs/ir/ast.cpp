@@ -42,7 +42,8 @@ bool AstNode::IsExpression() const {
     case AstNodeType::BINARY_EXPRESSION:
     case AstNodeType::CONDITIONAL_EXPRESSION:
     case AstNodeType::ASSIGNMENT_EXPRESSION:
-    case AstNodeType::SEQUENCE_EXPRESSION: {
+    case AstNodeType::SEQUENCE_EXPRESSION:
+    case AstNodeType::FUNCTION_EXPRESSION: {
       return true;
     }
     default: {

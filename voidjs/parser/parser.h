@@ -54,6 +54,7 @@ class Parser {
   ast::Expression* ParseBinaryExpression(bool allow_in = true, std::int32_t precedence = 0);
   ast::Expression* ParseConditionalExpression(bool allow_in = true);
   ast::Expression* ParseAssignmentExpression(bool allow_in = true);
+  ast::Expression* ParseFunctionExpression();
 
   ast::Expression* ParseIdentifier();
   ast::VariableDeclarations ParseVariableDeclarationList(bool allow_in = true);
@@ -65,7 +66,12 @@ class Parser {
   ast::CaseClauses ParseCaseBlock();
   ast::CaseClauses ParseCaseClauses();
   ast::CaseClause* ParseCaseClause();
-  ast::Statement* ParsePotentialLabelledStatement(); 
+  ast::Statement* ParsePotentialLabelledStatement();
+  ast::Statement* ParseFunctionDeclaraion();
+  ast::Expressions ParseFormalParameterList();
+  ast::Properties ParsePropertyNameAndValueList();
+  ast::Property* ParsePropertyAssignment();
+  ast::Expression* ParsePropertyName();
 
  private:
   void ThrowSyntaxError(std::string msg); 

@@ -43,6 +43,7 @@ enum class AstNodeType {
   CONDITIONAL_EXPRESSION,
   ASSIGNMENT_EXPRESSION,
   SEQUENCE_EXPRESSION,
+  FUNCTION_EXPRESSION,
 
   // Literal
   LITERAL,                     // not used
@@ -59,6 +60,7 @@ enum class AstNodeType {
   OBJECT_LITERAL,
   PROPERTY,
   CASE_CLAUSE,
+  FUNCTION_DECLARATION,
 };
 
 class AstNode;
@@ -93,6 +95,7 @@ class BinaryExpression;
 class ConditionalExpression;
 class AssignmentExpression;
 class SequenceExpression;
+class FunctionExpression;
 class This;
 class Literal;
 class NullLiteral;
@@ -105,11 +108,13 @@ class ArrayLiteral;
 class ObjectLiteral;
 class Property;
 class CaseClause;
+class FunctionDeclaration;
 
 using Statements = std::vector<Statement*>;
 using Expressions = std::vector<Expression*>;
 using VariableDeclarations = std::vector<VariableDeclaration*>;
 using CaseClauses = std::vector<CaseClause*>;
+using Properties = std::vector<Property*>;
 
 class AstNode {
  public:
@@ -155,6 +160,7 @@ class AstNode {
   bool IsConditionalExpression() const { return type_ == AstNodeType::CONDITIONAL_EXPRESSION; }
   bool IsAssignmentExpression() const { return type_ == AstNodeType::ASSIGNMENT_EXPRESSION; }
   bool IsSequenceExpression() const { return type_ == AstNodeType::SEQUENCE_EXPRESSION; }
+  bool IsFunctionExpression() const { return type_ == AstNodeType::FUNCTION_EXPRESSION; }
   bool IsNullLiteral() const { return type_ == AstNodeType::NULL_LITERAL; }
   bool IsBooleanLiteral() const { return type_ == AstNodeType::BOOLEAN_LITERAL; }
   bool IsNumericLiteral() const { return type_ == AstNodeType::NUMERIC_LITERAL; }
@@ -166,6 +172,7 @@ class AstNode {
   bool IsObjectLiteral() const { return type_ == AstNodeType::OBJECT_LITERAL; }
   bool IsProperty() const { return type_ == AstNodeType::PROPERTY; }
   bool IsCaseClause() const { return type_ == AstNodeType::CASE_CLAUSE; }
+  bool IsFunctionDeclaration() const { return type_ == AstNodeType::FUNCTION_DECLARATION; }
 
   // As Cast
   Program* AsProgram() { return reinterpret_cast<Program*>(this); }
@@ -199,6 +206,7 @@ class AstNode {
   ConditionalExpression* AsConditionalExpression() { return reinterpret_cast<ConditionalExpression*>(this); }
   AssignmentExpression* AsAssignmentExpression() { return reinterpret_cast<AssignmentExpression*>(this); }
   SequenceExpression* AsSequenceExpression() { return reinterpret_cast<SequenceExpression*>(this); }
+  FunctionExpression* AsFunctionExpression() { return reinterpret_cast<FunctionExpression*>(this); }
   Literal* AsLiteral() { return reinterpret_cast<Literal*>(this); }
   NullLiteral* AsNullLiteral() { return reinterpret_cast<NullLiteral*>(this); }
   BooleanLiteral* AsBooleanLiteral() { return reinterpret_cast<BooleanLiteral*>(this); }
@@ -211,6 +219,7 @@ class AstNode {
   ObjectLiteral* AsObjectLiteral() { return reinterpret_cast<ObjectLiteral*>(this); }
   Property* AsProperty() { return reinterpret_cast<Property*>(this); }
   CaseClause* AsCaseClause() { return reinterpret_cast<CaseClause*>(this); }
+  FunctionDeclaration* AsFunctionDeclaration() { return reinterpret_cast<FunctionDeclaration*>(this); }
 
   // As Cast const-version
   const Program* AsProgram() const { return reinterpret_cast<const Program*>(this); }
@@ -244,6 +253,7 @@ class AstNode {
   const ConditionalExpression* AsConditionalExpression() const { return reinterpret_cast<const ConditionalExpression*>(this); }
   const AssignmentExpression* AsAssignmentExpression() const { return reinterpret_cast<const AssignmentExpression*>(this); }
   const SequenceExpression* AsSequenceExpression() const { return reinterpret_cast<const SequenceExpression*>(this); }
+  const FunctionExpression* AsFunctionExpression() const { return reinterpret_cast<const FunctionExpression*>(this); }
   const Literal* AsLiteral() const { return reinterpret_cast<const Literal*>(this); }
   const NullLiteral* AsNullLiteral() const { return reinterpret_cast<const NullLiteral*>(this); }
   const BooleanLiteral* AsBooleanLiteral() const { return reinterpret_cast<const BooleanLiteral*>(this); }
@@ -256,6 +266,7 @@ class AstNode {
   const ObjectLiteral* AsObjectLiteral() const { return reinterpret_cast<const ObjectLiteral*>(this); }
   const Property* AsProperty() const { return reinterpret_cast<const Property*>(this); }
   const CaseClause* AsCaseClause() const { return reinterpret_cast<const CaseClause*>(this); }
+  const FunctionDeclaration* AsFunctionDeclaration() const { return reinterpret_cast<const FunctionDeclaration*>(this); }
   
  private:
   AstNodeType type_;

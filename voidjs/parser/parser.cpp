@@ -778,7 +778,7 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
     }
   } else {
     if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
-      // callee = ParseFunctionExpression();
+      callee = ParseFunctionExpression();
     } else {
       callee = ParsePrimaryExpression();
     }
@@ -998,6 +998,56 @@ Expression* Parser::ParseAssignmentExpression(bool allow_in) {
   return nullptr;
 }
 
+// Parse FunctionExpression
+// Defined in ECMAScript 5.1 Chapter 13
+//  FunctionExpression :
+//    function Identifieropt ( FormalParameterList_opt ) { FunctionBody }
+Expression* Parser::ParseFunctionExpression() {
+  // begin with function
+  lexer_.NextToken();
+
+  Expression* ident = nullptr;
+  if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER) {
+    ident = ParseIdentifier();
+  }
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  Expressions params;
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    params = ParseFormalParameterList();
+  }
+  
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+    ThrowSyntaxError("expects a '{'");
+  }
+  lexer_.NextToken();
+
+  Statements stmts;
+  while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
+      stmts.push_back(ParseFunctionDeclaraion());
+    } else {
+      stmts.push_back(ParseStatement());
+    }
+  }
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    ThrowSyntaxError("expects a '}'");
+  }
+  lexer_.NextToken();
+
+  return new FunctionExpression(ident, std::move(params), std::move(stmts));
+}
+
 // Parse Identifier
 Expression* Parser::ParseIdentifier() {
   auto ident = new Identifier(lexer_.GetToken().GetString());
@@ -1132,25 +1182,24 @@ Expressions Parser::ParseArgumentList(TokenType end_token_type) {
 //    { }
 //    { PropertyNameAndValueList }
 //    { PropertyNameAndValueList , }
-
-//  PropertyNameAndValueList :
-//    PropertyAssignment
-//    PropertyNameAndValueList , PropertyAssignment
-
-//  PropertyAssignment :
-//    PropertyName : AssignmentExpression
-//    get PropertyName ( ) { FunctionBody }
-//    set PropertyName ( PropertySetParameterList ) { FunctionBody }
-
-//  PropertyName :
-//    IdentifierName
-//    StringLiteral
-//    NumericLiteral
-
-//  PropertySetParameterList :
-//    Identifier
 Expression* Parser::ParseObjectLiteral() {
-  // todo
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+    ThrowSyntaxError("expects a '{'");
+  }
+  lexer_.NextToken();
+
+  Properties props;
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    props = ParsePropertyNameAndValueList();
+  }
+
+  if (lexer_.GetToken().GetType() == TokenType::COMMA) {
+    lexer_.NextToken();
+  }
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    ThrowSyntaxError("expects a '}'");
+  }
   return nullptr;
 }
 
@@ -1248,6 +1297,237 @@ Statement* Parser::ParsePotentialLabelledStatement() {
   } else {
     return ParseExpressionStatement();
   }
+}
+
+// Parse FunctionDeclaration
+// Parse FunctionExpression
+// Defined in ECMAScript 5.1 Chapter 13
+//  FunctionExpression :
+//    function Identifieropt ( FormalParameterList_opt ) { FunctionBody }
+Statement* Parser::ParseFunctionDeclaraion() {
+  // begin with function
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::IDENTIFIER) {
+    ThrowSyntaxError("expects an identifier");
+  }
+  auto ident = ParseIdentifier();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+    ThrowSyntaxError("expects a '('");
+  }
+  lexer_.NextToken();
+
+  Expressions params;
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    params = ParseFormalParameterList();
+  }
+  
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+    ThrowSyntaxError("expects a ')'");
+  }
+  lexer_.NextToken();
+
+  if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+    ThrowSyntaxError("expects a '{'");
+  }
+  lexer_.NextToken();
+
+  Statements stmts;
+  while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
+      stmts.push_back(ParseFunctionDeclaraion());
+    } else {
+      stmts.push_back(ParseStatement());
+    }
+  }
+
+  if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+    ThrowSyntaxError("expects a '}'");
+  }
+  lexer_.NextToken();
+
+  return new FunctionDeclaration(ident, std::move(params), std::move(stmts));
+}
+
+// Parse FormalParameterList
+// Defined in ECMAScript 5.1 Chapter 13
+//  FormalParameterList :
+//    Identifier
+//    FormalParameterList , Identifier
+Expressions Parser::ParseFormalParameterList() {
+  Expressions idents;
+  
+  idents.push_back(ParseIdentifier());
+
+  while (lexer_.GetToken().GetType() == TokenType::COMMA) {
+    lexer_.NextToken();
+
+    idents.push_back(ParseIdentifier());
+  }
+
+  return idents;
+}
+
+// Parse PropertyNameAndValueList
+// Defined in ECMAScript 5.1 Chapter 11.1.5
+//  PropertyNameAndValueList :
+//    PropertyAssignment
+//    PropertyNameAndValueList , PropertyAssignment
+Properties Parser::ParsePropertyNameAndValueList() {
+  Properties props;
+  props.push_back(ParsePropertyAssignment());
+
+  while (lexer_.GetToken().GetType() == TokenType::COMMA) {
+    lexer_.NextToken();
+
+    props.push_back(ParsePropertyAssignment());
+  }
+
+  return props;
+}
+
+// Parse PropertyAssignment
+//  PropertyAssignment :
+//    PropertyName : AssignmentExpression
+//    get PropertyName ( ) { FunctionBody }
+//    set PropertyName ( PropertySetParameterList ) { FunctionBody }
+Property* Parser::ParsePropertyAssignment() {
+  if (lexer_.GetToken().GetType() == TokenType::STRING &&
+      lexer_.GetToken().GetString() == u"get") {
+    auto type = PropertyType::GET;
+    lexer_.NextToken();
+
+    if (const auto& token = lexer_.GetToken();
+        !token.IsIdentifierName()            &&
+        token.GetType() != TokenType::NUMBER ||
+        token.GetType() != TokenType::STRING) {
+      ThrowSyntaxError("invalid token");
+    }
+    auto key = ParsePropertyName();
+
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+      ThrowSyntaxError("expects a '('");
+    }
+    lexer_.NextToken();
+
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+      ThrowSyntaxError("expects a ')'");
+    }
+    lexer_.NextToken();
+
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+      ThrowSyntaxError("expects a '{'");
+    }
+    lexer_.NextToken();
+
+    Statements stmts;
+    while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+      if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
+        stmts.push_back(ParseFunctionDeclaraion());
+      } else {
+        stmts.push_back(ParseStatement());
+      }
+    }
+
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+      ThrowSyntaxError("expects a '}'");
+    }
+    lexer_.NextToken();
+
+    auto value = new FunctionExpression(nullptr, Expressions{}, std::move(stmts));
+
+    return new Property(type, key, value);
+  } else if (lexer_.GetToken().GetType() == TokenType::STRING &&
+             lexer_.GetToken().GetString() == u"set") {
+    auto type = PropertyType::SET;
+    lexer_.NextToken();
+
+    if (const auto& token = lexer_.GetToken();
+        !token.IsIdentifierName()            &&
+        token.GetType() != TokenType::NUMBER &&
+        token.GetType() != TokenType::STRING) {
+      ThrowSyntaxError("invalid token");
+    }
+    auto key = ParsePropertyName();
+
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_PAREN) {
+      ThrowSyntaxError("expects a '('");
+    }
+    lexer_.NextToken();
+
+    if (lexer_.GetToken().GetType() != TokenType::IDENTIFIER) {
+      ThrowSyntaxError("expects an identifier");
+    }
+    Expressions params;
+    params.push_back(ParseIdentifier());
+
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
+      ThrowSyntaxError("expects a ')'");
+    }
+    lexer_.NextToken();
+    
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+      ThrowSyntaxError("expects a '{'");
+    }
+    lexer_.NextToken();
+
+    Statements stmts;
+    while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+      if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
+        stmts.push_back(ParseFunctionDeclaraion());
+      } else {
+        stmts.push_back(ParseStatement());
+      }
+    }
+
+    if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
+      ThrowSyntaxError("expects a '}'");
+    }
+    lexer_.NextToken();
+
+    auto value = new FunctionExpression(nullptr, std::move(params), std::move(stmts));
+
+    return new Property(type, key, value);
+  } else {
+    auto type = PropertyType::INIT;
+    
+    if (const auto& token = lexer_.GetToken();
+        !token.IsIdentifierName()            &&
+        token.GetType() != TokenType::NUMBER &&
+        token.GetType() != TokenType::STRING) {
+      ThrowSyntaxError("invalid token");
+    }
+    auto key = ParsePropertyName();
+
+    if (lexer_.GetToken().GetType() != TokenType::COLON) {
+      ThrowSyntaxError("expects a ':'");
+    }
+    lexer_.NextToken();
+
+    auto value = ParseAssignmentExpression();
+
+    return new Property(type, key, value);
+  }
+}
+// Parse PropertyName
+//  PropertyName :
+//    IdentifierName
+//    StringLiteral
+//    NumericLiteral
+Expression* Parser::ParsePropertyName() {
+  if (lexer_.GetToken().IsIdentifierName()) {
+    auto key = new Identifier(lexer_.GetToken().GetString());
+    lexer_.NextToken();
+    
+  } else if (lexer_.GetToken().GetType() == TokenType::NUMBER) {
+    auto key = new NumericLiteral(lexer_.GetToken().GetNumber());
+    lexer_.NextToken();
+  } else if (lexer_.GetToken().GetType() == TokenType::STRING) {
+    auto key = new StringLiteral(lexer_.GetToken().GetString());
+    lexer_.NextToken();
+  }
+  return nullptr;
 }
 
 void Parser::ThrowSyntaxError(std::string msg) {
