@@ -79,9 +79,6 @@ Statement* Parser::ParseStatement() {
     case TokenType::KEYWORD_SWITCH: {
       return ParseSwitchStatement();
     }
-    case TokenType::IDENTIFIER: {
-      return ParseLabelledStatement();
-    }
     case TokenType::KEYWORD_THROW: {
       return ParseThrowStatement();
     }
@@ -90,6 +87,9 @@ Statement* Parser::ParseStatement() {
     }
     case TokenType::KEYWORD_DEBUGGER: {
       return ParseDebuggerStatement();
+    }
+    case TokenType::IDENTIFIER: {
+      return ParsePotentialLabelledStatement();
     }
     default: {
       return ParseExpressionStatement();
@@ -579,7 +579,7 @@ Statement* Parser::ParseTryStatement() {
   lexer_.NextToken();
 
   if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
-    ThrowSyntaxError("expects a '}'");
+    ThrowSyntaxError("expects a '{'");
   }
   auto body = ParseBlockStatement();
 
@@ -602,7 +602,7 @@ Statement* Parser::ParseTryStatement() {
     lexer_.NextToken();
     
     if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
-      ThrowSyntaxError("expects a '}'");
+      ThrowSyntaxError("expects a '{'");
     }
     auto catch_block = ParseBlockStatement();
 
@@ -610,7 +610,7 @@ Statement* Parser::ParseTryStatement() {
       lexer_.NextToken();
 
       if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
-        ThrowSyntaxError("expects a '}'");
+        ThrowSyntaxError("expects a '{'");
       }
       auto finally_block = ParseBlockStatement();
 
@@ -618,6 +618,15 @@ Statement* Parser::ParseTryStatement() {
     } else {
       return new TryStatement(body, catch_name, catch_block, nullptr);
     }
+  } else if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FINALLY) {
+    lexer_.NextToken();
+    
+    if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
+      ThrowSyntaxError("expects a '{'");
+    }
+    auto finally_block = ParseBlockStatement();
+
+    return new TryStatement(body, nullptr, nullptr, finally_block);
   } else {
     return new TryStatement(body, nullptr, nullptr, nullptr);
   }
@@ -1148,8 +1157,8 @@ Expression* Parser::ParseObjectLiteral() {
 // Parse CaseBlock
 // Defined in ECMAScript 5.1 Chapter 12.11
 //  CaseBlock :
-//    { CaseClausesopt }
-//    { CaseClausesoptDefaultClause CaseClausesopt }
+//    { CaseClauses_opt }
+//    { CaseClauses_opt DefaultClause CaseClauses_opt }
 CaseClauses Parser::ParseCaseBlock() {
   if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
     ThrowSyntaxError("expects a '{'");
@@ -1160,7 +1169,7 @@ CaseClauses Parser::ParseCaseBlock() {
 
   if (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE ||
       lexer_.GetToken().GetType() == TokenType::KEYWORD_DEFAULT) {
-    cases = ParseCaseBlock();
+    cases = ParseCaseClauses();
   }
 
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
@@ -1194,7 +1203,7 @@ CaseClauses Parser::ParseCaseClauses() {
 CaseClause* Parser::ParseCaseClause() {
   if (lexer_.GetToken().GetType() == TokenType::KEYWORD_CASE) {
     lexer_.NextToken();
-
+    
     auto cond = ParseExpression();
 
     if (lexer_.GetToken().GetType() != TokenType::COLON) {
@@ -1204,13 +1213,13 @@ CaseClause* Parser::ParseCaseClause() {
 
     Statements stmts;
 
-    while (lexer_.GetToken().GetType() != TokenType::KEYWORD_CASE ||
-           lexer_.GetToken().GetType() != TokenType::KEYWORD_DEFAULT ||
+    while (lexer_.GetToken().GetType() != TokenType::KEYWORD_CASE &&
+           lexer_.GetToken().GetType() != TokenType::KEYWORD_DEFAULT &&
            lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
       stmts.push_back(ParseStatement());
     }
 
-    return new CaseClause(false, cond, std::move(stmts));
+    return new CaseClause(cond, std::move(stmts));
   } else if (lexer_.GetToken().GetType() == TokenType::KEYWORD_DEFAULT) {
     lexer_.NextToken();
 
@@ -1221,15 +1230,24 @@ CaseClause* Parser::ParseCaseClause() {
 
     Statements stmts;
 
-    while (lexer_.GetToken().GetType() != TokenType::KEYWORD_CASE ||
-           lexer_.GetToken().GetType() != TokenType::KEYWORD_DEFAULT ||
+    while (lexer_.GetToken().GetType() != TokenType::KEYWORD_CASE &&
+           lexer_.GetToken().GetType() != TokenType::KEYWORD_DEFAULT &&
            lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
       stmts.push_back(ParseStatement());
     }
 
-    return new CaseClause(true, nullptr, std::move(stmts));
+    return new CaseClause(nullptr, std::move(stmts));
   }
   return nullptr;
+}
+
+// Parse Potential LabelledStatement
+Statement* Parser::ParsePotentialLabelledStatement() {
+  if (lexer_.NextRewindToken().GetType() == TokenType::COLON) {
+    return ParseLabelledStatement();
+  } else {
+    return ParseExpressionStatement();
+  }
 }
 
 void Parser::ThrowSyntaxError(std::string msg) {

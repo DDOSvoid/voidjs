@@ -65,6 +65,7 @@ class Parser {
   ast::CaseClauses ParseCaseBlock();
   ast::CaseClauses ParseCaseClauses();
   ast::CaseClause* ParseCaseClause();
+  ast::Statement* ParsePotentialLabelledStatement(); 
 
  private:
   void ThrowSyntaxError(std::string msg); 

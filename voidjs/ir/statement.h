@@ -228,6 +228,9 @@ class SwitchStatement : public Statement {
       discriminant_(discriminant), case_clauses_(case_clauses)
   {}
 
+  Expression* GetDiscriminant() const { return discriminant_; }
+  const CaseClauses& GetCaseClauses() const { return case_clauses_; }
+
  private:
   Expression* discriminant_;
   CaseClauses case_clauses_;
@@ -239,6 +242,9 @@ class LabelledStatement : public Statement {
     : Statement(AstNodeType::LABELLED_STATEMENT),
       label_(label), body_(body)
   {}
+
+  Expression* GetLabel() const { return label_; }
+  Statement* GetBody() const { return body_; }
   
  private:
   Expression* label_;
@@ -252,6 +258,8 @@ class ThrowStatement : public Statement {
       expression_(expression)
   {}
 
+  Expression* GetExpression() const { return expression_; }
+
  private:
   Expression* expression_;
 };
@@ -264,6 +272,11 @@ class TryStatement : public Statement {
       body_(body), catch_name_(catch_name),
       catch_block_(catch_block), finally_block_(finally_block)
   {}
+
+  Statement* GetBody() const { return body_; }
+  Expression* GetCatchName() const { return catch_name_; }
+  Statement* GetCatchBlock() const { return catch_block_; }
+  Statement* GetFinallyBlock() const { return finally_block_; }
   
  private:
   Statement* body_;
@@ -298,13 +311,17 @@ class VariableDeclaration : public Statement {
 
 class CaseClause : public Statement {
  public:
-  CaseClause(bool is_default, Expression* condition, Statements statements)
-    : Statement(AstNodeType::CASE_CLAUSE), is_default_(is_default),
+  CaseClause(Expression* condition, Statements statements)
+    : Statement(AstNodeType::CASE_CLAUSE), 
       condition_(condition), statements_(std::move(statements))
   {}
+
+  Expression* GetCondition() const { return condition_; }
+  Statements GetStatements() const { return statements_; }
+
+  bool IsDefault() const { return condition_ == nullptr; }
       
  private:
-  bool is_default_;
   Expression* condition_;
   Statements statements_;
 };

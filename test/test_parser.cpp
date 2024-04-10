@@ -659,7 +659,7 @@ for (i; i <= n; i++) {
     ASSERT_TRUE(for_stmt->GetUpdate()->IsPostfixExpression());
     ASSERT_TRUE(for_stmt->GetBody()->IsBlockStatement());
   }
-
+  
   // for ( ; Expression_opt ; Expression_opt ) Statement
   {
     std::u16string source = uR"(
@@ -774,4 +774,158 @@ TEST(parser, ParseReturnStatement) {
     ASSERT_TRUE(expr2->IsIdentifier());
     EXPECT_EQ(u"j", expr2->AsIdentifier()->GetName());
   }
+}
+
+TEST(parser, ParseWithStatement) {
+  Parser parser(u"with (tmpvar) ;");
+
+  auto stmt = parser.ParseWithStatement();
+  ASSERT_TRUE(stmt->IsWithStatement());
+
+  auto with_stmt = stmt->AsWithStatement();
+  ASSERT_TRUE(with_stmt->GetContext()->IsIdentifier());
+  ASSERT_TRUE(with_stmt->GetBody()->IsEmptyStatement());
+  EXPECT_EQ(u"tmpvar", with_stmt->GetContext()->AsIdentifier()->GetName());
+}
+
+TEST(parser, ParseSwitchStatement) {
+    std::u16string source(uR"(
+switch (TokenType) {
+    case IDENTIFIER:
+    case KEYWORD:
+        return ParseIdentifier();
+    case PUNCTUATOR: {
+        return ParsePunctuator();   
+    }
+    default: {
+        return Parse();
+    }
+}
+)");
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseSwitchStatement();
+    ASSERT_TRUE(stmt->IsSwitchStatment());
+
+    auto switch_stmt = stmt->AsSwitchStatement();
+    ASSERT_TRUE(switch_stmt->GetDiscriminant()->IsIdentifier());
+    ASSERT_TRUE(switch_stmt->GetCaseClauses().size() == 4);
+    EXPECT_EQ(u"TokenType", switch_stmt->GetDiscriminant()->AsIdentifier()->GetName());
+    
+    const auto& cases = switch_stmt->GetCaseClauses();
+
+    {
+      auto case1 = cases[0];
+      ASSERT_TRUE(case1->GetCondition()->IsIdentifier());
+      ASSERT_TRUE(case1->GetStatements().size() == 0);
+      EXPECT_EQ(u"IDENTIFIER", case1->GetCondition()->AsIdentifier()->GetName());
+    }
+
+    {
+      auto case2 = cases[1];
+      ASSERT_TRUE(case2->GetCondition()->IsIdentifier());
+      ASSERT_TRUE(case2->GetStatements().size() == 1);
+      EXPECT_EQ(u"KEYWORD", case2->GetCondition()->AsIdentifier()->GetName());
+
+      auto stmt = case2->GetStatements()[0];
+      ASSERT_TRUE(stmt->IsReturnStatement());
+    }
+
+    {
+      auto case3 = cases[2];
+      ASSERT_TRUE(case3->GetCondition()->IsIdentifier());
+      ASSERT_TRUE(case3->GetStatements().size() == 1);
+      EXPECT_EQ(u"PUNCTUATOR", case3->GetCondition()->AsIdentifier()->GetName());
+
+      auto stmt = case3->GetStatements()[0];
+      ASSERT_TRUE(stmt->IsBlockStatement());
+    }
+
+    {
+      auto case4 = cases[3];
+      ASSERT_TRUE(case4->IsDefault());
+      ASSERT_TRUE(case4->GetStatements().size() == 1);
+
+      auto stmt = case4->GetStatements()[0];
+      ASSERT_TRUE(stmt->IsBlockStatement());
+    }
+}
+
+TEST(parser, ParseLabelledStatement) {
+  Parser parser(u"label0 : for (; ;) ;");
+
+  auto stmt = parser.ParseLabelledStatement();
+  ASSERT_TRUE(stmt->IsLabelledStatement());
+
+  auto label_stmt = stmt->AsLabelledStatement();
+  ASSERT_TRUE(label_stmt->GetLabel()->IsIdentifier());
+  ASSERT_TRUE(label_stmt->GetBody()->IsForStatement());
+  EXPECT_EQ(u"label0", label_stmt->GetLabel()->AsIdentifier()->GetName());
+}
+
+TEST(parser, ParseThrowStatement) {
+  Parser parser(u"throw 'parse error';");
+
+  auto stmt = parser.ParseThrowStatement();
+  ASSERT_TRUE(stmt->IsThrowStatement());
+
+  auto throw_stmt = stmt->AsThrowStatement();
+  ASSERT_TRUE(throw_stmt->GetExpression()->IsStringLiteral());
+  EXPECT_EQ(u"parse error", throw_stmt->GetExpression()->AsStringLiteral()->GetString());
+}
+
+TEST(parser, ParseTryStatement) {
+  // try Block Catch
+  {
+    std::u16string source = uR"(
+try {
+  nonExistentFunction();
+} catch (error) {
+  console.error(error);
+  // Expected output: ReferenceError: nonExistentFunction is not defined
+  // (Note: the exact output may be browser-dependent)
+}
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseTryStatement();
+    ASSERT_TRUE(stmt->IsTryStatement());
+
+    auto try_stmt = stmt->AsTryStatement();
+    ASSERT_TRUE(try_stmt->GetBody()->IsBlockStatement());
+    ASSERT_TRUE(try_stmt->GetCatchName()->IsIdentifier());
+    ASSERT_TRUE(try_stmt->GetCatchBlock()->IsBlockStatement());
+    EXPECT_EQ(u"error", try_stmt->GetCatchName()->AsIdentifier()->GetName());
+  }
+
+
+  // try Block Finally
+  {
+    std::u16string source = uR"(
+try {
+  // tie up a resource
+  writeMyFile(theData);
+} finally {
+  closeMyFile(); // always close the resource
+}
+)";
+
+    Parser parser(source);
+
+    auto stmt = parser.ParseTryStatement();
+    ASSERT_TRUE(stmt->IsTryStatement());
+
+    auto try_stmt = stmt->AsTryStatement();
+    ASSERT_TRUE(try_stmt->GetBody()->IsBlockStatement());
+    ASSERT_TRUE(try_stmt->GetFinallyBlock()->IsBlockStatement());
+  }
+}
+
+TEST(parser, ParseDebuggerStatement) {
+  Parser parser(u"debugger ;");
+
+  auto stmt = parser.ParseDebuggerStatement();
+  ASSERT_TRUE(stmt->IsDebuggerStatement());
 }
