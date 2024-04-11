@@ -15,6 +15,7 @@ add_library(voidjs_obj OBJECT
   voidjs/lexer/lexer.cpp
   voidjs/ir/ast.cpp
   voidjs/parser/parser.cpp
+  voidjs/runtime/js_value.cpp
 )
 target_include_directories(voidjs_obj PUBLIC .)
 
