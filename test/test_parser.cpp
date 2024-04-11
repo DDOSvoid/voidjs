@@ -6,6 +6,7 @@
 #include "gtest/gtest.h"
 #include "voidjs/lexer/token.h"
 #include "voidjs/ir/ast.h"
+#include "voidjs/ir/program.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/ir/literal.h"
@@ -139,6 +140,7 @@ TEST(parser, ParsePrimaryExpression) {
     EXPECT_EQ(2, elems[1]->AsNumericLiteral()->GetNumber<std::int32_t>());
   }
 
+  // ArrayLiteral
   {
     Parser parser(u"['Hello', , 'World',]");
 
@@ -188,6 +190,20 @@ TEST(parser, ParseLeftHandSideExpression) {
     ASSERT_TRUE(mem_expr2->GetProperty()->IsIdentifier());
     EXPECT_EQ(u"DDOSvoid", mem_expr2->GetObject()->AsIdentifier()->GetName());
     EXPECT_EQ(u"ZigZagZing", mem_expr2->GetProperty()->AsIdentifier()->GetName());
+  }
+
+  // MemberExpression [ Expression ]
+  {
+    Parser parser(uR"(arr["test"])");
+
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsMemberExpression());
+    
+    auto mem_expr = expr->AsMemberExpression();
+    ASSERT_TRUE(mem_expr->GetObject()->IsIdentifier());
+    ASSERT_TRUE(mem_expr->GetProperty()->IsStringLiteral());
+    EXPECT_EQ(u"arr", mem_expr->GetObject()->AsIdentifier()->GetName());
+    EXPECT_EQ(u"test", mem_expr->GetProperty()->AsStringLiteral()->GetString());
   }
 
   // New MemberExpression
@@ -424,6 +440,118 @@ TEST(parser, ParseExpression) {
   EXPECT_EQ(1, binary_expr->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
 }
 
+TEST(parser, ParseFunctionExpression) {
+  {
+    std::u16string source = uR"(
+function add(x, y) {
+    return x + y;
+}
+)";
+
+    Parser parser(source);
+
+    auto expr = parser.ParseFunctionExpression();
+    ASSERT_TRUE(expr->IsFunctionExpression());
+    
+    auto func_expr = expr->AsFunctionExpression();
+    ASSERT_TRUE(func_expr->GetName()->IsIdentifier());
+    ASSERT_TRUE(func_expr->GetParameters().size() == 2);
+    ASSERT_TRUE(func_expr->GetStatements().size() == 1);
+    EXPECT_EQ(u"add", func_expr->GetName()->AsIdentifier()->GetName());
+  }
+
+  {
+    std::u16string source = uR"(
+function (x, y, z) {
+    var tmp = x + y * z;
+    return foo(tmp, x, y, z);
+}
+)";
+
+    Parser parser(source);
+
+    auto expr = parser.ParseFunctionExpression();
+    ASSERT_TRUE(expr->IsFunctionExpression());
+    
+    auto func_expr = expr->AsFunctionExpression();
+    ASSERT_TRUE(func_expr->GetName() == nullptr);
+    ASSERT_TRUE(func_expr->GetParameters().size() == 3);
+    ASSERT_TRUE(func_expr->GetStatements().size() == 2);
+  }
+}
+
+TEST(parser, ParseObjectLiteral) {
+  {
+    std::u16string source = u"{}";
+
+    Parser parser(source);
+
+    auto expr = parser.ParseObjectLiteral();
+    ASSERT_TRUE(expr->IsObjectLiteral());
+
+    auto obj = expr->AsObjectLiteral();
+    ASSERT_TRUE(obj->GetProperties().size() == 0);
+  }
+
+  {
+    std::u16string source = uR"(
+{
+    value0   : 0,
+    "value1" : 1,
+    2        : 2,
+    get value0() {
+        return this.value0;
+    },
+    set "value1"(value) {
+        this["value1"] = value;
+    },
+}
+)";
+
+    Parser parser(source);
+
+    auto expr = parser.ParseObjectLiteral();
+    ASSERT_TRUE(expr->IsObjectLiteral());
+
+    auto obj = expr->AsObjectLiteral();
+    ASSERT_TRUE(obj->GetProperties().size() == 5);
+
+    const auto& props = obj->GetProperties();
+
+    auto prop1=  props[0];
+    ASSERT_TRUE(prop1->GetKey()->IsIdentifier());
+    ASSERT_TRUE(prop1->GetValue()->IsNumericLiteral());
+    EXPECT_EQ(ast::PropertyType::INIT, prop1->GetType());
+    EXPECT_EQ(u"value0", prop1->GetKey()->AsIdentifier()->GetName());
+    EXPECT_EQ(0, prop1->GetValue()->AsNumericLiteral()->GetNumber<std::int32_t>());
+
+    auto prop2 = props[1];
+    ASSERT_TRUE(prop2->GetKey()->IsStringLiteral());
+    ASSERT_TRUE(prop2->GetValue()->IsNumericLiteral());
+    EXPECT_EQ(ast::PropertyType::INIT, prop2->GetType());
+    EXPECT_EQ(u"value1", prop2->GetKey()->AsStringLiteral()->GetString());
+    EXPECT_EQ(1, prop2->GetValue()->AsNumericLiteral()->GetNumber<std::int32_t>());
+
+    auto prop3 = props[2];
+    ASSERT_TRUE(prop3->GetKey()->IsNumericLiteral());
+    ASSERT_TRUE(prop3->GetValue()->IsNumericLiteral());
+    EXPECT_EQ(ast::PropertyType::INIT, prop3->GetType());
+    EXPECT_EQ(2, prop3->GetKey()->AsNumericLiteral()->GetNumber<std::int32_t>());
+    EXPECT_EQ(2, prop3->GetValue()->AsNumericLiteral()->GetNumber<std::int32_t>());
+
+    auto prop4 = props[3];
+    ASSERT_TRUE(prop4->GetKey()->IsIdentifier());
+    ASSERT_TRUE(prop4->GetValue()->IsFunctionExpression());
+    EXPECT_EQ(ast::PropertyType::GET, prop4->GetType());
+    EXPECT_EQ(u"value0", prop4->GetKey()->AsIdentifier()->GetName());
+
+    auto prop5 = props[4];
+    ASSERT_TRUE(prop5->GetKey()->IsStringLiteral());
+    ASSERT_TRUE(prop5->GetValue()->IsFunctionExpression());
+    EXPECT_EQ(ast::PropertyType::SET, prop5->GetType());
+    EXPECT_EQ(u"value1", prop5->GetKey()->AsStringLiteral()->GetString());
+  }
+}
 
 TEST(parser, ParseBlockStatement) {
   // {}
@@ -928,4 +1056,50 @@ TEST(parser, ParseDebuggerStatement) {
 
   auto stmt = parser.ParseDebuggerStatement();
   ASSERT_TRUE(stmt->IsDebuggerStatement());
+}
+
+
+TEST(parser, ParseProgram) {
+  std::u16string source = uR"(
+Array.prototype.bubbleSort = function () {
+    for (var i = 0; i < this.length - 1; i++) {
+        for (var j = 0; j < this.length - 1 - i; j++) {
+            if (this[j] > this[j + 1]) {
+                var tmp = this[j];
+                this[j] = this[j + 1];
+                this[j + 1] = tmp;
+            }
+            console.log(this[j], this[j + 1]);
+        }
+    }
+
+    console.log(this);
+};
+var arr = [5, 4, 3, 2, 1];
+arr.bubbleSort();
+)";
+
+  Parser parser(source);
+
+  auto program = parser.ParseProgram();
+  ASSERT_TRUE(program->GetStatements().size() == 3);
+
+  const auto& stmts = program->GetStatements();
+
+  {
+    auto stmt = stmts[0];
+    ASSERT_TRUE(stmt->IsExpressionStatement());
+
+    auto expr_stmt = stmt->AsExpressionStatement();
+    ASSERT_TRUE(expr_stmt->GetExpression()->IsAssignmentExpression());
+
+    auto assign_expr = expr_stmt->GetExpression()->AsAssignmentExpression();
+    ASSERT_TRUE(assign_expr->GetLeft()->IsMemberExpression());
+    ASSERT_TRUE(assign_expr->GetRight()->IsFunctionExpression());
+
+    auto func_expr = assign_expr->GetRight()->AsFunctionExpression();
+    ASSERT_TRUE(func_expr->GetName() == nullptr);
+    ASSERT_TRUE(func_expr->GetParameters().size() == 0);
+    ASSERT_TRUE(func_expr->GetStatements().size() == 2);
+  }
 }

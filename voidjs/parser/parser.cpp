@@ -26,16 +26,14 @@ using namespace ast;
 //   Statement
 //   FunctionDeclaration
 Program* Parser::ParseProgram() {
-  if (lexer_.GetToken().GetType() == TokenType::STRING &&
-      (lexer_.GetToken().GetString() == uR"('use strict')" ||
-       lexer_.GetToken().GetString() == uR"("use strict")")) {
-    // use strict
-  }
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::EOS) {
     try {
-      auto stmt = ParseStatement();
-      stmts.push_back(stmt);
+      if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
+        stmts.push_back(ParseFunctionDeclaraion());
+      } else {
+        stmts.push_back(ParseStatement());
+      }
     } catch(const utils::Error& e) {
       error_ = e;
       return nullptr;
@@ -54,6 +52,9 @@ Statement* Parser::ParseStatement() {
     }
     case TokenType::SEMICOLON: {
       return ParseEmptyStatement();
+    }
+    case TokenType::KEYWORD_IF: {
+      return ParseIfStatement();
     }
     case TokenType::KEYWORD_DO: {
       return ParseDoWhileStatement();
@@ -187,14 +188,14 @@ Statement* Parser::ParseIfStatement() {
   }
   lexer_.NextToken();
   
-  Expression* cond = ParseExpression();
+  auto cond = ParseExpression();
   
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_PAREN) {
     ThrowSyntaxError("expects a ')'");
   }
   lexer_.NextToken();
 
-  Statement* cons = ParseStatement();
+  auto cons = ParseStatement();
 
   Statement* alt = nullptr;
   if (lexer_.GetToken().GetType() == TokenType::KEYWORD_ELSE) {
@@ -716,6 +717,10 @@ Expression* Parser::ParsePrimaryExpression() {
       auto arr = ParseArrayLiteral();
       return arr; 
     }
+    case TokenType::LEFT_BRACE: {
+      auto obj = ParseObjectLiteral();
+      return obj;
+    }
     case TokenType::LEFT_PAREN: {
       lexer_.NextToken();
       auto expr = ParseExpression();
@@ -1183,24 +1188,24 @@ Expressions Parser::ParseArgumentList(TokenType end_token_type) {
 //    { PropertyNameAndValueList }
 //    { PropertyNameAndValueList , }
 Expression* Parser::ParseObjectLiteral() {
-  if (lexer_.GetToken().GetType() != TokenType::LEFT_BRACE) {
-    ThrowSyntaxError("expects a '{'");
-  }
+  // begin with {
   lexer_.NextToken();
 
   Properties props;
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     props = ParsePropertyNameAndValueList();
   }
-
-  if (lexer_.GetToken().GetType() == TokenType::COMMA) {
-    lexer_.NextToken();
-  }
+  
+  // Extra comma is consumed by ParsePropertyNameAndValueList()
+  // if (lexer_.GetToken().GetType() == TokenType::COMMA) {
+  //   lexer_.NextToken();
+  // }
 
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     ThrowSyntaxError("expects a '}'");
   }
-  return nullptr;
+
+  return new ObjectLiteral(std::move(props));
 }
 
 // Parse CaseBlock
@@ -1376,11 +1381,16 @@ Expressions Parser::ParseFormalParameterList() {
 //    PropertyNameAndValueList , PropertyAssignment
 Properties Parser::ParsePropertyNameAndValueList() {
   Properties props;
+
   props.push_back(ParsePropertyAssignment());
 
   while (lexer_.GetToken().GetType() == TokenType::COMMA) {
     lexer_.NextToken();
 
+    if (lexer_.GetToken().GetType() == TokenType::RIGHT_BRACE) {
+      break;
+    }
+    
     props.push_back(ParsePropertyAssignment());
   }
 
@@ -1393,14 +1403,14 @@ Properties Parser::ParsePropertyNameAndValueList() {
 //    get PropertyName ( ) { FunctionBody }
 //    set PropertyName ( PropertySetParameterList ) { FunctionBody }
 Property* Parser::ParsePropertyAssignment() {
-  if (lexer_.GetToken().GetType() == TokenType::STRING &&
+  if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
       lexer_.GetToken().GetString() == u"get") {
     auto type = PropertyType::GET;
     lexer_.NextToken();
 
     if (const auto& token = lexer_.GetToken();
         !token.IsIdentifierName()            &&
-        token.GetType() != TokenType::NUMBER ||
+        token.GetType() != TokenType::NUMBER &&
         token.GetType() != TokenType::STRING) {
       ThrowSyntaxError("invalid token");
     }
@@ -1438,7 +1448,7 @@ Property* Parser::ParsePropertyAssignment() {
     auto value = new FunctionExpression(nullptr, Expressions{}, std::move(stmts));
 
     return new Property(type, key, value);
-  } else if (lexer_.GetToken().GetType() == TokenType::STRING &&
+  } else if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
              lexer_.GetToken().GetString() == u"set") {
     auto type = PropertyType::SET;
     lexer_.NextToken();
@@ -1491,7 +1501,7 @@ Property* Parser::ParsePropertyAssignment() {
     return new Property(type, key, value);
   } else {
     auto type = PropertyType::INIT;
-    
+
     if (const auto& token = lexer_.GetToken();
         !token.IsIdentifierName()            &&
         token.GetType() != TokenType::NUMBER &&
@@ -1516,18 +1526,19 @@ Property* Parser::ParsePropertyAssignment() {
 //    StringLiteral
 //    NumericLiteral
 Expression* Parser::ParsePropertyName() {
+  Expression* key = nullptr;
   if (lexer_.GetToken().IsIdentifierName()) {
-    auto key = new Identifier(lexer_.GetToken().GetString());
+    key = new Identifier(lexer_.GetToken().GetString());
     lexer_.NextToken();
     
   } else if (lexer_.GetToken().GetType() == TokenType::NUMBER) {
-    auto key = new NumericLiteral(lexer_.GetToken().GetNumber());
+    key = new NumericLiteral(lexer_.GetToken().GetNumber());
     lexer_.NextToken();
   } else if (lexer_.GetToken().GetType() == TokenType::STRING) {
-    auto key = new StringLiteral(lexer_.GetToken().GetString());
+    key = new StringLiteral(lexer_.GetToken().GetString());
     lexer_.NextToken();
   }
-  return nullptr;
+  return key;
 }
 
 void Parser::ThrowSyntaxError(std::string msg) {

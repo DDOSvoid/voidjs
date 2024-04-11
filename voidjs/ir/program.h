@@ -11,6 +11,8 @@ class Program : public AstNode {
   explicit Program(Statements statements)
     : AstNode(AstNodeType::PROGRAM), statements_(std::move(statements))
   {}
+
+  const Statements& GetStatements() { return statements_; }
   
  private:
   Statements statements_;

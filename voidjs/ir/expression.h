@@ -183,6 +183,10 @@ class FunctionExpression : public Expression {
       name_(name), parameters_(parameters), statements_(statements)
   {}
 
+  Expression* GetName() const { return name_; }
+  const Expressions& GetParameters() const { return parameters_; }
+  const Statements& GetStatements() const { return statements_; }
+
  private:
   Expression* name_;
   Expressions parameters_;
@@ -243,7 +247,7 @@ class Property : public Expression {
 
   PropertyType GetType() const { return type_; }
   Expression* GetKey() const { return key_; }
-  Expression* Getvalue() const { return value_; }
+  Expression* GetValue() const { return value_; }
   
  private:
   PropertyType type_;
