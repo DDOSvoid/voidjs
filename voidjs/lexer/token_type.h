@@ -13,11 +13,11 @@ enum class TokenType {
   IDENTIFIER,
     
   // ReservedWord
-  KEYWORD,  // not used
+  KEYWORD,                            // not used
   FUTURE_RESERVED_WORD,
-  STRICT_MODE_FUTURE_RESERVED_WORD,
+  STRICT_MODE_FUTURE_RESERVED_WORD,   // not used
   NULL_LITERAL,
-  BOOLEAN_LITERAL,  // not used
+  BOOLEAN_LITERAL,                    // not used
   
   TRUE,
   FALSE,

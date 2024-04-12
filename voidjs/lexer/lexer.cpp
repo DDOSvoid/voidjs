@@ -828,11 +828,13 @@ void Lexer::ScanIdentifier() {
                        kFutureReservedWords.end(), ident_name) != kFutureReservedWords.end()) {
     token_.SetType(TokenType::FUTURE_RESERVED_WORD);
     token_.SetString(std::move(ident_name));
-  } else if (std::find(kStrictModeFutureReservedWords.begin(),
-                       kStrictModeFutureReservedWords.end(), ident_name) != kStrictModeFutureReservedWords.end()) {
-    token_.SetType(TokenType::STRICT_MODE_FUTURE_RESERVED_WORD);
-    token_.SetString(std::move(ident_name));
-  } else {
+  }
+  // else if (std::find(kStrictModeFutureReservedWords.begin(),
+  //                    kStrictModeFutureReservedWords.end(), ident_name) != kStrictModeFutureReservedWords.end()) {
+  //   token_.SetType(TokenType::STRICT_MODE_FUTURE_RESERVED_WORD);
+  //   token_.SetString(std::move(ident_name));
+  // }
+  else {
     token_.SetType(TokenType::IDENTIFIER);
     token_.SetString(std::move(ident_name));
   }
