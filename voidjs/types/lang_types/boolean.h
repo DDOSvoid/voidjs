@@ -6,7 +6,15 @@
 namespace voidjs {
 namespace types {
 
-class Boolean: public JsValue {
+class Boolean: public JSValue {
+ public:
+  Boolean()
+    : JSValue()
+  {}
+
+  explicit Boolean(bool boolean)
+    : JSValue(boolean)
+  {}
 };
 
 }  // namespace types

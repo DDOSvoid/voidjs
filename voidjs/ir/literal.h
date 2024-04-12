@@ -4,6 +4,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "voidjs/utils/helper.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
 
@@ -40,6 +41,8 @@ class NumericLiteral : public Expression {
   template <typename T, typename = std::is_arithmetic<T>>
   T GetNumber() const { return static_cast<T>(number_); }
 
+  bool IsInteger() const { return utils::IsInteger(number_); }
+
  private:
   double number_; 
 };
@@ -51,7 +54,7 @@ class StringLiteral : public Expression {
       string_(std::move(str))
   {}
 
-  std::u16string_view GetString() const { return string_; }
+  std::u16string GetString() const { return string_; }
 
  private:
   std::u16string string_;

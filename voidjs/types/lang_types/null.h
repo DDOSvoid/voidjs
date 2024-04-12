@@ -6,7 +6,7 @@
 namespace voidjs {
 namespace types {
 
-class Null : public JsValue {
+class Null : public JSValue {
 };
 
 }  // namespace types

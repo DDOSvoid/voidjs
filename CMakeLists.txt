@@ -16,6 +16,7 @@ add_library(voidjs_obj OBJECT
   voidjs/ir/ast.cpp
   voidjs/parser/parser.cpp
   voidjs/types/js_value.cpp
+  voidjs/interpreter/interpreter.cpp
 )
 target_include_directories(voidjs_obj PUBLIC .)
 

@@ -6,7 +6,19 @@
 namespace voidjs {
 namespace types {
 
-class Number : public JsValue {
+class Number : public JSValue {
+ public:
+  Number()
+    : JSValue()
+  {}
+
+  explicit Number(std::int32_t number)
+    : JSValue(number)
+  {}
+
+  explicit Number(double number)
+    : JSValue(number)
+  {}
 };
 
 }  // namespace types
