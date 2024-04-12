@@ -38,7 +38,7 @@ class NumericLiteral : public Expression {
       number_(number)
   {}
 
-  template <typename T, typename = std::is_arithmetic<T>>
+  template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
   T GetNumber() const { return static_cast<T>(number_); }
 
   bool IsInteger() const { return utils::IsInteger(number_); }
