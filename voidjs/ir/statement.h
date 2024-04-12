@@ -328,15 +328,24 @@ class CaseClause : public Statement {
 
 class FunctionDeclaration : public Statement {
  public:
-  FunctionDeclaration(Expression* name, Expressions parameters, Statements statements)
+  FunctionDeclaration(Expression* name, Expressions parameters,
+                      Statements statements, bool is_strict)
     : Statement(AstNodeType::FUNCTION_DECLARATION),
-      name_(name), parameters_(parameters), statements_(std::move(statements))
+      name_(name), parameters_(parameters),
+      statements_(std::move(statements)), is_strict_(is_strict)
   {}
+
+  Expression* GetName() const { return name_; }
+  const Expressions& GetParameters() const { return parameters_; }
+  const Statements& GetStatements() const { return statements_; }
+
+  bool IsStrict() const { return is_strict_; }
 
  private:
   Expression* name_;
   Expressions parameters_;
   Statements statements_;
+  bool is_strict_;
 };
 
 }  // namespace voidjs

@@ -26,6 +26,18 @@ using namespace ast;
 //   Statement
 //   FunctionDeclaration
 Program* Parser::ParseProgram() {
+  bool is_strict = false;
+  if (lexer_.GetToken().GetType() == TokenType::STRING &&
+      lexer_.GetToken().GetString() == u"use strict") {
+    is_strict = true;
+    lexer_.NextToken();
+    
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      ThrowSyntaxError("expects a ';'");
+    }
+    lexer_.NextToken();
+  }
+  
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::EOS) {
     try {
@@ -39,7 +51,7 @@ Program* Parser::ParseProgram() {
       return nullptr;
     }
   }
-  return new Program(std::move(stmts)); 
+  return new Program(std::move(stmts), is_strict); 
 }
 
 Statement* Parser::ParseStatement() {
@@ -1338,6 +1350,18 @@ Statement* Parser::ParseFunctionDeclaraion() {
   }
   lexer_.NextToken();
 
+  bool is_strict = false;
+  if (lexer_.GetToken().GetType() == TokenType::STRING &&
+      lexer_.GetToken().GetString() == u"use strict") {
+    is_strict = true;
+    lexer_.NextToken();
+    
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      ThrowSyntaxError("expects a ';'");
+    }
+    lexer_.NextToken();
+  }
+
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
@@ -1352,7 +1376,7 @@ Statement* Parser::ParseFunctionDeclaraion() {
   }
   lexer_.NextToken();
 
-  return new FunctionDeclaration(ident, std::move(params), std::move(stmts));
+  return new FunctionDeclaration(ident, std::move(params), std::move(stmts), is_strict);
 }
 
 // Parse FormalParameterList

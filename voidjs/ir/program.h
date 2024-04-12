@@ -8,14 +8,18 @@ namespace ast {
 
 class Program : public AstNode {
  public:
-  explicit Program(Statements statements)
-    : AstNode(AstNodeType::PROGRAM), statements_(std::move(statements))
+  explicit Program(Statements statements, bool is_strict)
+    : AstNode(AstNodeType::PROGRAM),
+      statements_(std::move(statements)), is_strict_(is_strict)
   {}
 
-  const Statements& GetStatements() { return statements_; }
+  const Statements& GetStatements() const { return statements_; }
+  
+  bool IsStrict() const { return is_strict_; }
   
  private:
   Statements statements_;
+  bool is_strict_;
 };
 
 }  // namespace ast

@@ -1,4 +1,4 @@
-#include "voidjs/runtime/js_value.h"
+#include "voidjs/types/js_value.h"
 
 namespace voidjs {
 

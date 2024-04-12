@@ -1061,6 +1061,7 @@ TEST(parser, ParseDebuggerStatement) {
 
 TEST(parser, ParseProgram) {
   std::u16string source = uR"(
+"use strict";
 Array.prototype.bubbleSort = function () {
     for (var i = 0; i < this.length - 1; i++) {
         for (var j = 0; j < this.length - 1 - i; j++) {
@@ -1083,6 +1084,7 @@ arr.bubbleSort();
 
   auto program = parser.ParseProgram();
   ASSERT_TRUE(program->GetStatements().size() == 3);
+  ASSERT_TRUE(program->IsStrict());
 
   const auto& stmts = program->GetStatements();
 
