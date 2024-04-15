@@ -37,6 +37,7 @@ add_executable(
   unit_test
   test/test_lexer.cpp
   test/test_parser.cpp
+  test/test_interpreter.cpp
 )
 target_link_libraries(
   unit_test

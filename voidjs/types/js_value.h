@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+#include "voidjs/utils/helper.h"
+
 namespace voidjs {
 
 // 64 bit nan-boxing
@@ -50,23 +52,23 @@ class Number;
 
 class JSValue {
  public:
-  constexpr JSValue()
+  JSValue()
     : value_(jsvalue::VALUE_HOLE)
   {}
 
-  constexpr JSValue(JSValueType value)
+  explicit JSValue(JSValueType value)
     : value_(value)
   {}
 
-  constexpr JSValue(bool value)
+  explicit JSValue(bool value)
     : value_(static_cast<JSValueType>(value) | jsvalue::TAG_BOOLEAN)
   {}
     
-  constexpr JSValue(std::int32_t value)
-    : value_(static_cast<std::uint64_t>(value) | jsvalue::TAG_INT)
+  explicit JSValue(std::int32_t value)
+    : value_(static_cast<JSValueType>(value) | jsvalue::TAG_INT)
   {}
 
-  constexpr JSValue(std::uint32_t value) {
+  explicit JSValue(std::uint32_t value) {
     if (static_cast<std::int32_t>(value) < 0) {
       value_ = JSValue(static_cast<double>(value)).value_;
     } else {
@@ -74,18 +76,18 @@ class JSValue {
     }
   }
 
-  constexpr JSValue(double value)
-    : value_(static_cast<JSValueType>(value) + jsvalue::DOUBLE_OFFSET)
+  JSValue(double value)
+    : value_(utils::BitCast<JSValueType>(value) + jsvalue::DOUBLE_OFFSET)
   {}
 
   bool operator==(const JSValue& other) const { return value_ == other.value_; }
   bool operator!=(const JSValue& other) const { return value_ != other.value_; }
 
-  static constexpr JSValue False() { return JSValue(jsvalue::VALUE_FALSE); }
-  static constexpr JSValue True() { return JSValue(jsvalue::VALUE_TRUE); }
-  static constexpr JSValue Undefined() { return JSValue(jsvalue::VALUE_UNDEFINED); }
-  static constexpr JSValue Null() { return JSValue(jsvalue::VALUE_NULL); }
-  static constexpr JSValue Hole() { return JSValue(jsvalue::VALUE_HOLE); }
+  static JSValue False() { return JSValue(jsvalue::VALUE_FALSE); }
+  static JSValue True() { return JSValue(jsvalue::VALUE_TRUE); }
+  static JSValue Undefined() { return JSValue(jsvalue::VALUE_UNDEFINED); }
+  static JSValue Null() { return JSValue(jsvalue::VALUE_NULL); }
+  static JSValue Hole() { return JSValue(jsvalue::VALUE_HOLE); }
 
   bool IsFalse() const { return value_ == jsvalue::VALUE_FALSE; }
   bool IsTrue() const { return value_ == jsvalue::VALUE_TRUE; }
@@ -96,6 +98,11 @@ class JSValue {
   bool IsObject() const { return (value_ & jsvalue::TAG_OBJECT_MASK) == jsvalue::TAG_OBJECT; }
   bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
   bool IsDouble() const { return !IsObject() && !IsInt(); }
+
+  std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
+  double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }
+  
+  JSValueType GetRawData() const { return value_; }
 
  protected:
   JSValueType value_ {};

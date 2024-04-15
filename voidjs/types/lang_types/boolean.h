@@ -15,6 +15,8 @@ class Boolean: public JSValue {
   explicit Boolean(bool boolean)
     : JSValue(boolean)
   {}
+
+  bool GetValue() const { return IsTrue(); }
 };
 
 }  // namespace types

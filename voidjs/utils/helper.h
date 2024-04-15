@@ -7,6 +7,7 @@
 #include <codecvt>
 #include <locale>
 #include <cmath>
+#include <type_traits>
 #include <vector>
 
 #include "voidjs/lexer/character.h"
@@ -35,6 +36,19 @@ inline bool IsInteger(double number) {
   }
 }
 
+template <typename T, typename U>
+union Data {
+  T t;
+  U u;
+};
+
+template <typename Des, typename Src>
+inline Des BitCast(const Src& src) {
+  static_assert(sizeof(Src) == sizeof(Des));
+  Data<Src, Des> data;
+  data.t = src;
+  return data.u;
+}
 
 }  // namespace utils
 }  // namespace voidjs

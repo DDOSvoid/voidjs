@@ -17,19 +17,12 @@ namespace voidjs {
 
 class Interpreter {
  public:
-  explicit Interpreter(std::u16string source)
-    : parser_(std::move(source))
-  {}
-
   void Execute();
 
   types::Null* EvalNullLiteral(ast::AstNode*);
   types::Boolean* EvalBooleanLiteral(ast::AstNode*);
   types::Number* EvalNumericLiteral(ast::AstNode*);
   types::String* EvalStringLiteral(ast::AstNode*);
-
- private:
-  Parser parser_;
 };
 
 }  // namespace voidjs

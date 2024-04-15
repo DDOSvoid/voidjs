@@ -106,7 +106,7 @@ A.B.C
     {TokenType::KEYWORD_VAR},
     {TokenType::ASSIGN},
     {TokenType::FUTURE_RESERVED_WORD, u"enum"},
-    {TokenType::STRICT_MODE_FUTURE_RESERVED_WORD, u"private"},
+    {TokenType::IDENTIFIER, u"private"},
     {TokenType::IDENTIFIER, u"test"},
     {TokenType::IDENTIFIER, u"A"},
     {TokenType::DOT},
