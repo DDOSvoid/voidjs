@@ -1,7 +1,8 @@
-#ifndef VOIDJS_RUNTIME_JS_VALUE_H
-#define VOIDJS_RUNTIME_JS_VALUE_H
+#ifndef VOIDJS_TYPES_JS_VALUE_H
+#define VOIDJS_TYPES_JS_VALUE_H
 
 #include <cstdint>
+#include <iostream>
 
 #include "voidjs/utils/helper.h"
 
@@ -45,8 +46,9 @@ namespace types {
 class Undefined;
 class Null;
 class Boolean;
-class String;
 class Number;
+class String;
+class Object;
 
 }  // namespace types
 
@@ -55,9 +57,13 @@ class JSValue {
   JSValue()
     : value_(jsvalue::VALUE_HOLE)
   {}
-
+  
   explicit JSValue(JSValueType value)
     : value_(value)
+  {}
+
+  explicit JSValue(types::Object* value)
+    : value_(reinterpret_cast<std::uintptr_t>(value))
   {}
 
   explicit JSValue(bool value)
@@ -76,7 +82,7 @@ class JSValue {
     }
   }
 
-  JSValue(double value)
+  explicit JSValue(double value)
     : value_(utils::BitCast<JSValueType>(value) + jsvalue::DOUBLE_OFFSET)
   {}
 
@@ -94,20 +100,26 @@ class JSValue {
   bool IsUndefined() const { return value_ == jsvalue::VALUE_UNDEFINED; }
   bool IsNull() const { return value_ == jsvalue::VALUE_NULL; }
   bool IsHole() const { return value_ == jsvalue::VALUE_HOLE; }
+  bool IsBoolean() const { return value_ == jsvalue::VALUE_FALSE || value_ == jsvalue::VALUE_TRUE; }
 
   bool IsObject() const { return (value_ & jsvalue::TAG_OBJECT_MASK) == jsvalue::TAG_OBJECT; }
   bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
   bool IsDouble() const { return !IsObject() && !IsInt(); }
+  bool IsNumber() const { return IsInt() || IsDouble(); }
+
+  bool IsString() const;
 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
   double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }
-  
+
+  types::Object* GetObject() const { return reinterpret_cast<types::Object*>(value_); }
+
   JSValueType GetRawData() const { return value_; }
 
- protected:
+ private:
   JSValueType value_ {};
 };
 
 }  // namespace voidjs
 
-#endif  // VOIDJS_RUNTIME_JS_VALUE_H
+#endif  // VOIDJS_TYPES_JS_VALUE_H

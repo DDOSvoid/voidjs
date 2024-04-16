@@ -23,7 +23,7 @@ TEST(Intepreter, EvalNumericLiteral) {
     ASSERT_TRUE(ast_node->IsNumericLiteral());
 
     auto num = interpreter.EvalNumericLiteral(ast_node);
-    EXPECT_EQ(0.07, num->GetValue<double>());
+    EXPECT_EQ(0.07, num.GetDouble());
   }
 
   {
@@ -35,12 +35,11 @@ TEST(Intepreter, EvalNumericLiteral) {
     ASSERT_TRUE(ast_node->IsNumericLiteral());
 
     auto num = interpreter.EvalNumericLiteral(ast_node);
-    EXPECT_EQ(42, num->GetValue<std::int32_t>());
+    EXPECT_EQ(42, num.GetInt());
   }
 }
 
 TEST(Intepreter, EvalStringLiteral) {
-
   Parser parser(uR"("Hello, World!")");
   
   Interpreter interpreter;
@@ -50,5 +49,5 @@ TEST(Intepreter, EvalStringLiteral) {
 
   auto str = interpreter.EvalStringLiteral(ast_node);
 
-  EXPECT_EQ(u"Hello, World!", str->GetValue());
+  EXPECT_EQ(u"Hello, World!", str.GetObject()->AsString()->GetString());
 }

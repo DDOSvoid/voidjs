@@ -12,6 +12,7 @@
 #include "voidjs/types/lang_types/boolean.h"
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/spec_types/reference.h"
 
 namespace voidjs {
 
@@ -19,10 +20,18 @@ class Interpreter {
  public:
   void Execute();
 
-  types::Null* EvalNullLiteral(ast::AstNode*);
-  types::Boolean* EvalBooleanLiteral(ast::AstNode*);
-  types::Number* EvalNumericLiteral(ast::AstNode*);
-  types::String* EvalStringLiteral(ast::AstNode*);
+  JSValue EvalExpression(ast::AstNode* ast_node);
+  JSValue EvalPrimaryExpression(ast::AstNode* ast_node);
+  JSValue EvalLeftHandSideExpression(ast::AstNode* ast_node);
+
+  JSValue EvalNullLiteral(ast::AstNode* ast_node);
+  JSValue EvalBooleanLiteral(ast::AstNode* ast_node);
+  JSValue EvalNumericLiteral(ast::AstNode* ast_node);
+  JSValue EvalStringLiteral(ast::AstNode* ast_node);
+
+ private:
+  template <typename T>
+  JSValue GetValue(T V);
 };
 
 }  // namespace voidjs

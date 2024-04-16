@@ -6,28 +6,42 @@
 #include <string>
 
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/js_type.h"
+#include "voidjs/types/lang_types/object.h"
 
 namespace voidjs {
 namespace types {
 
-class String : public JSValue {
+class String : public Object {
  public:
-  explicit String(const std::u16string& str) {
-    auto ptr = new std::uint8_t[sizeof(std::size_t) + sizeof(char16_t) * str.size()];
-    
-    std::copy(str.begin(), str.end(), reinterpret_cast<char16_t*>(ptr + sizeof(std::size_t)));
-    
-    *reinterpret_cast<std::size_t*>(ptr) = str.size();
-      
-    value_ = reinterpret_cast<JSValueType>(ptr);
+  // std::size_t length_;
+  static constexpr std::size_t LENGTH_OFFSET = Object::SIZE;
+  std::size_t GetLength() const { return *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET); }
+  void SetLength(std::size_t length) { *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET) = length; }
+
+  // char16_t[] data_;
+  static constexpr std::size_t DATA_OFFSET = LENGTH_OFFSET + sizeof(std::size_t);
+  char16_t* GetData() const { return utils::BitGet<char16_t*>(this, DATA_OFFSET); }
+  char16_t GetByIdx(std::size_t idx) const { return *(GetData() + idx); } 
+  void SetByIndex(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
+
+  // used for print 
+  std::u16string GetString() const {
+    auto len = GetLength();
+    auto data = GetData();
+    return std::u16string(data, len);
+  }
+  
+  static String* New(const std::u16string& source) {
+    auto len = source.size();
+    auto str = reinterpret_cast<String*>(
+      Object::New(sizeof(std::size_t) + len * sizeof(char16_t),
+                  JSType::STRING));
+    str->SetLength(len);
+    std::copy(source.begin(), source.end(), str->GetData());
+    return str;
   }
 
-  std::u16string GetValue() const {
-    auto ptr = reinterpret_cast<std::uint8_t*>(value_);
-    auto sz = *reinterpret_cast<std::size_t*>(ptr);
-    auto str = reinterpret_cast<char16_t*>(ptr + sizeof(std::size_t));
-    return std::u16string(str, sz);
-  }
 };
 
 }  // namespace types

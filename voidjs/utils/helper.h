@@ -42,12 +42,17 @@ union Data {
   U u;
 };
 
-template <typename Des, typename Src>
-inline Des BitCast(const Src& src) {
-  static_assert(sizeof(Src) == sizeof(Des));
-  Data<Src, Des> data;
+template <typename To, typename From>
+inline To BitCast(const From& src) {
+  static_assert(sizeof(To) == sizeof(From));
+  Data<From, To> data;
   data.t = src;
   return data.u;
+}
+
+template <typename T>
+inline T BitGet(const void* start, std::size_t offset) {
+  return reinterpret_cast<T>(reinterpret_cast<std::uintptr_t>(start) + offset);
 }
 
 }  // namespace utils
