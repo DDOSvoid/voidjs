@@ -13,16 +13,18 @@ using JSValueType = std::uint64_t;
 
 namespace jsvalue {
 
-//    False:       [56 bits 0] | 0000 0110
-//    True:        [56 bits 0] | 0000 0111
-//    Undefined:   [56 bits 0] | 0000 0010
-//    Null:        [56 bits 0] | 0000 0011
-//    Hole:        [56 bits 0] | 0000 0101
+// False:       [56 bits 0] | 0000 0110
+// True:        [56 bits 0] | 0000 0111
+// Undefined:   [56 bits 0] | 0000 0010
+// Null:        [56 bits 0] | 0000 0011
+// Hole:        [56 bits 0] | 0000 0101
+// Empty:       [56 bits 0] | 0000 0000
 inline constexpr JSValueType VALUE_FALSE       = 0x0000'0000'0000'0006;
 inline constexpr JSValueType VALUE_TRUE        = 0x0000'0000'0000'0007;
 inline constexpr JSValueType VALUE_UNDEFINED   = 0x0000'0000'0000'0002;
 inline constexpr JSValueType VALUE_NULL        = 0x0000'0000'0000'0003;
 inline constexpr JSValueType VALUE_HOLE        = 0x0000'0000'0000'0005;
+inline constexpr JSValueType VALUE_EMPTY       = 0x0000'0000'0000'0000;
 
 // [0x0000] [48 bit direct pointer]
 inline constexpr JSValueType TAG_OBJECT_MASK   = 0xFFFF'000000000000;
@@ -55,7 +57,7 @@ class Object;
 class JSValue {
  public:
   JSValue()
-    : value_(jsvalue::VALUE_HOLE)
+    : value_(jsvalue::VALUE_EMPTY)
   {}
   
   explicit JSValue(JSValueType value)
@@ -108,6 +110,8 @@ class JSValue {
   bool IsNumber() const { return IsInt() || IsDouble(); }
 
   bool IsString() const;
+
+  bool IsEmpty() const { return value_ == jsvalue::VALUE_EMPTY; }
 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
   double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }

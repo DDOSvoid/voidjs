@@ -1,17 +1,152 @@
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/ir/ast.h"
+#include "voidjs/lexer/token_type.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/spec_types/completion.h"
 
 namespace voidjs {
 
 using namespace ast;
 using namespace types;
 
-JSValue Interpreter::EvalExpression(ast::AstNode* ast_node) {
-  return JSValue();
+void Interpreter::Execute() {
+  
 }
 
-JSValue Interpreter::EvalPrimaryExpression(ast::AstNode* ast_node) {
+// Eval Program
+// Defined in ECMAScript 5.1 Chapter 14
+Completion Interpreter::EvalProgram(ast::AstNode *ast_node) {
+  auto prog = ast_node->AsProgram();
+
+  // 1. strict mode
+  bool is_strict = prog->IsStrict();
+
+  // 2. If SourceElements is not present, return (normal, empty, empty).
+  if (prog->GetStatements().empty()) {
+    return Completion(CompletionType::NORMAL);
+  }
+
+  // 3. Let progCxt be a new execution context for global code as described in 10.4.1.
+
+  // 4. Let result be the result of evaluating SourceElements.
+  Completion result;
+  {
+    // 1. Let headResult be the result of evaluating SourceElements.
+    const auto& stmts = prog->GetStatements();
+    auto stmt = stmts.front();
+    Completion head_result;
+    if (stmt->IsFunctionDeclaration()) {
+      // head_result = EvalFunctionDeclaration(stmt);
+    } else {
+      head_result = EvalStatement(stmt);
+    }
+    
+    // 2. If headResult is an abrupt completion, return headResult
+    // 3. Let tailResult be result of evaluating SourceElement.
+    // 4. If tailResult.value is empty, let V = headResult.value, otherwise let V = tailResult.value.
+    Completion tail_result;
+    for (std::size_t i = 1; i < stmts.size(); ++i) {
+      if (head_result.IsAbruptCompletion()) {
+        break;
+      }
+      if (auto stmt = stmts[i]; stmt->IsFunctionDeclaration()) {
+        // tail_result = EvalFunctionDeclaration(stmt);
+      } else {
+        tail_result = EvalStatement(stmt);
+      }
+      head_result = Completion(
+        tail_result.GetType(),
+        tail_result.GetValue().IsEmpty() ? head_result.GetValue() : tail_result.GetValue(),
+        tail_result.GetTarget());
+    }
+
+    // 5. Return (tailResult.type, V, tailResult.target)
+    result = head_result;
+  }
+
+  // 5. Exit the execution context progCxt.
+
+  // 6. Return result
+  return result;
+}
+
+// Eval Statement
+// Defined in ECMAScript 5.1 Chapter 12
+Completion Interpreter::EvalStatement(ast::AstNode* ast_node) {
+  switch (ast_node->GetType()) {
+    case ast::AstNodeType::EXPRESSION_STATEMENT: {
+      return EvalExpressionStatement(ast_node);
+    }
+    default: {
+      return Completion();
+    }
+  }
+}
+
+// Eval ExpressionStatement
+// Defined in ECMAScript 5.1 Chapter 12.4
+Completion Interpreter::EvalExpressionStatement(AstNode* ast_node) {
+  // 1. Let exprRef be the result of evaluating Expression.
+  auto expr_ref = EvalExpression(ast_node);
+
+  // 2. Return (normal, GetValue(exprRef), empty).
+  return Completion(CompletionType::NORMAL, GetValue(expr_ref));
+}
+
+// Eval Expression
+// Defined in ECMAScript 5.1 Chapter 11.14
+JSValue Interpreter::EvalExpression(AstNode* ast_node) {
+  if (ast_node->IsSequenceExpression()) {
+    // 1. Let lref be the result of evaluating Expression.
+    // 2. Call GetValue(lref).
+    // 3. Let rref be the result of evaluating AssignmentExpression.
+    // 4. Return GetValue(rref).
+    const auto& exprs = ast_node->AsSequenceExpression()->GetExpressions();
+    JSValue value;
+    for (auto expr : exprs) {
+      value = GetValue(EvalExpression(expr));
+    }
+    return value;
+  } else {
+    return EvalAssignmentExpression(ast_node);
+  }
+}
+
+// Eval AssignmentExpression
+// Defined in ECMAScript 5.1 Chapter 11.13
+JSValue Interpreter::EvalAssignmentExpression(AstNode *ast_node) {
+  if (ast_node->IsAssignmentExpression()) {
+    auto assign_expr = ast_node->AsAssignmentExpression();
+
+    if (assign_expr->GetOperator() == TokenType::ASSIGN) {
+      // 1. Let lref be the result of evaluating LeftHandSideExpression.
+      // auto lref = EvalLeftHandSideExpression(assign_expr->GetLeft());
+
+      // 2. Let rref be the result of evaluating AssignmentExpression.
+      // auto rref = EvalAssignmentExpression(assign_expr->GetRight());
+
+      // 3. Let rval be GetValue(rref).
+      // auto rval = GetValue(rref);
+
+      // 4. Throw a SyntaxError exception if the following conditions are all true:
+      //      Type(lref) is Reference is true
+      //      IsStrictReference(lref) is true
+      //      Type(GetBase(lref)) is Environment Record
+      //      GetReferencedName(lref) is either "eval" or "arguments"
+
+      // 5. Call PutValue(lref, rval).
+
+      // 6. Return rval.
+      // return rval;
+    } else {
+      
+    }
+  } else {
+    // return EvalConditionalExpression(ast_node);
+  }
+}
+
+JSValue Interpreter::EvalPrimaryExpression(AstNode* ast_node) {
   switch (ast_node->GetType()) {
     case ast::AstNodeType::THIS: {
       return JSValue();
@@ -65,28 +200,39 @@ JSValue Interpreter::EvalStringLiteral(AstNode* ast_node) {
   return JSValue(str);
 }
 
-// // GetValue(V)
-// // Defined in ECMAScript 5.1 Chapter 8.7.1
-// template <typename T>
-// JSValue* Interpreter::GetValue(T* V) {
-//   static_assert(std::is_same_v<JSValue, T> ||
-//                 std::is_same_v<Reference, T>);
+// GetValue(V)
+// Defined in ECMAScript 5.1 Chapter 8.7.1
+JSValue Interpreter::GetValue(JSValue V) {
+  // 1. If Type(V) is not Reference, return V.
+  return V; 
+}
 
-//   // 1. If Type(V) is not Reference, return V.
-//   if constexpr (std::is_same_v<JSValue, T>) {
-//     return V;
-//   }
+JSValue Interpreter::GetValue(Reference V) {
+  // 2. Let base be the result of calling GetBase(V).
+  auto base = V.GetBase();
 
-//   // 2. Let base be the result of calling GetBase(V).
-//   auto base = V->GetBase();
-
-//   // 3. If IsUnresolvableReference(V), throw a ReferenceError exception.
-//   if (V->IsUnresolvableReference()) {
+  // 3. If IsUnresolvableReference(V), throw a ReferenceError exception.
+  if (V.IsUnresolvableReference()) {
     
-//   }
+  }
 
-// }
+  // 4. If IsPropertyReference(V), then
+  if (V.IsPropertyReference()) {
+    // a. If HasPrimitiveBase(V) is false,
+    //    then let get be the [[Get]] internal method of base,
+    //    otherwise let get be the special [[Get]] internal method defined below.
 
+    // b. Return the result of calling the get internal method
+    //    using base as its this value, and passing GetReferencedName(V) for the argument.
+
+  }
+  // 5. Else, base must be an environment record.
+  else { 
+    // a. Return the result of calling the GetBindingValue concrete method of
+    //    base passing GetReferencedName(V) and IsStrictReference(V) as arguments.
+    
+  }
+}
 
 
 }  // namespace voidjs

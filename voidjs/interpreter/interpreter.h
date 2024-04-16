@@ -8,11 +8,9 @@
 #include "voidjs/ir/literal.h"
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/js_value.h"
-#include "voidjs/types/lang_types/null.h"
-#include "voidjs/types/lang_types/boolean.h"
-#include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/reference.h"
+#include "voidjs/types/spec_types/completion.h"
 
 namespace voidjs {
 
@@ -20,7 +18,14 @@ class Interpreter {
  public:
   void Execute();
 
+  types::Completion EvalProgram(ast::AstNode* ast_node);
+
+  types::Completion EvalStatement(ast::AstNode* ast_node);
+  types::Completion EvalExpressionStatement(ast::AstNode* ast_node); 
+
   JSValue EvalExpression(ast::AstNode* ast_node);
+  JSValue EvalAssignmentExpression(ast::AstNode* ast_node);
+  JSValue EvalConditionalExpression(ast::AstNode* ast_node);
   JSValue EvalPrimaryExpression(ast::AstNode* ast_node);
   JSValue EvalLeftHandSideExpression(ast::AstNode* ast_node);
 
@@ -29,9 +34,14 @@ class Interpreter {
   JSValue EvalNumericLiteral(ast::AstNode* ast_node);
   JSValue EvalStringLiteral(ast::AstNode* ast_node);
 
+  types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node); 
+
  private:
-  template <typename T>
-  JSValue GetValue(T V);
+  JSValue GetValue(JSValue V);
+  JSValue GetValue(types::Reference V);
+
+  void PutValue(JSValue V);
+  JSValue PutValue(types::Reference V);
 };
 
 }  // namespace voidjs

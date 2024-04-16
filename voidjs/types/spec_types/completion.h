@@ -6,7 +6,7 @@
 namespace voidjs {
 namespace types {
 
-enum CompletionType {
+enum class CompletionType {
   NORMAL,
   BREAK,
   CONTINUE,
@@ -16,11 +16,30 @@ enum CompletionType {
 
 class Completion {
  public:
+  Completion() {}
+  
+  explicit Completion(CompletionType type)
+    : type_(type)
+  {}
+
+  Completion(CompletionType type, JSValue value)
+    : type_(type), value_(value)
+  {}
+  
+  Completion(CompletionType type, JSValue value, JSValue target)
+    : type_(type), value_(value), target_(target)
+  {}
+
+  CompletionType GetType() const { return type_; }
+  JSValue GetValue() const { return value_; }
+  JSValue GetTarget() const { return target_; }
+
+  bool IsAbruptCompletion() const { return type_ != CompletionType::NORMAL; }
   
  private:
-  CompletionType type_;
+  CompletionType type_ {CompletionType::NORMAL};
   JSValue value_;
-  std::u16string target_;
+  JSValue target_; 
 };
 
 }  // namespace types
