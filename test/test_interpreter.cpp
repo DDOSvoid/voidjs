@@ -22,7 +22,7 @@ TEST(Intepreter, EvalNumericLiteral) {
     auto ast_node = parser.ParsePrimaryExpression();
     ASSERT_TRUE(ast_node->IsNumericLiteral());
 
-    auto num = interpreter.EvalNumericLiteral(ast_node);
+    auto num = interpreter.EvalNumericLiteral(ast_node->AsNumericLiteral());
     EXPECT_EQ(0.07, num.GetDouble());
   }
 
@@ -34,7 +34,7 @@ TEST(Intepreter, EvalNumericLiteral) {
     auto ast_node = parser.ParsePrimaryExpression();
     ASSERT_TRUE(ast_node->IsNumericLiteral());
 
-    auto num = interpreter.EvalNumericLiteral(ast_node);
+    auto num = interpreter.EvalNumericLiteral(ast_node->AsNumericLiteral());
     EXPECT_EQ(42, num.GetInt());
   }
 }
@@ -47,7 +47,7 @@ TEST(Intepreter, EvalStringLiteral) {
   auto ast_node = parser.ParsePrimaryExpression();
   ASSERT_TRUE(ast_node->IsStringLiteral());
 
-  auto str = interpreter.EvalStringLiteral(ast_node);
+  auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
   ASSERT_TRUE(str.IsString());
 
   EXPECT_EQ(u"Hello, World!", str.GetObject()->AsString()->GetString());
@@ -62,7 +62,7 @@ TEST(Intepreter, EvalBinaryExpression) {
     auto ast_node = parser.ParseBinaryExpression();
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
-    auto val = interpreter.GetValue(interpreter.EvalBinaryExpression(ast_node));
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
     ASSERT_TRUE(val.IsInt());
     EXPECT_EQ(6, val.GetInt());
   }

@@ -2,6 +2,8 @@
 
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/ir/ast.h"
+#include "voidjs/ir/expression.h"
+#include "voidjs/ir/literal.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/completion.h"
@@ -75,10 +77,10 @@ Completion Interpreter::EvalProgram(ast::AstNode *ast_node) {
 
 // Eval Statement
 // Defined in ECMAScript 5.1 Chapter 12
-Completion Interpreter::EvalStatement(ast::AstNode* ast_node) {
-  switch (ast_node->GetType()) {
+Completion Interpreter::EvalStatement(Statement* stmt) {
+  switch (stmt->GetType()) {
     case ast::AstNodeType::EXPRESSION_STATEMENT: {
-      return EvalExpressionStatement(ast_node);
+      return EvalExpressionStatement(stmt->AsExpressionStatement());
     }
     default: {
       return Completion();
@@ -88,9 +90,9 @@ Completion Interpreter::EvalStatement(ast::AstNode* ast_node) {
 
 // Eval ExpressionStatement
 // Defined in ECMAScript 5.1 Chapter 12.4
-Completion Interpreter::EvalExpressionStatement(AstNode* ast_node) {
+Completion Interpreter::EvalExpressionStatement(ExpressionStatement* expr_stmt) {
   // 1. Let exprRef be the result of evaluating Expression.
-  auto expr_ref = EvalExpression(ast_node);
+  auto expr_ref = EvalExpression(expr_stmt->GetExpression());
 
   // 2. Return (normal, GetValue(exprRef), empty).
   return Completion(CompletionType::NORMAL, GetValue(expr_ref));
@@ -98,252 +100,220 @@ Completion Interpreter::EvalExpressionStatement(AstNode* ast_node) {
 
 // Eval Expression
 // Defined in ECMAScript 5.1 Chapter 11.14
-std::variant<JSValue, Reference> Interpreter::EvalExpression(AstNode* ast_node) {
-  if (ast_node->IsSequenceExpression()) {
-    // 1. Let lref be the result of evaluating Expression.
-    // 2. Call GetValue(lref).
-    // 3. Let rref be the result of evaluating AssignmentExpression.
-    // 4. Return GetValue(rref).
-    const auto& exprs = ast_node->AsSequenceExpression()->GetExpressions();
-    JSValue value;
-    for (auto expr : exprs) {
-      value = GetValue(EvalExpression(expr));
+std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
+  switch (expr->GetType()) {
+    case AstNodeType::SEQUENCE_EXPRESSION: {
+      return EvalSequenceExpression(expr->AsSequenceExpression());
     }
-    return value;
-  } else {
-    return EvalAssignmentExpression(ast_node);
+    case AstNodeType::ASSIGNMENT_EXPRESSION: {
+      return EvalAssignmentExpression(expr->AsAssignmentExpression());
+    }
+    case AstNodeType::CONDITIONAL_EXPRESSION: {
+      return EvalConditionalExpression(expr->AsConditionalExpression());
+    }
+    case AstNodeType::BINARY_EXPRESSION: {
+      return EvalBinaryExpression(expr->AsBinaryExpression());
+    }
+    case AstNodeType::UNARY_EXPRESSION: {
+      return EvalUnaryExpression(expr->AsUnaryExpression());
+    }
+    case AstNodeType::POSTFIX_EXPRESSION: {
+      return EvalPostfixExpression(expr->AsPostfixExpression());
+    }
+    case AstNodeType::MEMBER_EXPRESSION: {
+      return EvalMemberExpression(expr->AsMemberExpression());
+    }
+    case AstNodeType::NULL_LITERAL: {
+      return EvalNullLiteral(expr->AsNullLiteral());
+    }
+    case AstNodeType::BOOLEAN_LITERAL: {
+      return EvalBooleanLiteral(expr->AsBooleanLiteral());
+    }
+    case AstNodeType::NUMERIC_LITERAL: {
+      return EvalNumericLiteral(expr->AsNumericLiteral());
+    }
+    case AstNodeType::STRING_LITERAL: {
+      return EvalStringLiteral(expr->AsStringLiteral());
+    }
+    default: {
+      return JSValue{};
+    }
   }
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalSequenceExpression(SequenceExpression* seq_expr) {
+  // 1. Let lref be the result of evaluating Expression.
+  // 2. Call GetValue(lref).
+  // 3. Let rref be the result of evaluating AssignmentExpression.
+  // 4. Return GetValue(rref).
+  const auto& exprs = seq_expr->GetExpressions();
+  JSValue val;
+  for (auto expr : exprs) {
+    val = GetValue(EvalExpression(expr));
+  }
+  return val;
 }
 
 // Eval AssignmentExpression
 // Defined in ECMAScript 5.1 Chapter 11.13
-std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(AstNode *ast_node) {
-  if (ast_node->IsAssignmentExpression()) {
-    auto assign_expr = ast_node->AsAssignmentExpression();
-
-    if (assign_expr->GetOperator() == TokenType::ASSIGN) {
-      // AssignmentExpression : LeftHandSideExpression = AssignmentExpression
+std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(AssignmentExpression* assign_expr) {
+  if (assign_expr->GetOperator() == TokenType::ASSIGN) {
+    // AssignmentExpression : LeftHandSideExpression = AssignmentExpression
       
-      // 1. Let lref be the result of evaluating LeftHandSideExpression.
-      auto lref = EvalLeftHandSideExpression(assign_expr->GetLeft());
+    // 1. Let lref be the result of evaluating LeftHandSideExpression.
+    auto lref = EvalExpression(assign_expr->GetLeft());
 
-      // 2. Let rref be the result of evaluating AssignmentExpression.
-      auto rref = EvalAssignmentExpression(assign_expr->GetRight());
+    // 2. Let rref be the result of evaluating AssignmentExpression.
+    auto rref = EvalExpression(assign_expr->GetRight());
 
-      // 3. Let rval be GetValue(rref).
-      auto rval = GetValue(rref);
+    // 3. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
 
-      // 4. Throw a SyntaxError exception if the following conditions are all true:
-      //      Type(lref) is Reference is true
-      //      IsStrictReference(lref) is true
-      //      Type(GetBase(lref)) is Environment Record
-      //      GetReferencedName(lref) is either "eval" or "arguments"
-      if (auto plref = std::get_if<Reference>(&lref);
-          plref                                                &&
-          plref->IsStrictReference()                           &&
-          std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
-          (plref->GetReferencedName() == u"eval"               ||
-           plref->GetReferencedName() == u"arguments")) {
+    // 4. Throw a SyntaxError exception if the following conditions are all true:
+    //      Type(lref) is Reference is true
+    //      IsStrictReference(lref) is true
+    //      Type(GetBase(lref)) is Environment Record
+    //      GetReferencedName(lref) is either "eval" or "arguments"
+    if (auto plref = std::get_if<Reference>(&lref);
+        plref                                                &&
+        plref->IsStrictReference()                           &&
+        std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
+        (plref->GetReferencedName() == u"eval"               ||
+         plref->GetReferencedName() == u"arguments")) {
         
-      }
+    }
 
-      // 5. Call PutValue(lref, rval).
-      PutValue(lref, rval);
+    // 5. Call PutValue(lref, rval).
+    PutValue(lref, rval);
 
-      // 6. Return rval.
-      return rval;
-    } else {
-      // AssignmentExpression : LeftHandSideExpression @= AssignmentExpression
+    // 6. Return rval.
+    return rval;
+  } else {
+    // AssignmentExpression : LeftHandSideExpression @= AssignmentExpression
       
-      // 1. Let lref be the result of evaluating LeftHandSideExpression.
-      auto lref = EvalLeftHandSideExpression(assign_expr->GetLeft());
+    // 1. Let lref be the result of evaluating LeftHandSideExpression.
+    auto lref = EvalExpression(assign_expr->GetLeft());
 
-      // 2. Let lval be GetValue(lref).
-      auto lval = GetValue(lref);
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
 
-      // 3. Let rref be the result of evaluating AssignmentExpression.
-      auto rref = EvalAssignmentExpression(assign_expr->GetRight());
+    // 3. Let rref be the result of evaluating AssignmentExpression.
+    auto rref = EvalExpression(assign_expr->GetRight());
 
-      // 4. Let rval be GetValue(rref).
-      auto rval = GetValue(rref);
+    // 4. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
 
-      // 5. Let r be the result of applying operator @ to lval and rval.
-      JSValue r = ApplyCompoundAssignment(assign_expr->GetOperator(), lval, rval);
+    // 5. Let r be the result of applying operator @ to lval and rval.
+    JSValue r = ApplyCompoundAssignment(assign_expr->GetOperator(), lval, rval);
 
-      // 4. Throw a SyntaxError exception if the following conditions are all true:
-      //      Type(lref) is Reference is true
-      //      IsStrictReference(lref) is true
-      //      Type(GetBase(lref)) is Environment Record
-      //      GetReferencedName(lref) is either "eval" or "arguments"
-      if (auto plref = std::get_if<Reference>(&lref);
-          plref                                                &&
-          plref->IsStrictReference()                           &&
-          std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
-          (plref->GetReferencedName() == u"eval"               ||
-           plref->GetReferencedName() == u"arguments")) {
+    // 4. Throw a SyntaxError exception if the following conditions are all true:
+    //      Type(lref) is Reference is true
+    //      IsStrictReference(lref) is true
+    //      Type(GetBase(lref)) is Environment Record
+    //      GetReferencedName(lref) is either "eval" or "arguments"
+    if (auto plref = std::get_if<Reference>(&lref);
+        plref                                                &&
+        plref->IsStrictReference()                           &&
+        std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
+        (plref->GetReferencedName() == u"eval"               ||
+         plref->GetReferencedName() == u"arguments")) {
         
-      }
-
-      // 5. Call PutValue(lref, rval).
-      PutValue(lref, rval);
-
-      // 6. Return rval.
-      return rval;
     }
+
+    // 5. Call PutValue(lref, rval).
+    PutValue(lref, rval);
+
+    // 6. Return rval.
+    return rval;
+  }
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(ConditionalExpression* cond_expr) {
+  // ConditionalExpression : LogicalORExpression ? AssignmentExpression : AssignmentExpression
+
+  // 1. Let lref be the result of evaluating LogicalORExpression.
+  auto lref = EvalExpression(cond_expr->GetConditional());
+
+  // 2. If ToBoolean(GetValue(lref)) is true, then
+  if (JSValue::ToBoolean(GetValue(lref)) == JSValue::True()) {
+    // a. Let trueRef be the result of evaluating the first AssignmentExpression.
+    auto true_ref = EvalExpression(cond_expr->GetConsequent());
+
+    // b. Return GetValue(trueRef).
+    return true_ref;
   } else {
-    return EvalConditionalExpression(ast_node);
+    // a. Let falseRef be the result of evaluating the second AssignmentExpression.
+    auto false_ref = EvalExpression(cond_expr->GetAlternate());
+
+    // b. Return GetValue(falseRef).
+    return false_ref;
   }
 }
 
-std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(AstNode *ast_node) {
-  if (ast_node->IsConditionalExpression()) {
-    // ConditionalExpression : LogicalORExpression ? AssignmentExpression : AssignmentExpression
-    auto cond_expr = ast_node->AsConditionalExpression();
-
-    // 1. Let lref be the result of evaluating LogicalORExpression.
-    auto lref = EvalBinaryExpression(cond_expr->GetConditional());
-
-    // 2. If ToBoolean(GetValue(lref)) is true, then
-    if (JSValue::ToBoolean(GetValue(lref)) == JSValue::True()) {
-      // a. Let trueRef be the result of evaluating the first AssignmentExpression.
-      auto true_ref = EvalAssignmentExpression(cond_expr->GetConsequent());
-
-      // b. Return GetValue(trueRef).
-      return true_ref;
-    } else {
-      // a. Let falseRef be the result of evaluating the second AssignmentExpression.
-      auto false_ref = EvalAssignmentExpression(cond_expr->GetAlternate());
-
-      // b. Return GetValue(falseRef).
-      return false_ref;
-    }
-  } else {
-    return EvalBinaryExpression(ast_node);
-  }
+std::variant<JSValue, Reference> Interpreter::EvalBinaryExpression(BinaryExpression* binary_expr) {
+  auto lval = GetValue(EvalExpression(binary_expr->GetLeft()));
+  auto rval = GetValue(EvalExpression(binary_expr->GetRight()));
+  return ApplyBinaryOperator(binary_expr->GetOperator(), lval, rval);
 }
 
-std::variant<JSValue, Reference> Interpreter::EvalBinaryExpression(AstNode *ast_node) {
-  if (ast_node->IsBinaryExpression()) {
-    auto binary_expr = ast_node->AsBinaryExpression();
-    auto lval = GetValue(EvalUnaryExpression(binary_expr->GetLeft()));
-    auto rval = GetValue(EvalBinaryExpression(binary_expr->GetRight()));
-    return ApplyBinaryOperator(binary_expr->GetOperator(), lval, rval);
-  } else {
-    return EvalUnaryExpression(ast_node);
-  }
+std::variant<JSValue, Reference> Interpreter::EvalUnaryExpression(UnaryExpression* unary_expr) {
+  auto val = GetValue(EvalExpression(unary_expr->GetExpression()));
+  return ApplyUnaryOperator(unary_expr->GetOperator(), val);
 }
 
-std::variant<JSValue, Reference> Interpreter::EvalUnaryExpression(AstNode *ast_node) {
-  if (ast_node->IsUnaryExpression()) {
-    auto unary_expr = ast_node->AsUnaryExpression();
-    auto val = GetValue(EvalPostfixExpression(unary_expr->GetExpression()));
-    return ApplyUnaryOperator(unary_expr->GetOperator(), val);
-  } else {
-    return EvalPostfixExpression(ast_node);
-  }
+std::variant<JSValue, Reference> Interpreter::EvalPostfixExpression(PostfixExpression* post_expr) {
+  
 }
 
-std::variant<JSValue, Reference> Interpreter::EvalPostfixExpression(AstNode *ast_node) {
-  if (ast_node->IsPostfixExpression()) {
-    auto post_expr = ast_node->AsPostfixExpression();
-    
-  } else {
-    return EvalLeftHandSideExpression(ast_node);
-  }
+std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpression* mem_expr) {
+  
+  // 1. Let baseReference be the result of evaluating MemberExpression.
+  auto base_ref = EvalExpression(mem_expr->GetObject());
+
+  // 2. Let baseValue be GetValue(baseReference).
+  auto base_val = GetValue(base_ref);
+
+  // 3. Let propertyNameReference be the result of evaluating Expression.
+  auto prop_name_ref = EvalExpression(mem_expr->GetProperty());
+
+  // 4. Let propertyNameValue be GetValue(propertyNameReference).
+  auto prop_name_val = GetValue(prop_name_ref);
+
+  // 5. Call CheckObjectCoercible(baseValue).
+  base_val.CheckObjectCoercible();
+
+  // 6. Let propertyNameString be ToString(propertyNameValue).
+  auto prop_name_str = JSValue::ToString(prop_name_val); 
+
+  // 7. If the syntactic production that is being evaluated is contained in strict mode code,
+  //    let strict be true, else let strict be false.
+  // todo
+  bool strict = false;
+
+  // 8. Return a value of type Reference
+  //    whose base value is baseValue and whose referenced name is propertyNameString,
+  //    and whose strict mode flag is strict.
+  return Reference(base_val, prop_name_str.GetObject()->AsString()->GetString(), strict);
 }
 
-std::variant<JSValue, Reference> Interpreter::EvalLeftHandSideExpression(AstNode* ast_node) {
-  if (ast_node->IsMemberExpression()) {
-    // MemberExpression : MemberExpression [ Expression ]
-    auto mem_expr = ast_node->AsMemberExpression();
-
-    // 1. Let baseReference be the result of evaluating MemberExpression.
-    auto base_ref = EvalLeftHandSideExpression(mem_expr->GetObject());
-
-    // 2. Let baseValue be GetValue(baseReference).
-    auto base_val = GetValue(base_ref);
-
-    // 3. Let propertyNameReference be the result of evaluating Expression.
-    auto prop_name_ref = EvalExpression(mem_expr->GetProperty());
-
-    // 4. Let propertyNameValue be GetValue(propertyNameReference).
-    auto prop_name_val = GetValue(prop_name_ref);
-
-    // 5. Call CheckObjectCoercible(baseValue).
-    base_val.CheckObjectCoercible();
-
-    // 6. Let propertyNameString be ToString(propertyNameValue).
-    auto prop_name_str = JSValue::ToString(prop_name_val); 
-
-    // 7. If the syntactic production that is being evaluated is contained in strict mode code,
-    //    let strict be true, else let strict be false.
-    // todo
-    bool strict = false;
-
-    // 8. Return a value of type Reference
-    //    whose base value is baseValue and whose referenced name is propertyNameString,
-    //    and whose strict mode flag is strict.
-    return Reference(base_val, prop_name_str.GetObject()->AsString()->GetString(), strict);
-  } else if (ast_node->IsNewExpression()) {
-  } else if (ast_node->IsCallExpression()) {
-  } else if (ast_node->IsFunctionExpression()) {
-  } else {
-    return EvalPrimaryExpression(ast_node);
-  }
-}
-
-std::variant<JSValue, Reference> Interpreter::EvalPrimaryExpression(AstNode* ast_node) {
-  switch (ast_node->GetType()) {
-    case ast::AstNodeType::THIS: {
-      return JSValue();
-    }
-    case ast::AstNodeType::IDENTIFIER: {
-      return JSValue();
-    }
-    case ast::AstNodeType::NULL_LITERAL: {
-      return EvalNullLiteral(ast_node);
-    }
-    case ast::AstNodeType::BOOLEAN_LITERAL: {
-      return EvalBooleanLiteral(ast_node);
-    }
-    case ast::AstNodeType::NUMERIC_LITERAL: {
-      return EvalNumericLiteral(ast_node); 
-    }
-    case ast::AstNodeType::STRING_LITERAL: {
-      return EvalStringLiteral(ast_node);
-    }
-    case ast::AstNodeType::ARRAY_LITERAL: {
-      return JSValue();
-    }
-    case ast::AstNodeType::OBJECT_LITERAL: {
-      return JSValue();
-    }
-    default: {
-      return EvalExpression(ast_node);
-    }
-  }
-}
-
-JSValue Interpreter::EvalNullLiteral(AstNode* ast_node) {
+JSValue Interpreter::EvalNullLiteral(NullLiteral* nul) {
   return JSValue::Null();
 }
 
-JSValue Interpreter::EvalBooleanLiteral(AstNode* ast_node) {
-  return JSValue(ast_node->AsBooleanLiteral()->GetBoolean());
+JSValue Interpreter::EvalBooleanLiteral(BooleanLiteral* boolean) {
+  return JSValue(boolean->GetBoolean());
 }
 
-JSValue Interpreter::EvalNumericLiteral(AstNode* ast_node) {
-  auto literal = ast_node->AsNumericLiteral();
-  if (literal->IsInteger()) {
-    return JSValue(literal->GetNumber<std::int32_t>());
+JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
+  if (num->IsInteger()) {
+    return JSValue(num->GetNumber<std::int32_t>());
   } else {
-    return JSValue(literal->GetNumber<double>());
+    return JSValue(num->GetNumber<double>());
   }
 }
 
-JSValue Interpreter::EvalStringLiteral(AstNode* ast_node) {
-  auto str = String::New(ast_node->AsStringLiteral()->GetString());
-  return JSValue(str);
+JSValue Interpreter::EvalStringLiteral(StringLiteral* str) {
+  return JSValue(String::New(str->GetString()));
 }
 
 // Apply Compound Assignment

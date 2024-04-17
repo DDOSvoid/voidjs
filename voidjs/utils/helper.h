@@ -42,6 +42,7 @@ union Data {
   U u;
 };
 
+// replace for std::bit_cast, which is introduced in C++20
 template <typename To, typename From>
 inline To BitCast(const From& src) {
   static_assert(sizeof(To) == sizeof(From));
