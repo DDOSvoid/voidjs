@@ -17,13 +17,11 @@ namespace jsvalue {
 // True:        [56 bits 0] | 0000 0111
 // Undefined:   [56 bits 0] | 0000 0010
 // Null:        [56 bits 0] | 0000 0011
-// Hole:        [56 bits 0] | 0000 0101
 // Empty:       [56 bits 0] | 0000 0000
 inline constexpr JSValueType VALUE_FALSE       = 0x0000'0000'0000'0006;
 inline constexpr JSValueType VALUE_TRUE        = 0x0000'0000'0000'0007;
 inline constexpr JSValueType VALUE_UNDEFINED   = 0x0000'0000'0000'0002;
 inline constexpr JSValueType VALUE_NULL        = 0x0000'0000'0000'0003;
-inline constexpr JSValueType VALUE_HOLE        = 0x0000'0000'0000'0005;
 inline constexpr JSValueType VALUE_EMPTY       = 0x0000'0000'0000'0000;
 
 // [0x0000] [48 bit direct pointer]
@@ -95,22 +93,22 @@ class JSValue {
   static JSValue True() { return JSValue(jsvalue::VALUE_TRUE); }
   static JSValue Undefined() { return JSValue(jsvalue::VALUE_UNDEFINED); }
   static JSValue Null() { return JSValue(jsvalue::VALUE_NULL); }
-  static JSValue Hole() { return JSValue(jsvalue::VALUE_HOLE); }
 
+  // spec
   bool IsFalse() const { return value_ == jsvalue::VALUE_FALSE; }
   bool IsTrue() const { return value_ == jsvalue::VALUE_TRUE; }
   bool IsUndefined() const { return value_ == jsvalue::VALUE_UNDEFINED; }
   bool IsNull() const { return value_ == jsvalue::VALUE_NULL; }
-  bool IsHole() const { return value_ == jsvalue::VALUE_HOLE; }
   bool IsBoolean() const { return value_ == jsvalue::VALUE_FALSE || value_ == jsvalue::VALUE_TRUE; }
+  bool IsNumber() const { return IsInt() || IsDouble(); }
+  // bool IsString() const;
+  bool IsPrimitive() const { return IsUndefined() || IsNull() || IsBoolean() || IsNumber() || IsString(); }
 
+  // internal
   bool IsObject() const { return (value_ & jsvalue::TAG_OBJECT_MASK) == jsvalue::TAG_OBJECT; }
   bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
   bool IsDouble() const { return !IsObject() && !IsInt(); }
-  bool IsNumber() const { return IsInt() || IsDouble(); }
-
   bool IsString() const;
-
   bool IsEmpty() const { return value_ == jsvalue::VALUE_EMPTY; }
 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
@@ -119,6 +117,16 @@ class JSValue {
   types::Object* GetObject() const { return reinterpret_cast<types::Object*>(value_); }
 
   JSValueType GetRawData() const { return value_; }
+
+  // Type Conversion
+  // Defined in ECMAScript 5.1 Chapter 9
+  static JSValue ToPrimitive(JSValue val);
+  static JSValue ToBoolean(JSValue val);
+  static JSValue ToString(JSValue val);
+
+  // Type Testing
+  // Defined in ECMAScript 5.1 Chapter 9
+  void CheckObjectCoercible() const;
 
  private:
   JSValueType value_ {};

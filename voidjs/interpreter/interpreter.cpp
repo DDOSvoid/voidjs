@@ -204,7 +204,7 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(AstNode 
     auto lref = EvalBinaryExpression(cond_expr->GetConditional());
 
     // 2. If ToBoolean(GetValue(lref)) is true, then
-    if (true) {
+    if (JSValue::ToBoolean(GetValue(lref)) == JSValue::True()) {
       // a. Let trueRef be the result of evaluating the first AssignmentExpression.
       auto true_ref = EvalAssignmentExpression(cond_expr->GetConsequent());
 
@@ -223,11 +223,73 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(AstNode 
 }
 
 std::variant<JSValue, Reference> Interpreter::EvalBinaryExpression(AstNode *ast_node) {
-  
+  if (ast_node->IsBinaryExpression()) {
+    auto binary_expr = ast_node->AsBinaryExpression();
+    auto lval = GetValue(EvalUnaryExpression(binary_expr->GetLeft()));
+    auto rval = GetValue(EvalBinaryExpression(binary_expr->GetRight()));
+    return ApplyBinaryOperator(binary_expr->GetOperator(), lval, rval);
+  } else {
+    return EvalUnaryExpression(ast_node);
+  }
 }
 
-std::variant<JSValue, Reference> Interpreter::EvalLeftHandSideExpression(AstNode *ast_node) {
-  
+std::variant<JSValue, Reference> Interpreter::EvalUnaryExpression(AstNode *ast_node) {
+  if (ast_node->IsUnaryExpression()) {
+    auto unary_expr = ast_node->AsUnaryExpression();
+    auto val = GetValue(EvalPostfixExpression(unary_expr->GetExpression()));
+    return ApplyUnaryOperator(unary_expr->GetOperator(), val);
+  } else {
+    return EvalPostfixExpression(ast_node);
+  }
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalPostfixExpression(AstNode *ast_node) {
+  if (ast_node->IsPostfixExpression()) {
+    auto post_expr = ast_node->AsPostfixExpression();
+    
+  } else {
+    return EvalLeftHandSideExpression(ast_node);
+  }
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalLeftHandSideExpression(AstNode* ast_node) {
+  if (ast_node->IsMemberExpression()) {
+    // MemberExpression : MemberExpression [ Expression ]
+    auto mem_expr = ast_node->AsMemberExpression();
+
+    // 1. Let baseReference be the result of evaluating MemberExpression.
+    auto base_ref = EvalLeftHandSideExpression(mem_expr->GetObject());
+
+    // 2. Let baseValue be GetValue(baseReference).
+    auto base_val = GetValue(base_ref);
+
+    // 3. Let propertyNameReference be the result of evaluating Expression.
+    auto prop_name_ref = EvalExpression(mem_expr->GetProperty());
+
+    // 4. Let propertyNameValue be GetValue(propertyNameReference).
+    auto prop_name_val = GetValue(prop_name_ref);
+
+    // 5. Call CheckObjectCoercible(baseValue).
+    base_val.CheckObjectCoercible();
+
+    // 6. Let propertyNameString be ToString(propertyNameValue).
+    auto prop_name_str = JSValue::ToString(prop_name_val); 
+
+    // 7. If the syntactic production that is being evaluated is contained in strict mode code,
+    //    let strict be true, else let strict be false.
+    // todo
+    bool strict = false;
+
+    // 8. Return a value of type Reference
+    //    whose base value is baseValue and whose referenced name is propertyNameString,
+    //    and whose strict mode flag is strict.
+    return Reference(base_val, prop_name_str.GetObject()->AsString()->GetString(), strict);
+  } else if (ast_node->IsNewExpression()) {
+  } else if (ast_node->IsCallExpression()) {
+  } else if (ast_node->IsFunctionExpression()) {
+  } else {
+    return EvalPrimaryExpression(ast_node);
+  }
 }
 
 std::variant<JSValue, Reference> Interpreter::EvalPrimaryExpression(AstNode* ast_node) {
@@ -285,6 +347,7 @@ JSValue Interpreter::EvalStringLiteral(AstNode* ast_node) {
 }
 
 // Apply Compound Assignment
+// todo
 JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
   switch (op) {
     case TokenType::ADD_ASSIGN: {
@@ -298,6 +361,29 @@ JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue
       return {};
     }
   }
+}
+
+// ApplyBinaryOperator
+// todo
+JSValue Interpreter::ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval) {
+  switch (op) {
+    case TokenType::ADD: {
+      if (lval.IsInt() && rval.IsInt()) {
+        return JSValue(lval.GetInt() + rval.GetInt());
+      } else {
+        return {};
+      }
+    }
+    default: {
+      return {};
+    }
+  }
+}
+
+// ApplyUnaryOperator
+// todo
+JSValue Interpreter::ApplyUnaryOperator(TokenType op, JSValue val) {
+  return {};
 }
 
 // GetValue(V)

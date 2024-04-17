@@ -8,6 +8,7 @@
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/ir/literal.h"
+#include "voidjs/lexer/token_type.h"
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/lang_types/string.h"
@@ -28,7 +29,9 @@ class Interpreter {
   std::variant<JSValue, types::Reference> EvalExpression(ast::AstNode* ast_node);
   std::variant<JSValue, types::Reference> EvalAssignmentExpression(ast::AstNode* ast_node);
   std::variant<JSValue, types::Reference> EvalConditionalExpression(ast::AstNode* ast_node);
-  std::variant<JSValue, types::Reference> EvalBinaryExpression(ast::AstNode* ast_node); 
+  std::variant<JSValue, types::Reference> EvalBinaryExpression(ast::AstNode* ast_node);
+  std::variant<JSValue, types::Reference> EvalUnaryExpression(ast::AstNode* ast_node);
+  std::variant<JSValue, types::Reference> EvalPostfixExpression(ast::AstNode* ast_node);
   std::variant<JSValue, types::Reference> EvalLeftHandSideExpression(ast::AstNode* ast_node);
   std::variant<JSValue, types::Reference> EvalPrimaryExpression(ast::AstNode* ast_node);
 
@@ -37,13 +40,15 @@ class Interpreter {
   JSValue EvalNumericLiteral(ast::AstNode* ast_node);
   JSValue EvalStringLiteral(ast::AstNode* ast_node);
 
-  types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node); 
-
- private:
-  JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
+  types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
+
+ private:
+  JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
+  JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
+  JSValue ApplyUnaryOperator(TokenType op, JSValue val);
 };
 
 }  // namespace voidjs

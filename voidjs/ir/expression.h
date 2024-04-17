@@ -63,8 +63,8 @@ class MemberExpression : public Expression {
       object_(object), property_(property)
   {}
 
-  const Expression* GetObject() const { return object_; }
-  const Expression* GetProperty() const { return property_; }
+  Expression* GetObject() const { return object_; }
+  Expression* GetProperty() const { return property_; }
 
  private:
   Expression* object_;

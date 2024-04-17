@@ -26,10 +26,10 @@ class String : public Object {
   void SetByIndex(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
 
   // used for print 
-  std::u16string GetString() const {
+  std::u16string_view GetString() const {
     auto len = GetLength();
     auto data = GetData();
-    return std::u16string(data, len);
+    return std::u16string_view(data, len);
   }
   
   static String* New(const std::u16string& source) {

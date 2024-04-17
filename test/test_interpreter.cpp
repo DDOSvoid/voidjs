@@ -48,6 +48,22 @@ TEST(Intepreter, EvalStringLiteral) {
   ASSERT_TRUE(ast_node->IsStringLiteral());
 
   auto str = interpreter.EvalStringLiteral(ast_node);
+  ASSERT_TRUE(str.IsString());
 
   EXPECT_EQ(u"Hello, World!", str.GetObject()->AsString()->GetString());
+}
+
+TEST(Intepreter, EvalBinaryExpression) {
+  {
+    Parser parser(u"1 + (2 + 3)");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalBinaryExpression(ast_node));
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(6, val.GetInt());
+  }
 }

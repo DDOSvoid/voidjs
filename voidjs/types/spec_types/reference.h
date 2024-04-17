@@ -12,6 +12,11 @@ namespace types {
 
 class Reference {
  public:
+  Reference(const std::variant<JSValue, EnvironmentRecord*>& base,
+            std::u16string_view name, bool is_strict)
+    : base_(base), name_(name), is_strict_(is_strict)
+  {}
+  
   // GetBase(V). Returns the base value component of the reference V.
   const std::variant<JSValue, EnvironmentRecord*>& GetBase() const { return base_; }
 
@@ -46,7 +51,7 @@ class Reference {
  private:
   std::variant<JSValue, EnvironmentRecord*> base_;
   std::u16string_view name_;
-  bool is_strict_;
+  bool is_strict_ {};
 };
 
 }  // namespace types
