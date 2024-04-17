@@ -2,8 +2,10 @@
 #define VOIDJS_TYPES_SPEC_TYPES_REFERENCE_H
 
 #include <string_view>
+#include <variant>
 
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/spec_types/environment_record.h"
 
 namespace voidjs {
 namespace types {
@@ -11,7 +13,7 @@ namespace types {
 class Reference {
  public:
   // GetBase(V). Returns the base value component of the reference V.
-  JSValue GetBase() const { return base_; }
+  const std::variant<JSValue, EnvironmentRecord*>& GetBase() const { return base_; }
 
   // GetReferencedName(V). Returns the referenced name component of the reference V.
   std::u16string_view GetReferencedName() const { return name_; }
@@ -20,17 +22,29 @@ class Reference {
   bool IsStrictReference() const { return is_strict_; }
 
   // HasPrimitiveBase(V). Returns true if the base value is a Boolean, String, or Number.
-  bool HasPrimitiveBase() const { return base_.IsBoolean() || base_.IsString() || base_.IsNumber(); }
+  bool HasPrimitiveBase() const {
+    if (auto val = std::get_if<JSValue>(&base_); val) {
+      return false;
+    } else {
+      return val->IsBoolean() || val->IsString() || val->IsNumber();
+    }
+  }
 
   // IsPropertyReference(V). Returns true if either the base value is an object
   // or HasPrimitiveBase(V) is true; otherwise returns false.
-  bool IsPropertyReference() const { return base_.IsObject() || HasPrimitiveBase(); }
+  bool IsPropertyReference() const {
+    auto val = std::get_if<JSValue>(&base_);
+    return (val && val->IsObject()) || HasPrimitiveBase();
+  }
 
   // IsUnresolvableReference(V). Returns true if the base value is undefined and false otherwise.
-  bool IsUnresolvableReference() const { return base_.IsUndefined(); }
+  bool IsUnresolvableReference() const {
+    auto val = std::get_if<JSValue>(&base_);
+    return val && val->IsUndefined();
+  }
 
  private:
-  JSValue base_;
+  std::variant<JSValue, EnvironmentRecord*> base_;
   std::u16string_view name_;
   bool is_strict_;
 };

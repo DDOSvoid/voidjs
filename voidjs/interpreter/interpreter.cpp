@@ -1,8 +1,11 @@
+#include <variant>
+
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/completion.h"
+#include "voidjs/types/spec_types/reference.h"
 
 namespace voidjs {
 
@@ -95,7 +98,7 @@ Completion Interpreter::EvalExpressionStatement(AstNode* ast_node) {
 
 // Eval Expression
 // Defined in ECMAScript 5.1 Chapter 11.14
-JSValue Interpreter::EvalExpression(AstNode* ast_node) {
+std::variant<JSValue, Reference> Interpreter::EvalExpression(AstNode* ast_node) {
   if (ast_node->IsSequenceExpression()) {
     // 1. Let lref be the result of evaluating Expression.
     // 2. Call GetValue(lref).
@@ -114,39 +117,120 @@ JSValue Interpreter::EvalExpression(AstNode* ast_node) {
 
 // Eval AssignmentExpression
 // Defined in ECMAScript 5.1 Chapter 11.13
-JSValue Interpreter::EvalAssignmentExpression(AstNode *ast_node) {
+std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(AstNode *ast_node) {
   if (ast_node->IsAssignmentExpression()) {
     auto assign_expr = ast_node->AsAssignmentExpression();
 
     if (assign_expr->GetOperator() == TokenType::ASSIGN) {
+      // AssignmentExpression : LeftHandSideExpression = AssignmentExpression
+      
       // 1. Let lref be the result of evaluating LeftHandSideExpression.
-      // auto lref = EvalLeftHandSideExpression(assign_expr->GetLeft());
+      auto lref = EvalLeftHandSideExpression(assign_expr->GetLeft());
 
       // 2. Let rref be the result of evaluating AssignmentExpression.
-      // auto rref = EvalAssignmentExpression(assign_expr->GetRight());
+      auto rref = EvalAssignmentExpression(assign_expr->GetRight());
 
       // 3. Let rval be GetValue(rref).
-      // auto rval = GetValue(rref);
+      auto rval = GetValue(rref);
 
       // 4. Throw a SyntaxError exception if the following conditions are all true:
       //      Type(lref) is Reference is true
       //      IsStrictReference(lref) is true
       //      Type(GetBase(lref)) is Environment Record
       //      GetReferencedName(lref) is either "eval" or "arguments"
+      if (auto plref = std::get_if<Reference>(&lref);
+          plref                                                &&
+          plref->IsStrictReference()                           &&
+          std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
+          (plref->GetReferencedName() == u"eval"               ||
+           plref->GetReferencedName() == u"arguments")) {
+        
+      }
 
       // 5. Call PutValue(lref, rval).
+      PutValue(lref, rval);
 
       // 6. Return rval.
-      // return rval;
+      return rval;
     } else {
+      // AssignmentExpression : LeftHandSideExpression @= AssignmentExpression
       
+      // 1. Let lref be the result of evaluating LeftHandSideExpression.
+      auto lref = EvalLeftHandSideExpression(assign_expr->GetLeft());
+
+      // 2. Let lval be GetValue(lref).
+      auto lval = GetValue(lref);
+
+      // 3. Let rref be the result of evaluating AssignmentExpression.
+      auto rref = EvalAssignmentExpression(assign_expr->GetRight());
+
+      // 4. Let rval be GetValue(rref).
+      auto rval = GetValue(rref);
+
+      // 5. Let r be the result of applying operator @ to lval and rval.
+      JSValue r = ApplyCompoundAssignment(assign_expr->GetOperator(), lval, rval);
+
+      // 4. Throw a SyntaxError exception if the following conditions are all true:
+      //      Type(lref) is Reference is true
+      //      IsStrictReference(lref) is true
+      //      Type(GetBase(lref)) is Environment Record
+      //      GetReferencedName(lref) is either "eval" or "arguments"
+      if (auto plref = std::get_if<Reference>(&lref);
+          plref                                                &&
+          plref->IsStrictReference()                           &&
+          std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
+          (plref->GetReferencedName() == u"eval"               ||
+           plref->GetReferencedName() == u"arguments")) {
+        
+      }
+
+      // 5. Call PutValue(lref, rval).
+      PutValue(lref, rval);
+
+      // 6. Return rval.
+      return rval;
     }
   } else {
-    // return EvalConditionalExpression(ast_node);
+    return EvalConditionalExpression(ast_node);
   }
 }
 
-JSValue Interpreter::EvalPrimaryExpression(AstNode* ast_node) {
+std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(AstNode *ast_node) {
+  if (ast_node->IsConditionalExpression()) {
+    // ConditionalExpression : LogicalORExpression ? AssignmentExpression : AssignmentExpression
+    auto cond_expr = ast_node->AsConditionalExpression();
+
+    // 1. Let lref be the result of evaluating LogicalORExpression.
+    auto lref = EvalBinaryExpression(cond_expr->GetConditional());
+
+    // 2. If ToBoolean(GetValue(lref)) is true, then
+    if (true) {
+      // a. Let trueRef be the result of evaluating the first AssignmentExpression.
+      auto true_ref = EvalAssignmentExpression(cond_expr->GetConsequent());
+
+      // b. Return GetValue(trueRef).
+      return true_ref;
+    } else {
+      // a. Let falseRef be the result of evaluating the second AssignmentExpression.
+      auto false_ref = EvalAssignmentExpression(cond_expr->GetAlternate());
+
+      // b. Return GetValue(falseRef).
+      return false_ref;
+    }
+  } else {
+    return EvalBinaryExpression(ast_node);
+  }
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalBinaryExpression(AstNode *ast_node) {
+  
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalLeftHandSideExpression(AstNode *ast_node) {
+  
+}
+
+std::variant<JSValue, Reference> Interpreter::EvalPrimaryExpression(AstNode* ast_node) {
   switch (ast_node->GetType()) {
     case ast::AstNodeType::THIS: {
       return JSValue();
@@ -200,24 +284,40 @@ JSValue Interpreter::EvalStringLiteral(AstNode* ast_node) {
   return JSValue(str);
 }
 
-// GetValue(V)
-// Defined in ECMAScript 5.1 Chapter 8.7.1
-JSValue Interpreter::GetValue(JSValue V) {
-  // 1. If Type(V) is not Reference, return V.
-  return V; 
+// Apply Compound Assignment
+JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
+  switch (op) {
+    case TokenType::ADD_ASSIGN: {
+      if (lval.IsInt() && rval.IsInt()) {
+        return JSValue(lval.GetInt() + rval.GetInt());
+      } else {
+        return {};
+      }
+    }
+    default: {
+      return {};
+    }
+  }
 }
 
-JSValue Interpreter::GetValue(Reference V) {
+// GetValue(V)
+// Defined in ECMAScript 5.1 Chapter 8.7.1
+JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
+  // 1. If Type(V) is not Reference, return V.
+  if (auto ptr = std::get_if<JSValue>(&V)) {
+    return *ptr;
+  }
+  
   // 2. Let base be the result of calling GetBase(V).
-  auto base = V.GetBase();
+  auto base = std::get_if<Reference>(&V)->GetBase();
 
   // 3. If IsUnresolvableReference(V), throw a ReferenceError exception.
-  if (V.IsUnresolvableReference()) {
+  if (std::get_if<Reference>(&V)->IsUnresolvableReference()) {
     
   }
 
   // 4. If IsPropertyReference(V), then
-  if (V.IsPropertyReference()) {
+  if (std::get_if<Reference>(&V)->IsPropertyReference()) {
     // a. If HasPrimitiveBase(V) is false,
     //    then let get be the [[Get]] internal method of base,
     //    otherwise let get be the special [[Get]] internal method defined below.
@@ -234,5 +334,52 @@ JSValue Interpreter::GetValue(Reference V) {
   }
 }
 
+void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W) {
+  // 1. If Type(V) is not Reference, throw a ReferenceError exception.
+  if (std::get_if<Reference>(&V)) {
+    
+  }
+
+  auto ref = std::get_if<Reference>(&V);
+
+  // 2. Let base be the result of calling GetBase(V).
+  auto base = ref->GetBase();
+
+  // 3. If IsUnresolvableReference(V), then
+  if (ref->IsUnresolvableReference()) {
+    // a. If IsStrictReference(V) is true, then
+    if (ref->IsStrictReference()) {
+      // i. Throw ReferenceError exception.
+      
+    }
+    // b. Call the [[Put]] internal method of the global object,
+    //    passing GetReferencedName(V) for the property name,
+    //    W for the value, and false for the Throw flag.
+    else {
+      
+    }
+  }
+  // 4. Else if IsPropertyReference(V), then
+  else if (ref->IsPropertyReference()) {
+    // a. If HasPrimitiveBase(V) is false,
+    // then let put be the [[Put]] internal method of base,
+    // otherwise let put be the special [[Put]] internal method defined below.
+    if (ref->HasPrimitiveBase()) {
+      
+    } else {
+    }
+
+    // b. Call the put internal method using base as its this value,
+    // and passing GetReferencedName(V) for the property name,
+    // W for the value, and IsStrictReference(V) for the Throw flag.
+  }
+  // 5. Else base must be a reference whose base is an environment record. So,
+  else {
+    // a. Call the SetMutableBinding (10.2.1) concrete method of base,
+    //    passing GetReferencedName(V), W, and IsStrictReference(V) as arguments.
+  }
+
+  // 6. Return
+}
 
 }  // namespace voidjs
