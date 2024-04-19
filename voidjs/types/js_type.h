@@ -5,8 +5,10 @@
 
 namespace voidjs {
 
-enum class JSType : std::uint32_t {
+enum class JSType : std::uint8_t {
   STRING,
+  OBJECT,
+  ARRAY,
 };
 
 }  // namespace voidjs

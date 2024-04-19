@@ -24,8 +24,8 @@ inline constexpr JSValueType VALUE_NULL        = 0x0000'0000'0000'0003;
 inline constexpr JSValueType VALUE_EMPTY       = 0x0000'0000'0000'0000;
 
 // [0x0000] [48 bit direct pointer]
-inline constexpr JSValueType TAG_OBJECT_MASK   = 0xFFFF'000000000000;
-inline constexpr JSValueType TAG_OBJECT        = 0x0000'000000000000;
+inline constexpr JSValueType TAG_HEAP_OBJECT_MASK   = 0xFFFF'000000000000;
+inline constexpr JSValueType TAG_HEAP_OBJECT        = 0x0000'000000000000;
 
 inline constexpr JSValueType TAG_BOOLEAN       = 0x0000'0000'0000'0006;
 
@@ -47,9 +47,12 @@ class Null;
 class Boolean;
 class Number;
 class String;
+
 class Object;
 
 }  // namespace types
+
+class HeapObject;
 
 class JSValue {
  public:
@@ -61,7 +64,7 @@ class JSValue {
     : value_(value)
   {}
 
-  explicit JSValue(types::Object* value)
+  explicit JSValue(HeapObject* value)
     : value_(reinterpret_cast<std::uintptr_t>(value))
   {}
 
@@ -93,27 +96,28 @@ class JSValue {
   static JSValue Undefined() { return JSValue(jsvalue::VALUE_UNDEFINED); }
   static JSValue Null() { return JSValue(jsvalue::VALUE_NULL); }
 
-  // spec
+  // language types check
   bool IsFalse() const { return value_ == jsvalue::VALUE_FALSE; }
   bool IsTrue() const { return value_ == jsvalue::VALUE_TRUE; }
   bool IsUndefined() const { return value_ == jsvalue::VALUE_UNDEFINED; }
   bool IsNull() const { return value_ == jsvalue::VALUE_NULL; }
   bool IsBoolean() const { return value_ == jsvalue::VALUE_FALSE || value_ == jsvalue::VALUE_TRUE; }
   bool IsNumber() const { return IsInt() || IsDouble(); }
-  // bool IsString() const;
-  bool IsPrimitive() const { return IsUndefined() || IsNull() || IsBoolean() || IsNumber() || IsString(); }
-
-  // internal
-  bool IsObject() const { return (value_ & jsvalue::TAG_OBJECT_MASK) == jsvalue::TAG_OBJECT; }
-  bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
-  bool IsDouble() const { return !IsObject() && !IsInt(); }
   bool IsString() const;
+  bool IsPrimitive() const { return IsUndefined() || IsNull() || IsBoolean() || IsNumber() || IsString(); }
+  bool IsObject() const { return !IsPrimitive(); }
+
+  // internal checks
+  bool IsHeapObject() const { return (value_ & jsvalue::TAG_HEAP_OBJECT_MASK) == jsvalue::TAG_HEAP_OBJECT; }
+  bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
+  bool IsDouble() const { return !IsHeapObject() && !IsInt(); }
   bool IsEmpty() const { return value_ == jsvalue::VALUE_EMPTY; }
+  bool IsPropertyName() const { return IsString() || IsNumber(); }
 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
   double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }
 
-  types::Object* GetObject() const { return reinterpret_cast<types::Object*>(value_); }
+  HeapObject* GetHeapObject() const { return reinterpret_cast<HeapObject*>(value_); }
 
   JSValueType GetRawData() const { return value_; }
 

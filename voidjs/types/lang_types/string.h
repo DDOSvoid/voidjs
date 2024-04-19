@@ -7,22 +7,22 @@
 
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
-#include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/heap_object.h"
 
 namespace voidjs {
 namespace types {
 
-class String : public Object {
+class String : public HeapObject {
  public:
   // std::size_t length_;
-  static constexpr std::size_t LENGTH_OFFSET = Object::SIZE;
+  static constexpr std::size_t LENGTH_OFFSET = HeapObject::SIZE;
   std::size_t GetLength() const { return *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET); }
   void SetLength(std::size_t length) { *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET) = length; }
 
   // char16_t[] data_;
   static constexpr std::size_t DATA_OFFSET = LENGTH_OFFSET + sizeof(std::size_t);
   char16_t* GetData() const { return utils::BitGet<char16_t*>(this, DATA_OFFSET); }
-  char16_t GetByIdx(std::size_t idx) const { return *(GetData() + idx); } 
+  char16_t GetByIndex(std::size_t idx) const { return *(GetData() + idx); } 
   void SetByIndex(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
 
   // used for print 
@@ -35,7 +35,7 @@ class String : public Object {
   static String* New(const std::u16string& source) {
     auto len = source.size();
     auto str = reinterpret_cast<String*>(
-      Object::New(sizeof(std::size_t) + len * sizeof(char16_t),
+      HeapObject::New(sizeof(std::size_t) + len * sizeof(char16_t),
                   JSType::STRING));
     str->SetLength(len);
     std::copy(source.begin(), source.end(), str->GetData());

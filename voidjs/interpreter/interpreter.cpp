@@ -88,6 +88,23 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
   }
 }
 
+// Eval BlockStatement
+// Defined in ECMAScript 5.1 Chapter 12.1
+Completion Interpreter::EvalBlockStatement(BlockStatement* block_stmt) {
+  const auto& stmts = block_stmt->GetStatements();
+  // Block: { }
+  
+  // 1. Return (normal, empty, empty)
+  if (stmts.empty()) {
+    return Completion(CompletionType::NORMAL);
+  }
+
+  // Block : { StatementList }
+
+  // 1. Return the result of evaluating StatementList.
+  return EvalStatementList(stmts);
+}
+
 // Eval ExpressionStatement
 // Defined in ECMAScript 5.1 Chapter 12.4
 Completion Interpreter::EvalExpressionStatement(ExpressionStatement* expr_stmt) {
@@ -141,7 +158,11 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
   }
 }
 
+// Eval SequenceExpression
+// Defined in ECMAScript 5.1 Chapter 11.14
 std::variant<JSValue, Reference> Interpreter::EvalSequenceExpression(SequenceExpression* seq_expr) {
+  // Expression : Expression , AssignmentExpression
+  
   // 1. Let lref be the result of evaluating Expression.
   // 2. Call GetValue(lref).
   // 3. Let rref be the result of evaluating AssignmentExpression.
@@ -156,6 +177,7 @@ std::variant<JSValue, Reference> Interpreter::EvalSequenceExpression(SequenceExp
 
 // Eval AssignmentExpression
 // Defined in ECMAScript 5.1 Chapter 11.13
+// AssignmentExpression : LeftHandSideExpression = AssignmentExpression
 std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(AssignmentExpression* assign_expr) {
   if (assign_expr->GetOperator() == TokenType::ASSIGN) {
     // AssignmentExpression : LeftHandSideExpression = AssignmentExpression
@@ -228,9 +250,11 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
   }
 }
 
+// Eval ConditionalExpression
+// Defined in ECMAScript 5.1 Chapter 11.12
 std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(ConditionalExpression* cond_expr) {
   // ConditionalExpression : LogicalORExpression ? AssignmentExpression : AssignmentExpression
-
+  
   // 1. Let lref be the result of evaluating LogicalORExpression.
   auto lref = EvalExpression(cond_expr->GetConditional());
 
@@ -250,22 +274,31 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(Conditio
   }
 }
 
+// Eval BinaryExpression
 std::variant<JSValue, Reference> Interpreter::EvalBinaryExpression(BinaryExpression* binary_expr) {
   auto lval = GetValue(EvalExpression(binary_expr->GetLeft()));
   auto rval = GetValue(EvalExpression(binary_expr->GetRight()));
   return ApplyBinaryOperator(binary_expr->GetOperator(), lval, rval);
 }
 
+// Eval UnaryExpression
+// Defined in ECMAScript 5.1 Chapter 11.4
 std::variant<JSValue, Reference> Interpreter::EvalUnaryExpression(UnaryExpression* unary_expr) {
   auto val = GetValue(EvalExpression(unary_expr->GetExpression()));
   return ApplyUnaryOperator(unary_expr->GetOperator(), val);
 }
 
+// Eval PostfixExpression
+// Defined in ECMAScript 5.1 Chapter 11.3
 std::variant<JSValue, Reference> Interpreter::EvalPostfixExpression(PostfixExpression* post_expr) {
   
 }
 
+// Eval MemberExpression
+// Defined in ECMAScript 5.1 Chapter 11.2
 std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpression* mem_expr) {
+  // MemberExpression : MemberExpression [ Expression ]
+  // MemberExpression . IdentifierName
   
   // 1. Let baseReference be the result of evaluating MemberExpression.
   auto base_ref = EvalExpression(mem_expr->GetObject());
@@ -293,17 +326,23 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   // 8. Return a value of type Reference
   //    whose base value is baseValue and whose referenced name is propertyNameString,
   //    and whose strict mode flag is strict.
-  return Reference(base_val, prop_name_str.GetObject()->AsString()->GetString(), strict);
+  return Reference(base_val, prop_name_str.GetHeapObject()->AsString()->GetString(), strict);
 }
 
+// Eval NullLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNullLiteral(NullLiteral* nul) {
   return JSValue::Null();
 }
 
+// Eval BooleanLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalBooleanLiteral(BooleanLiteral* boolean) {
   return JSValue(boolean->GetBoolean());
 }
 
+// Eval NumericLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
   if (num->IsInteger()) {
     return JSValue(num->GetNumber<std::int32_t>());
@@ -312,6 +351,8 @@ JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
   }
 }
 
+// Eval StringLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalStringLiteral(StringLiteral* str) {
   return JSValue(String::New(str->GetString()));
 }
@@ -348,6 +389,37 @@ JSValue Interpreter::ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rva
       return {};
     }
   }
+}
+
+// Eval StatementList
+// Defined in ECMAScript 5.1 Chapter 12.1
+Completion Interpreter::EvalStatementList(const Statements &stmts) {
+  // StatementList :StatementList Statement
+  
+  // 1. Let sl be the result of evaluating StatementList.
+  // 2. If sl is an abrupt completion, return sl.
+  // 3. Let s be the result of evaluating Statement.
+  // 4. If an exception was thrown, return (throw, V, empty) where V is the exception.
+  //    (Execution now proceeds as if no exception were thrown.)
+  // 5. If s.value is empty, let V = sl.value, otherwise let V = s.value.
+  // 6. Return (s.type, V, s.target).
+  Completion sl;
+  
+  for (auto stmt : stmts) {
+    auto s = EvalStatement(stmt);
+    
+    if (s.GetType() == CompletionType::THROW) {
+        return s;
+    }
+
+    sl = Completion(s.GetType(), s.GetValue().IsEmpty() ? sl.GetValue() : s.GetValue(), s.GetTarget());
+
+    if (sl.IsAbruptCompletion()) {
+      return sl;
+    }
+  }
+
+  return sl;
 }
 
 // ApplyUnaryOperator

@@ -14,17 +14,24 @@
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/reference.h"
 #include "voidjs/types/spec_types/completion.h"
+#include "voidjs/interpreter/vm.h"
 
 namespace voidjs {
 
 class Interpreter {
  public:
   void Execute();
+  void EnterGlobalCode();
+  void EnterEvalCode();
+  void EnterFunctionCode();
+  void DeclarationBindingInstantiation();
 
   types::Completion EvalProgram(ast::AstNode* ast_node);
 
   types::Completion EvalStatement(ast::Statement* stmt);
+  types::Completion EvalBlockStatement(ast::BlockStatement* block_stmt);
   types::Completion EvalExpressionStatement(ast::ExpressionStatement* expr_stmt); 
+  types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
 
   std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);
   std::variant<JSValue, types::Reference> EvalSequenceExpression(ast::SequenceExpression* seq_aexpr);
@@ -39,15 +46,16 @@ class Interpreter {
   JSValue EvalNumericLiteral(ast::NumericLiteral* num);
   JSValue EvalStringLiteral(ast::StringLiteral* str);
 
-  types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
+  types::Completion EvalStatementList(const ast::Statements& stmts);
+  JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
+  JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
+  JSValue ApplyUnaryOperator(TokenType op, JSValue val);
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
 
  private:
-  JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
-  JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
-  JSValue ApplyUnaryOperator(TokenType op, JSValue val);
+  VM* vm_;
 };
 
 }  // namespace voidjs

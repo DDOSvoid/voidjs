@@ -1,11 +1,11 @@
 #include "voidjs/types/js_value.h"
-#include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
 
 bool JSValue::IsString() const {
-  return IsObject() && GetObject()->IsString();
+  return IsHeapObject() && GetHeapObject()->IsString();
 }
 
 // To Primitive
@@ -29,7 +29,7 @@ JSValue JSValue::ToBoolean(JSValue val) {
     // todo
     return val.IsInt() && val.GetInt() == 0 ? True() : False();
   } else if (val.IsString()) {
-    return val.GetObject()->AsString()->GetLength() == 0 ? True() : False();
+    return val.GetHeapObject()->AsString()->GetLength() == 0 ? True() : False();
   } else if (val.IsObject()) {
     return True();
   }

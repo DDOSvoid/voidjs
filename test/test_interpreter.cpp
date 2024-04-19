@@ -7,6 +7,36 @@
 
 using namespace voidjs;
 
+TEST(Interpreter, EvalBlockStatement) {
+  {
+    Parser parser(u"{ }");
+
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBlockStatement();
+    ASSERT_TRUE(ast_node->IsBlockStatement());
+
+    auto comp = interpreter.EvalBlockStatement(ast_node->AsBlockStatement());
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    EXPECT_TRUE(comp.GetValue().IsEmpty());
+  }
+}
+
+TEST(Intepreter, EvalBinaryExpression) {
+  {
+    Parser parser(u"1 + (2 + 3)");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(6, val.GetInt());
+  }
+}
+
 TEST(Interpreter, EvalNullLiteral) {
 }
 
@@ -50,20 +80,5 @@ TEST(Intepreter, EvalStringLiteral) {
   auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
   ASSERT_TRUE(str.IsString());
 
-  EXPECT_EQ(u"Hello, World!", str.GetObject()->AsString()->GetString());
-}
-
-TEST(Intepreter, EvalBinaryExpression) {
-  {
-    Parser parser(u"1 + (2 + 3)");
-  
-    Interpreter interpreter;
-
-    auto ast_node = parser.ParseBinaryExpression();
-    ASSERT_TRUE(ast_node->IsBinaryExpression());
-
-    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsInt());
-    EXPECT_EQ(6, val.GetInt());
-  }
+  EXPECT_EQ(u"Hello, World!", str.GetHeapObject()->AsString()->GetString());
 }
