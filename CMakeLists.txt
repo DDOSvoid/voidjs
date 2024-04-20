@@ -17,6 +17,7 @@ add_library(voidjs_obj OBJECT
   voidjs/parser/parser.cpp
   voidjs/types/js_value.cpp
   voidjs/types/lang_types/object.cpp
+  voidjs/types/internal_types/array.cpp
   voidjs/interpreter/interpreter.cpp
 )
 target_include_directories(voidjs_obj PUBLIC .)
@@ -39,6 +40,7 @@ add_executable(
   test/test_lexer.cpp
   test/test_parser.cpp
   test/test_interpreter.cpp
+  test/test_internal_types.cpp
 )
 target_link_libraries(
   unit_test

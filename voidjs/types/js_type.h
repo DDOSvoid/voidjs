@@ -9,6 +9,8 @@ enum class JSType : std::uint8_t {
   STRING,
   OBJECT,
   ARRAY,
+  DATA_PROPERTY_DESCRIPTOR,
+  ACCESSOR_PROPERTY_DESCRIPTOR,
 };
 
 }  // namespace voidjs

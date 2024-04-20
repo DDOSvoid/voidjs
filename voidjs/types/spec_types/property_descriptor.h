@@ -22,12 +22,15 @@ class PropertyDescriptor {
       has_writable_(true), has_enumerable_(true), has_configurable_(true)
   {}
 
+  bool HasWritable() const { return has_writable_; }
   bool GetWritable() const { return writable_; }
   void SetWritable(bool flag) { writable_ = flag; }
 
+  bool HasEnumerable() const { return has_enumerable_; }
   bool GetEnumerable() const { return enumerable_; }
   void SetEnumerable(bool flag) { enumerable_ = flag; }
 
+  bool HasConfigurable() const { return has_configurable_; }
   bool GetConfigurable() const { return configurable_; }
   void SetConfigurable(bool flag) { configurable_ = flag; }
   
@@ -43,6 +46,29 @@ class PropertyDescriptor {
   JSValue GetSetter() const { return setter_; }
   void SetSetter(JSValue value) { setter_ = value; }
 
+  // Defined in ECMAScript 5.1 Chatper 8.10.1
+  bool IsAccessorDescriptor() const {
+    // 1. If Desc is undefined, then return false.
+    // 2. If both Desc.[[Get]] and Desc.[[Set]] are absent, then return false.
+    // 3. Return true.
+    return HasGetter() && HasSetter();
+  }
+  
+  // Defined in ECMAScript 5.1 Chatper 8.10.2
+  bool IsDataDescriptor() const {
+    // 1. If Desc is undefined, then return false.
+    // 2. If both Desc.[[Value]] and Desc.[[Writable]] are absent, then return false.
+    // 3. Return true.
+    return HasValue() && HasWritable();
+  }
+
+  bool IsGenericDescriptor() const {
+    // 1. If Desc is undefined, then return false.
+    // 2. If IsAccessorDescriptor(Desc) and IsDataDescriptor(Desc) are both false, then return true.
+    // 3. Return false.
+    return !IsAccessorDescriptor() && !IsDataDescriptor();
+  }
+  
   bool IsEmpty() const {
     return
       !has_writable_ && !has_enumerable_ && !has_configurable_ &&
@@ -69,9 +95,19 @@ class DataPropertyDescriptor : public HeapObject {
   void SetValue(JSValue value) { *utils::BitGet<JSValue*>(this, VALUE_OFFSET) = value; }
 
   static constexpr std::size_t SIZE = VALUE_OFFSET + sizeof(JSValue);
+
+  static DataPropertyDescriptor* New(const PropertyDescriptor& desc) {
+    auto prop = HeapObject::New(SIZE, JSType::DATA_PROPERTY_DESCRIPTOR)->AsDataPropertyDescriptor();
+    prop->SetValue(desc.GetValue());
+    prop->SetWritable(desc.GetWritable());
+    prop->SetEnumerable(desc.GetEnumerable());
+    prop->SetConfigurable(desc.GetConfigurable());
+    return prop;
+  }
 };
 
 class AccessorPropertyDescriptor : public HeapObject {
+ public:
   static constexpr std::size_t GETTER_OFFSET = HeapObject::SIZE;
   JSValue GetGetter() { return *utils::BitGet<JSValue*>(this, GETTER_OFFSET); }
   void SetGetter(JSValue value) { *utils::BitGet<JSValue*>(this, GETTER_OFFSET) = value; }
@@ -81,6 +117,15 @@ class AccessorPropertyDescriptor : public HeapObject {
   void SetSetter(JSValue value) { *utils::BitGet<JSValue*>(this, SETTER_OFFSET) = value; }
 
   static constexpr std::size_t SIZE = SETTER_OFFSET + sizeof(JSValue);
+
+  static AccessorPropertyDescriptor* New(const PropertyDescriptor& desc) {
+    auto prop = HeapObject::New(SIZE, JSType::DATA_PROPERTY_DESCRIPTOR)->AsAccessorPropertyDescriptor();
+    prop->SetGetter(desc.GetGetter());
+    prop->SetSetter(desc.GetSetter());
+    prop->SetEnumerable(desc.GetEnumerable());
+    prop->SetConfigurable(desc.GetConfigurable());
+    return prop;
+  }
 };
 
 }  // namespace types

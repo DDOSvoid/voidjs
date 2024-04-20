@@ -14,6 +14,8 @@ namespace types {
 class String;
 class Object;
 class Array;
+class DataPropertyDescriptor;
+class AccessorPropertyDescriptor;
 
 }  // namespace types
 
@@ -81,16 +83,22 @@ class HeapObject {
   bool IsString() const { return GetType() == JSType::STRING; }
   bool IsObject() const { return GetType() == JSType::OBJECT; }
   bool IsArray() const { return GetType() == JSType::ARRAY; }
+  bool IsDataPropertyDescriptor() const { return GetType() == JSType::DATA_PROPERTY_DESCRIPTOR; }
+  bool ISAccessorPropertyDescriptor() const { return GetType() == JSType::ACCESSOR_PROPERTY_DESCRIPTOR; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
   types::Object* AsObject() { return reinterpret_cast<types::Object*>(this); }
   types::Array* AsArray() { return reinterpret_cast<types::Array*>(this); }
+  types::DataPropertyDescriptor* AsDataPropertyDescriptor() { return reinterpret_cast<types::DataPropertyDescriptor*>(this); }
+  types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() { return reinterpret_cast<types::AccessorPropertyDescriptor*>(this); }
 
   // As Cast
   const types::String* AsString() const { return reinterpret_cast<const types::String*>(this); }
   const types::Object* AsObject() const { return reinterpret_cast<const types::Object*>(this); }
   const types::Array* AsArray() const { return reinterpret_cast<const types::Array*>(this); }
+  const types::DataPropertyDescriptor* AsDataPropertyDescriptor() const { return reinterpret_cast<const types::DataPropertyDescriptor*>(this); }
+  const types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() const { return reinterpret_cast<const types::AccessorPropertyDescriptor*>(this); }
 };
 
 }  // namespace voidjs

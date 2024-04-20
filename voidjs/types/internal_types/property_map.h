@@ -1,6 +1,7 @@
 #ifndef VOIDJS_TYPES_INTERNAL_TYPES_PROPERTY_MAP_H
 #define VOIDJS_TYPES_INTERNAL_TYPES_PROPERTY_MAP_H
 
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/internal_types/array.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
@@ -16,8 +17,8 @@ class PropertyMap : public Array {
     auto len = GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
       auto cur_key = GetByIndex(idx);
-      if (cur_key == key) {
-        return cur_key;
+      if (JSValue::SameValue(cur_key, key)) {
+        return GetByIndex(idx + 1);
       }
     }
 
@@ -25,7 +26,28 @@ class PropertyMap : public Array {
   }
 
   void SetProperty(JSValue key, const PropertyDescriptor& desc) {
+    auto len = GetLength();
+
+    JSValue prop;
+    if (desc.IsDataDescriptor()) {
+      prop = JSValue(DataPropertyDescriptor::New(desc));
+    } else if (desc.IsAccessorDescriptor()) {
+      prop = JSValue(AccessorPropertyDescriptor::New(desc));
+    } else {
+      // todo
+    }
     
+    for (std::size_t idx = 0; idx < len; idx += 2) {
+      auto cur_key = GetByIndex(idx);
+      if (JSValue::SameValue(cur_key, key)) {
+        SetByIndex(idx + 1, prop);
+        return ;
+      }
+    }
+    
+    auto arr = Array::New(2);
+    SetByIndex(0, key);
+    SetByIndex(1, prop);
   }
  
 };
