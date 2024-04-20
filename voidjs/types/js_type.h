@@ -11,6 +11,7 @@ enum class JSType : std::uint8_t {
   ARRAY,
   DATA_PROPERTY_DESCRIPTOR,
   ACCESSOR_PROPERTY_DESCRIPTOR,
+  PROPERTY_MAP,
 };
 
 }  // namespace voidjs

@@ -15,7 +15,7 @@ namespace types {
 class String : public HeapObject {
  public:
   // std::size_t length_;
-  static constexpr std::size_t LENGTH_OFFSET = HeapObject::SIZE;
+  static constexpr std::size_t LENGTH_OFFSET = HeapObject::OFFSET;
   std::size_t GetLength() const { return *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET); }
   void SetLength(std::size_t length) { *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET) = length; }
 
@@ -31,17 +31,6 @@ class String : public HeapObject {
     auto data = GetData();
     return std::u16string_view(data, len);
   }
-  
-  static String* New(const std::u16string& source) {
-    auto len = source.size();
-    auto str = reinterpret_cast<String*>(
-      HeapObject::New(sizeof(std::size_t) + len * sizeof(char16_t),
-                  JSType::STRING));
-    str->SetLength(len);
-    std::copy(source.begin(), source.end(), str->GetData());
-    return str;
-  }
-
 };
 
 }  // namespace types

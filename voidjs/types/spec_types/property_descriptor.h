@@ -24,25 +24,34 @@ class PropertyDescriptor {
 
   bool HasWritable() const { return has_writable_; }
   bool GetWritable() const { return writable_; }
-  void SetWritable(bool flag) { writable_ = flag; }
+  void SetWritable(bool flag) {
+    writable_ = flag;
+    has_writable_ = true;
+  }
 
   bool HasEnumerable() const { return has_enumerable_; }
   bool GetEnumerable() const { return enumerable_; }
-  void SetEnumerable(bool flag) { enumerable_ = flag; }
+  void SetEnumerable(bool flag) {
+    enumerable_ = flag;
+    has_enumerable_ = true;
+  }
 
   bool HasConfigurable() const { return has_configurable_; }
   bool GetConfigurable() const { return configurable_; }
-  void SetConfigurable(bool flag) { configurable_ = flag; }
+  void SetConfigurable(bool flag) {
+    configurable_ = flag;
+    has_configurable_ = true;
+  }
   
-  bool HasValue() const { return value_.IsEmpty(); }
+  bool HasValue() const { return !value_.IsEmpty(); }
   JSValue GetValue() const { return value_; }
   void SetValue(JSValue value) { value_ = value; }
 
-  bool HasGetter() const { return getter_.IsEmpty(); }
+  bool HasGetter() const { return !getter_.IsEmpty(); }
   JSValue GetGetter() const { return getter_; }
   void SetGetter(JSValue value) { getter_ = value; }
 
-  bool HasSetter() const { return setter_.IsEmpty(); }
+  bool HasSetter() const { return !setter_.IsEmpty(); }
   JSValue GetSetter() const { return setter_; }
   void SetSetter(JSValue value) { setter_ = value; }
 
@@ -51,7 +60,7 @@ class PropertyDescriptor {
     // 1. If Desc is undefined, then return false.
     // 2. If both Desc.[[Get]] and Desc.[[Set]] are absent, then return false.
     // 3. Return true.
-    return HasGetter() && HasSetter();
+    return HasGetter() || HasSetter();
   }
   
   // Defined in ECMAScript 5.1 Chatper 8.10.2
@@ -59,7 +68,7 @@ class PropertyDescriptor {
     // 1. If Desc is undefined, then return false.
     // 2. If both Desc.[[Value]] and Desc.[[Writable]] are absent, then return false.
     // 3. Return true.
-    return HasValue() && HasWritable();
+    return HasValue() || HasWritable();
   }
 
   bool IsGenericDescriptor() const {
@@ -94,38 +103,22 @@ class DataPropertyDescriptor : public HeapObject {
   JSValue GetValue() { return *utils::BitGet<JSValue*>(this, VALUE_OFFSET); }
   void SetValue(JSValue value) { *utils::BitGet<JSValue*>(this, VALUE_OFFSET) = value; }
 
-  static constexpr std::size_t SIZE = VALUE_OFFSET + sizeof(JSValue);
-
-  static DataPropertyDescriptor* New(const PropertyDescriptor& desc) {
-    auto prop = HeapObject::New(SIZE, JSType::DATA_PROPERTY_DESCRIPTOR)->AsDataPropertyDescriptor();
-    prop->SetValue(desc.GetValue());
-    prop->SetWritable(desc.GetWritable());
-    prop->SetEnumerable(desc.GetEnumerable());
-    prop->SetConfigurable(desc.GetConfigurable());
-    return prop;
-  }
+  static constexpr std::size_t SIZE = sizeof(JSValue);
+  static constexpr std::size_t OFFSET = VALUE_OFFSET + sizeof(JSValue);
 };
 
 class AccessorPropertyDescriptor : public HeapObject {
  public:
-  static constexpr std::size_t GETTER_OFFSET = HeapObject::SIZE;
+  static constexpr std::size_t GETTER_OFFSET = HeapObject::OFFSET;
   JSValue GetGetter() { return *utils::BitGet<JSValue*>(this, GETTER_OFFSET); }
   void SetGetter(JSValue value) { *utils::BitGet<JSValue*>(this, GETTER_OFFSET) = value; }
   
-  static constexpr std::size_t SETTER_OFFSET = HeapObject::SIZE;
+  static constexpr std::size_t SETTER_OFFSET = GETTER_OFFSET + sizeof(JSValue);
   JSValue SetGetter() { return *utils::BitGet<JSValue*>(this, SETTER_OFFSET); }
   void SetSetter(JSValue value) { *utils::BitGet<JSValue*>(this, SETTER_OFFSET) = value; }
 
-  static constexpr std::size_t SIZE = SETTER_OFFSET + sizeof(JSValue);
-
-  static AccessorPropertyDescriptor* New(const PropertyDescriptor& desc) {
-    auto prop = HeapObject::New(SIZE, JSType::DATA_PROPERTY_DESCRIPTOR)->AsAccessorPropertyDescriptor();
-    prop->SetGetter(desc.GetGetter());
-    prop->SetSetter(desc.GetSetter());
-    prop->SetEnumerable(desc.GetEnumerable());
-    prop->SetConfigurable(desc.GetConfigurable());
-    return prop;
-  }
+  static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
+  static constexpr std::size_t OFFSET = SETTER_OFFSET + sizeof(JSValue);
 };
 
 }  // namespace types

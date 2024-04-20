@@ -22,7 +22,8 @@ class Object : public HeapObject {
   JSValue GetProperties() const { return *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET); }
   void SetProperties(JSValue props) { *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET) = props; }
 
-  static constexpr std::size_t SIZE = PROPERTIES_OFFSET + sizeof(JSValue);
+  static constexpr std::size_t SIZE = sizeof(JSValue);
+  static constexpr std::size_t OFFSET = PROPERTIES_OFFSET + sizeof(JSValue);
   
   std::optional<PropertyDescriptor> GetOwnProperty(JSValue P) const;
   JSValue Get() const;

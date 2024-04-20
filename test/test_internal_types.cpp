@@ -1,14 +1,17 @@
 #include "gtest/gtest.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/internal_types/array.h"
-#include "voidjs/types/js_value.h"
+#include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/types/lang_types/string.h"
 
 using namespace voidjs;
 
 TEST(InternalTypes, Array) {
   std::size_t len = 5;
   
-  auto arr = types::Array::New(len);
+  auto arr = ObjectFactory::NewArray(len);
 
   
   for (std::size_t idx = 0; idx < len; ++idx) {
@@ -28,4 +31,29 @@ TEST(InternalTypes, Array) {
     EXPECT_TRUE(JSValue::SameValue(JSValue(expect_arr[idx]),
                                    new_arr->GetByIndex(idx)));
   }
+}
+
+TEST(InternalTypes, ProperyMap) {
+  auto map = JSValue(ObjectFactory::NewPropertyMap());
+
+  auto key1 = JSValue(ObjectFactory::NewString(u"key1"));
+  auto val1 = types::PropertyDescriptor(JSValue(42));
+
+  auto key2 = JSValue(ObjectFactory::NewString(u"key2"));
+  auto val2 = types::PropertyDescriptor(JSValue(2));
+
+  auto key3 = JSValue(ObjectFactory::NewString(u"key3"));
+  auto val3 = types::PropertyDescriptor(JSValue(3));
+
+  auto key4 = JSValue(ObjectFactory::NewString(u"key4"));
+  auto val4 = types::PropertyDescriptor(JSValue(4));
+
+  map = types::PropertyMap::SetProperty(map, key1, val1);
+  map = types::PropertyMap::SetProperty(map, key2, val2);
+  map = types::PropertyMap::SetProperty(map, key3, val3);
+  map = types::PropertyMap::SetProperty(map, key4, val4);
+
+  auto val = map.GetHeapObject()->AsPropertyMap()->GetProperty(key4);
+  ASSERT_TRUE(val.IsHeapObject() && val.GetHeapObject()->IsDataPropertyDescriptor());
+  EXPECT_EQ(val4.GetValue().GetInt(), val.GetHeapObject()->AsDataPropertyDescriptor()->GetValue().GetInt());
 }

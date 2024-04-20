@@ -16,6 +16,7 @@ class Object;
 class Array;
 class DataPropertyDescriptor;
 class AccessorPropertyDescriptor;
+class PropertyMap;
 
 }  // namespace types
 
@@ -66,7 +67,8 @@ class HeapObject {
   bool GetConfigurable() const { return ConfigurableBitSet::Get(*GetMetaData()); }
   void SetConfigurable(bool flag) { ConfigurableBitSet::Set(GetMetaData(), flag); }
 
-  static constexpr std::size_t SIZE = META_DATA_OFFSET + META_DATA_SIZE;
+  static constexpr std::size_t SIZE = META_DATA_SIZE;
+  static constexpr std::size_t OFFSET = META_DATA_OFFSET + META_DATA_SIZE;
 
   static HeapObject* New(std::size_t size, JSType type) {
     auto obj = reinterpret_cast<HeapObject*>(Allocate(size));
@@ -85,6 +87,7 @@ class HeapObject {
   bool IsArray() const { return GetType() == JSType::ARRAY; }
   bool IsDataPropertyDescriptor() const { return GetType() == JSType::DATA_PROPERTY_DESCRIPTOR; }
   bool ISAccessorPropertyDescriptor() const { return GetType() == JSType::ACCESSOR_PROPERTY_DESCRIPTOR; }
+  bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -92,6 +95,7 @@ class HeapObject {
   types::Array* AsArray() { return reinterpret_cast<types::Array*>(this); }
   types::DataPropertyDescriptor* AsDataPropertyDescriptor() { return reinterpret_cast<types::DataPropertyDescriptor*>(this); }
   types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() { return reinterpret_cast<types::AccessorPropertyDescriptor*>(this); }
+  types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
 
   // As Cast
   const types::String* AsString() const { return reinterpret_cast<const types::String*>(this); }
@@ -99,6 +103,7 @@ class HeapObject {
   const types::Array* AsArray() const { return reinterpret_cast<const types::Array*>(this); }
   const types::DataPropertyDescriptor* AsDataPropertyDescriptor() const { return reinterpret_cast<const types::DataPropertyDescriptor*>(this); }
   const types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() const { return reinterpret_cast<const types::AccessorPropertyDescriptor*>(this); }
+  const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
 };
 
 }  // namespace voidjs

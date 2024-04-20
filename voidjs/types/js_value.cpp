@@ -1,6 +1,8 @@
 #include "voidjs/types/js_value.h"
+
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
@@ -40,14 +42,14 @@ JSValue JSValue::ToBoolean(JSValue val) {
 // Defined in ECMAScript 5.1 Chapter 9.8
 JSValue JSValue::ToString(JSValue val) {
   if (val.IsUndefined()) {
-    return JSValue(types::String::New(u"undefined"));
+    return JSValue(ObjectFactory::NewString(u"undefined"));
   } else if (val.IsNull()) {
-    return JSValue(types::String::New(u"null"));
+    return JSValue(ObjectFactory::NewString(u"null"));
   } else if (val.IsBoolean()) {
     if (val.IsTrue()) {
-      return JSValue(types::String::New(u"true"));
+      return JSValue(ObjectFactory::NewString(u"true"));
     } else {
-      return JSValue(types::String::New(u"false"));
+      return JSValue(ObjectFactory::NewString(u"false"));
     }
   } else if (val.IsNumber()) {
     // todo
@@ -89,6 +91,13 @@ bool JSValue::SameValue(JSValue x, JSValue y) {
   if (x.IsNull() && y.IsNull()) {
     return true;
   }
+  
+  // If Type(x) is Boolean,
+  // return true if x and y are both true or both false;
+  // otherwise, return false.
+  if (x.IsBoolean() && y.IsBoolean()) {
+    return x.GetBoolean() == y.GetBoolean();
+  }
 
   // todo
   if (x.IsNumber() && y.IsNumber()) {
@@ -96,12 +105,12 @@ bool JSValue::SameValue(JSValue x, JSValue y) {
       return x.GetInt() == y.GetInt();
     }
   }
-
+  
   // If Type(x) is String,
   // then return true if x and y are exactly the same sequence of characters
   // (same length and same characters in corresponding positions);
   // otherwise, return false.
-  if (x.IsString()) {
+  if (x.IsString() && y.IsString()) {
     return
       x.GetHeapObject()->AsString()->GetString() ==
       y.GetHeapObject()->AsString()->GetString();

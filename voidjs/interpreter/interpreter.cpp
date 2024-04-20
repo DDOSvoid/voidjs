@@ -6,6 +6,7 @@
 #include "voidjs/ir/literal.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/spec_types/completion.h"
 #include "voidjs/types/spec_types/reference.h"
 
@@ -354,7 +355,7 @@ JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
 // Eval StringLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalStringLiteral(StringLiteral* str) {
-  return JSValue(String::New(str->GetString()));
+  return JSValue(ObjectFactory::NewString(str->GetString()));
 }
 
 // Apply Compound Assignment
