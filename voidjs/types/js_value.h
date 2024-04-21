@@ -130,9 +130,10 @@ class JSValue {
   // Type Conversion
   // Defined in ECMAScript 5.1 Chapter 9
   static JSValue ToPrimitive(JSValue val, PreferredType type);
-  static JSValue ToBoolean(JSValue val);
+  static bool ToBoolean(JSValue val);
   static JSValue ToNumber(JSValue val); 
   static JSValue ToString(JSValue val);
+  static JSValue ToObject(JSValue val);
 
   // Type Testing
   // Defined in ECMAScript 5.1 Chapter 9

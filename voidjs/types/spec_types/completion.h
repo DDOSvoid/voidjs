@@ -26,20 +26,20 @@ class Completion {
     : type_(type), value_(value)
   {}
   
-  Completion(CompletionType type, JSValue value, JSValue target)
+  Completion(CompletionType type, JSValue value, const std::u16string& target)
     : type_(type), value_(value), target_(target)
   {}
 
   CompletionType GetType() const { return type_; }
   JSValue GetValue() const { return value_; }
-  JSValue GetTarget() const { return target_; }
+  const std::u16string& GetTarget() const { return target_; }
 
   bool IsAbruptCompletion() const { return type_ != CompletionType::NORMAL; }
   
  private:
   CompletionType type_ {CompletionType::NORMAL};
   JSValue value_;
-  JSValue target_; 
+  std::u16string target_; 
 };
 
 }  // namespace types

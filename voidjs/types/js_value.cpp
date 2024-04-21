@@ -29,27 +29,27 @@ JSValue JSValue::ToPrimitive(JSValue val, PreferredType type) {
 
 // To Boolean
 // Defined in ECMAScript 5.1 Chapter 9.2
-JSValue JSValue::ToBoolean(JSValue val) {
+bool JSValue::ToBoolean(JSValue val) {
   if (val.IsUndefined() || val.IsNull()) {
-    return False();
+    return false;
   } else if (val.IsBoolean()) {
-    return val;
+    return val == True();
   } else if (val.IsNumber()) {
     if (val.IsInt()) {
-      return val.GetInt() == 0 ? True() : False(); 
+      return val.GetInt() == 0;
     }
     if (val.IsDouble()) {
       auto d = val.GetDouble();
-      return !std::isnan(d) && d != 0 ? True() : False();
+      return !std::isnan(d) && d != 0;
     }
   } else if (val.IsString()) {
-    return val.GetHeapObject()->AsString()->GetLength() == 0 ? True() : False();
+    return val.GetHeapObject()->AsString()->GetLength() == 0;
   } else if (val.IsObject()) {
-    return True();
+    return true;
   }
   
   // this branch is unreachable
-  return JSValue{};
+  return false;
 }
 
 // To Number
@@ -95,6 +95,29 @@ JSValue JSValue::ToString(JSValue val) {
     // todo
   }
 
+  // this branch is unreachable
+  return JSValue{};
+}
+
+// ToObject
+// Defined in ECMAScript 5.1 Chapter 9.9
+JSValue JSValue::ToObject(JSValue val) {
+  if (val.IsUndefined() || val.IsNull()) {
+    // todo
+  }
+  if (val.IsBoolean()) {
+    // todo
+  }
+  if (val.IsNull()) {
+    // todo
+  }
+  if (val.IsString()) {
+    // todo
+  }
+  if (val.IsObject()) {
+    return val;
+  }
+  
   // this branch is unreachable
   return JSValue{};
 }

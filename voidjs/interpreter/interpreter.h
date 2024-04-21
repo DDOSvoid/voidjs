@@ -30,8 +30,14 @@ class Interpreter {
 
   types::Completion EvalStatement(ast::Statement* stmt);
   types::Completion EvalBlockStatement(ast::BlockStatement* block_stmt);
-  types::Completion EvalVariableStatement(ast::VariableStatement* var_stmt); 
-  types::Completion EvalExpressionStatement(ast::ExpressionStatement* expr_stmt); 
+  types::Completion EvalVariableStatement(ast::VariableStatement* var_stmt);
+  types::Completion EvalEmptyStatement(ast::EmptyStatement* empty_stmt); 
+  types::Completion EvalExpressionStatement(ast::ExpressionStatement* expr_stmt);
+  types::Completion EvalDoWhileStatement(ast::DoWhileStatement* do_while_stmt);
+  types::Completion EvalWhileStatement(ast::WhileStatement* while_stmt);
+  types::Completion EvalForStatement(ast::ForStatement* for_stmt);
+  types::Completion EvalForInStatement(ast::ForInStatement* for_in_stmt); 
+  types::Completion EvalIfStatement(ast::IfStatement* if_stmt);
   types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
 
   std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);
@@ -46,8 +52,12 @@ class Interpreter {
   JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
   JSValue EvalNumericLiteral(ast::NumericLiteral* num);
   JSValue EvalStringLiteral(ast::StringLiteral* str);
-
+  types::Reference EvalIdentifier(ast::Identifier* ident);
+  
   types::Completion EvalStatementList(const ast::Statements& stmts);
+  void EvalVariableDeclarationList(const ast::VariableDeclarations& decls);
+  JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl); 
+  
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyUnaryOperator(TokenType op, JSValue val);

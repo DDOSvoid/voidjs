@@ -23,7 +23,7 @@ HeapObject* ObjectFactory::NewHeapObject(std::size_t size) {
   return obj;
 }
 
-String* ObjectFactory::NewString(const std::u16string& source) {
+String* ObjectFactory::NewString(std::u16string_view source) {
   auto len = source.size();
   auto str = NewHeapObject(sizeof(std::size_t) + len * sizeof(char16_t))->AsString();
   str->SetType(JSType::STRING);

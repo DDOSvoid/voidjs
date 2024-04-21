@@ -4,6 +4,7 @@
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/literal.h"
+#include "voidjs/ir/statement.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
@@ -86,6 +87,12 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     case AstNodeType::VARIABLE_STATEMENT: {
       return EvalVariableStatement(stmt->AsVariableStatement());
     }
+    case AstNodeType::EMPTY_STATEMENT: {
+      return EvalEmptyStatement(stmt->AsEmptyStatement());
+    }
+    case AstNodeType::IF_STATEMENT: {
+      return EvalIfStatement(stmt->AsIfStatement());
+    }
     default: {
       return Completion();
     }
@@ -112,7 +119,17 @@ Completion Interpreter::EvalBlockStatement(BlockStatement* block_stmt) {
 // Eval VariableStatement
 // Defined in ECMAScript 5.1 Chapter 12.2
 Completion Interpreter::EvalVariableStatement(VariableStatement *var_stmt) {
-  return {};
+  // 1. Evaluate VariableDeclarationList.
+  // 2. Return (normal, empty, empty).
+  EvalVariableDeclarationList(var_stmt->GetVariableDeclarations());
+  return Completion(CompletionType::NORMAL);
+}
+
+// Eval EmptyStatement
+// Defined in ECMAScript 5.1 Chapter 12.3
+Completion Interpreter::EvalEmptyStatement(EmptyStatement *empty_stmt) {
+  // 1. Return (normal, empty, empty).
+  return Completion(CompletionType::NORMAL);
 }
 
 // Eval ExpressionStatement
@@ -123,6 +140,230 @@ Completion Interpreter::EvalExpressionStatement(ExpressionStatement* expr_stmt) 
 
   // 2. Return (normal, GetValue(exprRef), empty).
   return Completion(CompletionType::NORMAL, GetValue(expr_ref));
+}
+
+// Eval IfStatement
+// Defined in ECMAScript 5.1 Chapter 12.5
+Completion Interpreter::EvalIfStatement(ast::IfStatement* if_stmt) {
+  // IfStatement : if ( Expression ) Statement else Statement
+  
+  // 1. Let exprRef be the result of evaluating Expression.
+  auto expr_ref = EvalExpression(if_stmt->GetCondition());
+
+  // 2. If ToBoolean(GetValue(exprRef)) is true, then
+  if (JSValue::ToBoolean(GetValue(expr_ref))) {
+    // a. Return the result of evaluating the first Statement.
+    return EvalStatement(if_stmt->GetConsequent());
+  }
+  // 3. Else
+  else {
+    // a. Return the result of evaluating the second Statement.
+    if (if_stmt->GetConsequent()) {
+      return EvalStatement(if_stmt->GetAlternate());
+    } else {
+      return Completion(CompletionType::NORMAL);
+    }
+  }
+}
+
+// Eval DoWhileStatement
+// Defined in ECMAScript 5.1 Chapter 12.6.1
+Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
+  // do Statement while ( Expression );
+  
+  // 1. Let V = empty.
+  JSValue V;
+
+  // 2. Let iterating be true.
+  bool iterating = true;
+
+  // 3. Repeat, while iterating is true
+  while (iterating) {
+    // a. Let stmt be the result of evaluating Statement.
+    auto stmt = EvalStatement(do_while_stmt->GetBody());
+
+    // b. If stmt.value is not empty, let V = stmt.value.
+    if (!stmt.GetValue().IsEmpty()) {
+      V = stmt.GetValue();
+    }
+
+    // c. If stmt.type is not continue ||
+    //    stmt.target is not in the current label set, then
+    if (stmt.GetType() != CompletionType::CONTINUE ||
+        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      // i. If stmt.type is break and stmt.target is in the current label set,
+      //    return (normal, V, empty).
+      if (stmt.GetType() == CompletionType::BREAK &&
+          vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        return Completion(CompletionType::NORMAL, V);
+      }
+
+      // ii. If stmt is an abrupt completion, return stmt.
+      if (stmt.IsAbruptCompletion()) {
+        return stmt;
+      }
+    }
+
+    // d. Let exprRef be the result of evaluating Expression.
+    auto expr_ref = EvalExpression(do_while_stmt->GetCondition());
+
+    // e. If ToBoolean(GetValue(exprRef)) is false, set iterating to false.
+    if (!JSValue::ToBoolean(GetValue(expr_ref))) {
+      iterating = false;
+    }
+  }
+
+  // 4. Return (normal, V, empty);
+  return Completion(CompletionType::NORMAL, V);
+}
+
+// Eval WhileStatement
+// Defined in ECMAScript 5.1 Chapter 12.7
+Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
+  // IterationStatement : while ( Expression ) Statement
+  
+  // 1. Let V = empty.
+  JSValue V;
+
+  // 2. Repeat
+  while (true) {
+    // a. Let exprRef be the result of evaluating Expression.
+    auto expr_ref = EvalExpression(while_stmt->GetCondition());
+
+    // b. If ToBoolean(GetValue(exprRef)) is false, return (normal, V, empty).
+    if (!JSValue::ToBoolean(GetValue(expr_ref))) {
+      return Completion(CompletionType::NORMAL, V);
+    }
+
+    // c. Let stmt be the result of evaluating Statement.
+    auto stmt = EvalStatement(while_stmt->GetBody());
+
+    // d. If stmt.value is not empty, let V = stmt.value.
+    if (!stmt.GetValue().IsEmpty()) {
+      V = stmt.GetValue();
+    }
+
+    // e. If stmt.type is not continue ||
+    //    stmt.target is not in the current label set, then
+    if (stmt.GetType() != CompletionType::CONTINUE || 
+        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      // i. If stmt.type is break and stmt.target is in the current label set, then
+      if (stmt.GetType() == CompletionType::BREAK &&
+          vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        // 1. Return (normal, V, empty).
+        return Completion(CompletionType::NORMAL, V);
+      }
+
+      // ii. If stmt is an abrupt completion, return stmt.
+      if (stmt.IsAbruptCompletion()) {
+        return stmt;
+      }
+    }
+  }
+}
+
+// Eval ForStatement
+// Defind in ECMAScript 5.1 Chapter 12.6
+Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
+  // IterationStatement : for ( ExpressionNoInopt ; Expressionopt ; Expressionopt) Statement
+  // IterationStatement : for ( var VariableDeclarationListNoIn ; Expressionopt ; Expressionopt ) Statement
+
+  // 1. Evaluate VariableDeclarationListNoIn.
+  if (auto init = for_stmt->GetInitializer()) {
+    if (init->IsVariableStatement()) {
+      EvalVariableStatement(init->AsVariableStatement());
+    } else {
+      EvalExpression(init->AsExpression());
+    }
+  }
+
+  // 2. Let V = empty.
+  JSValue V;
+
+  // 3. Repeat
+  while (true) {
+    // a. If the first Expression is present, then
+    if (for_stmt->GetCondition()) {
+      // i. Let testExprRef be the result of evaluating the first Expression.
+      auto test_expr_ref = EvalExpression(for_stmt->GetCondition());
+
+      // ii. If ToBoolean(GetValue(testExprRef)) is false, return (normal, V, empty).
+      if (!JSValue::ToBoolean(GetValue(test_expr_ref))) {
+        return Completion(CompletionType::NORMAL, V);
+      }
+    }
+
+    // b. Let stmt be the result of evaluating Statement.
+    auto stmt = EvalStatement(for_stmt->GetBody());
+
+    // c. If stmt.value is not empty, let V = stmt.value
+    if (!stmt.GetValue().IsEmpty()) {
+      V = stmt.GetValue();
+    }
+
+    // d. If stmt.type is break and stmt.target is in the current label set,
+    //    return (normal, V, empty).
+    if (stmt.GetType() == CompletionType::BREAK &&
+        vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      return Completion(CompletionType::NORMAL, V);
+    }
+
+    // e. If stmt.type is not continue ||
+    //    stmt.target is not in the current label set, then
+    if (stmt.GetType() != CompletionType::CONTINUE || 
+        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      // 1. If stmt is an abrupt completion, return stmt.
+      if (stmt.IsAbruptCompletion()) {
+        return stmt;
+      }
+    }
+
+    // f. If the second Expression is present, then
+    if (for_stmt->GetUpdate()) {
+      // 1. Let incExprRef be the result of evaluating the second Expression.
+      auto inc_expr_ref = EvalExpression(for_stmt->GetUpdate());
+
+      // 2. Call GetValue(incExprRef). (This value is not used.)
+      GetValue(inc_expr_ref);
+    }
+  }
+}
+
+// Eval ForInStatement
+// Defined in ECMASCript 5.1 Chapter 12.6.4
+Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
+  // IterationStatement : for ( LeftHandSideExpression in Expression ) Statement
+  // IterationStatement : for ( var VariableDeclarationNoIn in Expression ) Statement
+
+  // 1. Let varName be the result of evaluating VariableDeclarationNoIn.
+  JSValue var_name;
+  if (for_in_stmt->GetLeft()->IsVariableDeclaraion()) {
+    var_name = EvalVariableDeclaration(for_in_stmt->GetLeft()->AsVariableDeclaration());
+  }
+
+  // 2. Let exprRef be the result of evaluating the Expression.
+  auto expr_ref = EvalExpression(for_in_stmt->GetRight());
+
+  // 3. Let experValue be GetValue(exprRef).
+  auto expr_val = GetValue(expr_ref);
+
+  // 4. If experValue is null or undefined, return (normal, empty, empty).
+  if (expr_val.IsNull() || expr_val.IsUndefined()) {
+    return Completion(CompletionType::NORMAL);
+  }
+
+  // 5. Let obj be ToObject(experValue).
+  auto obj = JSValue::ToObject(expr_val);
+
+  // 6. Let V = empty.
+  JSValue V;
+
+  // 7. Repeat
+  while (true) {
+    // a. Let P be the name of the next property of obj whose [[Enumerable]] attribute is true.
+    //    If there is no such property, return (normal, V, empty).
+    
+  }
 }
 
 // Eval Expression
@@ -161,6 +402,9 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
     }
     case AstNodeType::STRING_LITERAL: {
       return EvalStringLiteral(expr->AsStringLiteral());
+    }
+    case AstNodeType::IDENTIFIER: {
+      return EvalIdentifier(expr->AsIdentifier());
     }
     default: {
       return JSValue{};
@@ -269,7 +513,7 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(Conditio
   auto lref = EvalExpression(cond_expr->GetConditional());
 
   // 2. If ToBoolean(GetValue(lref)) is true, then
-  if (JSValue::ToBoolean(GetValue(lref)) == JSValue::True()) {
+  if (JSValue::ToBoolean(GetValue(lref))) {
     // a. Let trueRef be the result of evaluating the first AssignmentExpression.
     auto true_ref = EvalExpression(cond_expr->GetConsequent());
 
@@ -367,6 +611,12 @@ JSValue Interpreter::EvalStringLiteral(StringLiteral* str) {
   return JSValue(ObjectFactory::NewString(str->GetString()));
 }
 
+// Eval Identifier
+// Defined in ECMAScript 5.1 Chapter 11.1.2
+// todo
+Reference Interpreter::EvalIdentifier(Identifier* ident) {
+}
+
 // Apply Compound Assignment
 // todo
 JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
@@ -430,6 +680,36 @@ Completion Interpreter::EvalStatementList(const Statements &stmts) {
   }
 
   return sl;
+}
+
+// Eval VariableDeclarationList
+// Defined in ECMAScript 5.1 Chapter 12.2
+void Interpreter::EvalVariableDeclarationList(const VariableDeclarations& decls) {
+  for (auto decl : decls) {
+    EvalVariableDeclaration(decl);
+  }
+}
+
+// Eval VariableDeclaration
+// Defined in ECMASCript 5.1 Chapter 12.2
+JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
+  // 1. Let lhs be the result of evaluating Identifier as described in 11.1.2.
+  auto lhs = EvalExpression(decl->GetIdentifier());
+
+  // 2. Let rhs be the result of evaluating Initialiser.
+  if (decl->GetInitializer() == nullptr) {
+    return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
+  }
+  auto rhs = EvalExpression(decl->GetInitializer());
+
+  // 3. Let value be GetValue(rhs).
+  auto value = GetValue(rhs);
+
+  // 4. Call PutValue(lhs, value).
+  PutValue(lhs, value);
+
+  // 5. Return a String value containing the same sequence of characters as in the Identifier.
+  return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
 }
 
 // ApplyUnaryOperator
