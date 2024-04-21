@@ -21,7 +21,7 @@ void Interpreter::Execute() {
 
 // Eval Program
 // Defined in ECMAScript 5.1 Chapter 14
-Completion Interpreter::EvalProgram(ast::AstNode *ast_node) {
+Completion Interpreter::EvalProgram(AstNode *ast_node) {
   auto prog = ast_node->AsProgram();
 
   // 1. strict mode
@@ -80,8 +80,11 @@ Completion Interpreter::EvalProgram(ast::AstNode *ast_node) {
 // Defined in ECMAScript 5.1 Chapter 12
 Completion Interpreter::EvalStatement(Statement* stmt) {
   switch (stmt->GetType()) {
-    case ast::AstNodeType::EXPRESSION_STATEMENT: {
+    case AstNodeType::EXPRESSION_STATEMENT: {
       return EvalExpressionStatement(stmt->AsExpressionStatement());
+    }
+    case AstNodeType::VARIABLE_STATEMENT: {
+      return EvalVariableStatement(stmt->AsVariableStatement());
     }
     default: {
       return Completion();
@@ -104,6 +107,12 @@ Completion Interpreter::EvalBlockStatement(BlockStatement* block_stmt) {
 
   // 1. Return the result of evaluating StatementList.
   return EvalStatementList(stmts);
+}
+
+// Eval VariableStatement
+// Defined in ECMAScript 5.1 Chapter 12.2
+Completion Interpreter::EvalVariableStatement(VariableStatement *var_stmt) {
+  return {};
 }
 
 // Eval ExpressionStatement

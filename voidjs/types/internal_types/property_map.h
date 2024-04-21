@@ -17,50 +17,55 @@ class PropertyMap : public Array {
   static constexpr std::size_t DEFAULT_ENTRY_NUM = 3;
 
   JSValue GetProperty(JSValue key) {
-    // assert(key.IsPropertyKey());
-
     auto len = GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
-      auto cur_key = GetByIndex(idx);
+      auto cur_key = Get(idx);
       if (JSValue::SameValue(cur_key, key)) {
-        return GetByIndex(idx + 1);
+        return Get(idx + 1);
       }
     }
 
     return JSValue{};
   }
 
-  static JSValue SetProperty(JSValue prop_map, JSValue key, const PropertyDescriptor& desc) {
-    auto arr = prop_map.GetHeapObject()->AsPropertyMap();
-    
+  static PropertyMap* SetProperty(PropertyMap* prop_map, JSValue key, const PropertyDescriptor& desc) {
     JSValue prop;
     if (desc.IsDataDescriptor()) {
       prop = JSValue(ObjectFactory::NewDataPropertyDescriptor(desc));
     } else if (desc.IsAccessorDescriptor()) {
       prop = JSValue(ObjectFactory::NewAccessorPropertyDescriptor(desc));
     } else {
-      // todo
+      prop = JSValue(ObjectFactory::NewGenericPropertyDescriptor(desc));
     }
     
-    auto len = arr->GetLength();
+    auto len = prop_map->GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
-      auto cur_key = arr->GetByIndex(idx);
-      if (cur_key.IsEmpty()) {
-        arr->SetByIndex(idx, key);
-        arr->SetByIndex(idx + 1, prop);
-        return prop_map;
-      } 
+      auto cur_key = prop_map->Get(idx);
       if (JSValue::SameValue(cur_key, key)) {
-        arr->SetByIndex(idx + 1, prop);
+        if (cur_key.IsEmpty()) {
+          prop_map->Set(idx, key);
+        }
+        prop_map->Set(idx + 1, prop);
         return prop_map;
       }
     }
     
-    auto new_arr = ObjectFactory::NewArray(2);
-    new_arr->SetByIndex(0, key);
-    new_arr->SetByIndex(1, prop);
+    auto new_prop_map = ObjectFactory::NewPropertyMap();
+    new_prop_map->Set(0, key);
+    new_prop_map->Set(1, prop);
 
-    return JSValue(Append(JSValue(arr), JSValue(new_arr)));
+    return Append(prop_map, new_prop_map)->AsPropertyMap();
+  }
+
+  void DeleteProperty(JSValue key) {
+    auto len = GetLength();
+    for (std::size_t idx = 0; idx < len; idx += 2) {
+      auto cur_key = Get(idx);
+      if (JSValue::SameValue(cur_key, key)) {
+        Set(idx, JSValue{});
+        return ;
+      }
+    }
   }
 };
 

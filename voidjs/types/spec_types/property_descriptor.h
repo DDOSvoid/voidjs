@@ -9,6 +9,12 @@
 namespace voidjs {
 namespace types {
 
+// A data property descriptor is one that includes any fields named either [[Value]] or [[Writable]].
+// An accessor property descriptor is one that includes any fields named either [[Get]] or [[Set]].
+// Any property descriptor may have fields named [[Enumerable]] and [[Configurable]].
+// A Property Descriptor value may not be both a data property descriptor and an accessor property descriptor.
+// A generic property descriptor is a Property Descriptor value
+// that is neither a data property descriptor nor an accessor property descriptor.
 class PropertyDescriptor {
  public:
   PropertyDescriptor() {}
@@ -20,6 +26,11 @@ class PropertyDescriptor {
   PropertyDescriptor(JSValue value, bool w, bool e, bool c)
     : value_(value), writable_(w), enumerable_(e), configurable_(c),
       has_writable_(true), has_enumerable_(true), has_configurable_(true)
+  {}
+
+  PropertyDescriptor(JSValue getter, JSValue setter, bool e, bool c)
+    : getter_(getter), setter_(setter), enumerable_(e), configurable_(c),
+      has_enumerable_(true), has_configurable_(true)
   {}
 
   bool HasWritable() const { return has_writable_; }
@@ -44,17 +55,18 @@ class PropertyDescriptor {
   }
   
   bool HasValue() const { return !value_.IsEmpty(); }
-  JSValue GetValue() const { return value_; }
+  JSValue GetValue() const { return value_.IsEmpty() ? JSValue::Undefined() : value_; }
   void SetValue(JSValue value) { value_ = value; }
 
   bool HasGetter() const { return !getter_.IsEmpty(); }
-  JSValue GetGetter() const { return getter_; }
+  JSValue GetGetter() const { return getter_.IsEmpty() ? JSValue::Undefined() : getter_; }
   void SetGetter(JSValue value) { getter_ = value; }
 
   bool HasSetter() const { return !setter_.IsEmpty(); }
-  JSValue GetSetter() const { return setter_; }
+  JSValue GetSetter() const { return setter_.IsEmpty() ? JSValue::Undefined() : setter_; }
   void SetSetter(JSValue value) { setter_ = value; }
 
+  // IsAccessorDescriptor
   // Defined in ECMAScript 5.1 Chatper 8.10.1
   bool IsAccessorDescriptor() const {
     // 1. If Desc is undefined, then return false.
@@ -63,6 +75,7 @@ class PropertyDescriptor {
     return HasGetter() || HasSetter();
   }
   
+  // IsDataDescriptor
   // Defined in ECMAScript 5.1 Chatper 8.10.2
   bool IsDataDescriptor() const {
     // 1. If Desc is undefined, then return false.
@@ -71,12 +84,18 @@ class PropertyDescriptor {
     return HasValue() || HasWritable();
   }
 
+  // IsGenericDescriptor
+  // Defined in ECMAScript 5.1 Chapter 8.10.3
   bool IsGenericDescriptor() const {
     // 1. If Desc is undefined, then return false.
     // 2. If IsAccessorDescriptor(Desc) and IsDataDescriptor(Desc) are both false, then return true.
     // 3. Return false.
     return !IsAccessorDescriptor() && !IsDataDescriptor();
   }
+
+  // FromPropertyDescriptor
+  // Defined in ECMAScript 5.1 Chapter 8.10.4
+  
   
   bool IsEmpty() const {
     return
@@ -114,11 +133,14 @@ class AccessorPropertyDescriptor : public HeapObject {
   void SetGetter(JSValue value) { *utils::BitGet<JSValue*>(this, GETTER_OFFSET) = value; }
   
   static constexpr std::size_t SETTER_OFFSET = GETTER_OFFSET + sizeof(JSValue);
-  JSValue SetGetter() { return *utils::BitGet<JSValue*>(this, SETTER_OFFSET); }
+  JSValue GetSetter() { return *utils::BitGet<JSValue*>(this, SETTER_OFFSET); }
   void SetSetter(JSValue value) { *utils::BitGet<JSValue*>(this, SETTER_OFFSET) = value; }
 
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
   static constexpr std::size_t OFFSET = SETTER_OFFSET + sizeof(JSValue);
+};
+
+class GenericPropertyDescriptor : public HeapObject {
 };
 
 }  // namespace types

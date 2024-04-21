@@ -30,6 +30,7 @@ class Interpreter {
 
   types::Completion EvalStatement(ast::Statement* stmt);
   types::Completion EvalBlockStatement(ast::BlockStatement* block_stmt);
+  types::Completion EvalVariableStatement(ast::VariableStatement* var_stmt); 
   types::Completion EvalExpressionStatement(ast::ExpressionStatement* expr_stmt); 
   types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
 

@@ -15,26 +15,26 @@ TEST(InternalTypes, Array) {
 
   
   for (std::size_t idx = 0; idx < len; ++idx) {
-    arr->SetByIndex(idx, JSValue(static_cast<std::int32_t>(idx)));
+    arr->Set(idx, JSValue(static_cast<std::int32_t>(idx)));
   }
 
   for (std::size_t idx = 0; idx < len; ++idx) {
     EXPECT_TRUE(JSValue::SameValue(JSValue(static_cast<std::int32_t>(idx)),
-                                   arr->GetByIndex(idx)));
+                                   arr->Get(idx)));
   }
 
-  auto new_arr = types::Array::Append(JSValue(arr), JSValue(arr)).GetHeapObject()->AsArray();
+  auto new_arr = types::Array::Append(arr, arr);
   EXPECT_EQ(2 * len, new_arr->GetLength());
 
   auto expect_arr = std::vector{0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
   for (std::size_t idx = 0; idx < new_arr->GetLength(); ++idx) {
     EXPECT_TRUE(JSValue::SameValue(JSValue(expect_arr[idx]),
-                                   new_arr->GetByIndex(idx)));
+                                   new_arr->Get(idx)));
   }
 }
 
 TEST(InternalTypes, ProperyMap) {
-  auto map = JSValue(ObjectFactory::NewPropertyMap());
+  auto map = ObjectFactory::NewPropertyMap();
 
   auto key1 = JSValue(ObjectFactory::NewString(u"key1"));
   auto val1 = types::PropertyDescriptor(JSValue(42));
@@ -53,7 +53,12 @@ TEST(InternalTypes, ProperyMap) {
   map = types::PropertyMap::SetProperty(map, key3, val3);
   map = types::PropertyMap::SetProperty(map, key4, val4);
 
-  auto val = map.GetHeapObject()->AsPropertyMap()->GetProperty(key4);
+  auto val = map->GetProperty(key4);
   ASSERT_TRUE(val.IsHeapObject() && val.GetHeapObject()->IsDataPropertyDescriptor());
   EXPECT_EQ(val4.GetValue().GetInt(), val.GetHeapObject()->AsDataPropertyDescriptor()->GetValue().GetInt());
+
+  map->DeleteProperty(key1);
+
+  auto emp_val = map->GetProperty(key1);
+  EXPECT_TRUE(emp_val.IsEmpty());
 }

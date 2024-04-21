@@ -3,6 +3,7 @@
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/array.h"
@@ -31,6 +32,13 @@ String* ObjectFactory::NewString(const std::u16string& source) {
   return str;
 }
 
+Object* ObjectFactory::NewObject() {
+  auto obj = NewHeapObject(Object::SIZE)->AsObject();
+  obj->SetProperties(JSValue(NewPropertyMap()));
+  obj->SetProtoType(JSValue::Null());
+  return obj;
+}
+
 Array* ObjectFactory::NewArray(std::size_t len) {
   auto arr = NewHeapObject(sizeof(std::size_t) + len * sizeof(JSValue))->AsArray();
   arr->SetType(JSType::ARRAY);
@@ -56,6 +64,15 @@ AccessorPropertyDescriptor* ObjectFactory::NewAccessorPropertyDescriptor(
   prop->SetType(JSType::ACCESSOR_PROPERTY_DESCRIPTOR);
   prop->SetGetter(desc.GetGetter());
   prop->SetSetter(desc.GetSetter());
+  prop->SetEnumerable(desc.GetEnumerable());
+  prop->SetConfigurable(desc.GetConfigurable());
+  return prop;
+}
+
+GenericPropertyDescriptor* ObjectFactory::NewGenericPropertyDescriptor(
+  const types::PropertyDescriptor &desc) {
+  auto prop = NewHeapObject(GenericPropertyDescriptor::SIZE)->AsGenericPropertyDescriptor();
+  prop->SetType(JSType::GENERIC_PROPERTY_DESCRIPTOR);
   prop->SetEnumerable(desc.GetEnumerable());
   prop->SetConfigurable(desc.GetConfigurable());
   return prop;

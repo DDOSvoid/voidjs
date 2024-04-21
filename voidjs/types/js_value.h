@@ -54,6 +54,11 @@ class Object;
 
 class HeapObject;
 
+enum class PreferredType : std::uint8_t {
+  NUMBER,
+  STRING,
+};
+
 class JSValue {
  public:
   JSValue()
@@ -124,8 +129,9 @@ class JSValue {
 
   // Type Conversion
   // Defined in ECMAScript 5.1 Chapter 9
-  static JSValue ToPrimitive(JSValue val);
+  static JSValue ToPrimitive(JSValue val, PreferredType type);
   static JSValue ToBoolean(JSValue val);
+  static JSValue ToNumber(JSValue val); 
   static JSValue ToString(JSValue val);
 
   // Type Testing

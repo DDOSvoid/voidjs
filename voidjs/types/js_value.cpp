@@ -1,5 +1,8 @@
 #include "voidjs/types/js_value.h"
 
+#include <cmath>
+#include <limits>
+
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/object_factory.h"
@@ -13,12 +16,15 @@ bool JSValue::IsString() const {
 
 // To Primitive
 // Defined in ECMAScript 5.1 Chapter 9.1
-JSValue JSValue::ToPrimitive(JSValue val) {
+JSValue JSValue::ToPrimitive(JSValue val, PreferredType type) {
   if (val.IsPrimitive()) {
     return val;
-  } else {
+  } else if (val.IsObject()) {
     // todo
   }
+  
+  // this branch is unreachable
+  return JSValue{};
 }
 
 // To Boolean
@@ -29,13 +35,43 @@ JSValue JSValue::ToBoolean(JSValue val) {
   } else if (val.IsBoolean()) {
     return val;
   } else if (val.IsNumber()) {
-    // todo
-    return val.IsInt() && val.GetInt() == 0 ? True() : False();
+    if (val.IsInt()) {
+      return val.GetInt() == 0 ? True() : False(); 
+    }
+    if (val.IsDouble()) {
+      auto d = val.GetDouble();
+      return !std::isnan(d) && d != 0 ? True() : False();
+    }
   } else if (val.IsString()) {
     return val.GetHeapObject()->AsString()->GetLength() == 0 ? True() : False();
   } else if (val.IsObject()) {
     return True();
   }
+  
+  // this branch is unreachable
+  return JSValue{};
+}
+
+// To Number
+// Defined in ECMAScript 5.1 Chapter 9.3
+JSValue JSValue::ToNumber(JSValue val) {
+  if (val.IsUndefined()) {
+    return JSValue(std::numeric_limits<double>::quiet_NaN());
+  } else if (val.IsNull()) {
+    return JSValue(0);
+  } else if (val.IsBoolean()) {
+    return JSValue(val.GetBoolean() ? 1 : 0);
+  } else if (val.IsNumber()) {
+    return val;
+  } else if (val.IsString()) {
+    // todo
+  } else if (val.IsObject()) {
+    auto prim_val = ToPrimitive(val, PreferredType::NUMBER);
+    return ToNumber(prim_val);
+  }
+
+  // this branch is unreachable
+  return JSValue{};
 }
 
 // To String
@@ -58,6 +94,9 @@ JSValue JSValue::ToString(JSValue val) {
   } else if (val.IsObject()) {
     // todo
   }
+
+  // this branch is unreachable
+  return JSValue{};
 }
 
 // Check Object Coercible

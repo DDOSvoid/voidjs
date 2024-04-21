@@ -16,6 +16,7 @@ class Object;
 class Array;
 class DataPropertyDescriptor;
 class AccessorPropertyDescriptor;
+class GenericPropertyDescriptor;
 class PropertyMap;
 
 }  // namespace types
@@ -86,7 +87,8 @@ class HeapObject {
   bool IsObject() const { return GetType() == JSType::OBJECT; }
   bool IsArray() const { return GetType() == JSType::ARRAY; }
   bool IsDataPropertyDescriptor() const { return GetType() == JSType::DATA_PROPERTY_DESCRIPTOR; }
-  bool ISAccessorPropertyDescriptor() const { return GetType() == JSType::ACCESSOR_PROPERTY_DESCRIPTOR; }
+  bool IsAccessorPropertyDescriptor() const { return GetType() == JSType::ACCESSOR_PROPERTY_DESCRIPTOR; }
+  bool IsGenericPropertyDescriptor() const { return GetType() == JSType::GENERIC_PROPERTY_DESCRIPTOR; }
   bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
 
   // As Cast
@@ -95,6 +97,7 @@ class HeapObject {
   types::Array* AsArray() { return reinterpret_cast<types::Array*>(this); }
   types::DataPropertyDescriptor* AsDataPropertyDescriptor() { return reinterpret_cast<types::DataPropertyDescriptor*>(this); }
   types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() { return reinterpret_cast<types::AccessorPropertyDescriptor*>(this); }
+  types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() { return reinterpret_cast<types::GenericPropertyDescriptor*>(this); }
   types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
 
   // As Cast
@@ -103,6 +106,7 @@ class HeapObject {
   const types::Array* AsArray() const { return reinterpret_cast<const types::Array*>(this); }
   const types::DataPropertyDescriptor* AsDataPropertyDescriptor() const { return reinterpret_cast<const types::DataPropertyDescriptor*>(this); }
   const types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() const { return reinterpret_cast<const types::AccessorPropertyDescriptor*>(this); }
+  const types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() const { return reinterpret_cast<const types::GenericPropertyDescriptor*>(this); }
   const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
 };
 

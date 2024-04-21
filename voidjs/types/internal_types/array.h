@@ -18,10 +18,10 @@ class Array : public HeapObject {
   // JSValue[] data_;
   static constexpr std::size_t DATA_OFFSET = LENGTH_OFFSET + sizeof(std::size_t);
   JSValue* GetData() const { return utils::BitGet<JSValue*>(this, DATA_OFFSET); }
-  JSValue GetByIndex(std::size_t idx) const { return *(GetData() + idx); } 
-  void SetByIndex(std::size_t idx, JSValue val) { *(GetData() + idx) = val; }
+  JSValue Get(std::size_t idx) const { return *(GetData() + idx); } 
+  void Set(std::size_t idx, JSValue val) { *(GetData() + idx) = val; }
 
-  static JSValue Append(JSValue first, JSValue second);
+  static Array* Append(Array* first, Array* second);
 };
 
 }  // namespace types

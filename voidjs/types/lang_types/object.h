@@ -16,17 +16,31 @@ namespace types {
 
 class String;
 
+// JSValue properties
+// JSValue prototype
 class Object : public HeapObject {
  public:
   static constexpr std::size_t PROPERTIES_OFFSET = HeapObject::SIZE;
   JSValue GetProperties() const { return *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET); }
   void SetProperties(JSValue props) { *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET) = props; }
 
-  static constexpr std::size_t SIZE = sizeof(JSValue);
-  static constexpr std::size_t OFFSET = PROPERTIES_OFFSET + sizeof(JSValue);
-  
-  std::optional<PropertyDescriptor> GetOwnProperty(JSValue P) const;
-  JSValue Get() const;
+  static constexpr std::size_t PROTOTYPE_OFFSET = PROPERTIES_OFFSET + sizeof(JSValue);
+  JSValue GetProtoType() const { return *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET); }
+  void SetProtoType(JSValue proto) { *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET) = proto; }
+
+  static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
+  static constexpr std::size_t OFFSET = PROTOTYPE_OFFSET + sizeof(JSValue);
+
+  // 
+  PropertyDescriptor GetOwnProperty(JSValue P) const;
+  PropertyDescriptor GetProperty(JSValue P) const;
+  JSValue Get(JSValue P) const;
+  bool CanPut(JSValue P) const;
+  void Put(JSValue P, JSValue V, bool Throw);
+  bool HasProperty(JSValue P) const;
+  bool Delete(JSValue P, bool Throw);
+  JSValue DefaultValue(PreferredType hint) const;
+  bool DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool Throw); 
 };
 
 }  // namespace types
