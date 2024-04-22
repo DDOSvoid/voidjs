@@ -22,6 +22,10 @@ class ExecutionContext {
   void DeleteLabel(const std::u16string& label) {
     label_set_.erase(label);
   }
+
+  types::LexicalEnvironment* GetLexicalEnvironment() const {
+    return lexical_environment_;
+  }
   
  private:
   std::unordered_set<std::u16string> label_set_;  // contain "" initially

@@ -61,6 +61,8 @@ class Interpreter {
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyUnaryOperator(TokenType op, JSValue val);
+
+  JSValue IdentifierResolution(types::String* ident);
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);

@@ -18,6 +18,7 @@ class DataPropertyDescriptor;
 class AccessorPropertyDescriptor;
 class GenericPropertyDescriptor;
 class PropertyMap;
+class Binding;
 
 }  // namespace types
 
@@ -34,6 +35,9 @@ class HeapObject {
   // bool writable           1 bit
   // bool enumerable         1 bit
   // bool configurable       1 bit
+
+  // bool deletable          1 bit
+  // bool mutable            1 bit
   
   static constexpr std::size_t META_DATA_OFFSET = 0;
   static constexpr std::size_t META_DATA_SIZE = sizeof(std::uint64_t);
@@ -68,19 +72,17 @@ class HeapObject {
   bool GetConfigurable() const { return ConfigurableBitSet::Get(*GetMetaData()); }
   void SetConfigurable(bool flag) { ConfigurableBitSet::Set(GetMetaData(), flag); }
 
+  using DeletableBitSet = utils::BitSet<bool, 14, 15>;
+  bool GetDeletable() const { return DeletableBitSet::Get(*GetMetaData()); }
+  void SetDeletable(bool flag) { DeletableBitSet::Set(GetMetaData(), flag); }
+
+  using MutableBitSet = utils::BitSet<bool, 15, 16>;
+  bool GetMutable() const { return MutableBitSet::Get(*GetMetaData()); }
+  void SetMutable(bool flag) { MutableBitSet::Set(GetMetaData(), flag); }
+
   static constexpr std::size_t SIZE = META_DATA_SIZE;
   static constexpr std::size_t OFFSET = META_DATA_OFFSET + META_DATA_SIZE;
-
-  static HeapObject* New(std::size_t size, JSType type) {
-    auto obj = reinterpret_cast<HeapObject*>(Allocate(size));
-    obj->SetMetaData(0);
-    obj->SetType(type);
-    return obj;
-  }
-  
-  static std::uintptr_t Allocate(std::size_t size) {
-    return reinterpret_cast<std::uintptr_t>(new std::byte[SIZE + size]);
-  }
+ 
   
   // Is Check
   bool IsString() const { return GetType() == JSType::STRING; }
@@ -90,6 +92,7 @@ class HeapObject {
   bool IsAccessorPropertyDescriptor() const { return GetType() == JSType::ACCESSOR_PROPERTY_DESCRIPTOR; }
   bool IsGenericPropertyDescriptor() const { return GetType() == JSType::GENERIC_PROPERTY_DESCRIPTOR; }
   bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
+  bool IsBindgin() const { return GetType() == JSType::BINDING; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -99,6 +102,7 @@ class HeapObject {
   types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() { return reinterpret_cast<types::AccessorPropertyDescriptor*>(this); }
   types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() { return reinterpret_cast<types::GenericPropertyDescriptor*>(this); }
   types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
+  types::Binding* AsBinding() { return reinterpret_cast<types::Binding*>(this); }
 
   // As Cast
   const types::String* AsString() const { return reinterpret_cast<const types::String*>(this); }
@@ -108,6 +112,7 @@ class HeapObject {
   const types::AccessorPropertyDescriptor* AsAccessorPropertyDescriptor() const { return reinterpret_cast<const types::AccessorPropertyDescriptor*>(this); }
   const types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() const { return reinterpret_cast<const types::GenericPropertyDescriptor*>(this); }
   const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
+  const types::Binding* AsBinding() const { return reinterpret_cast<const types::Binding*>(this); }
 };
 
 }  // namespace voidjs

@@ -362,7 +362,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   while (true) {
     // a. Let P be the name of the next property of obj whose [[Enumerable]] attribute is true.
     //    If there is no such property, return (normal, V, empty).
-    
+    // todo
   }
 }
 
@@ -716,6 +716,22 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
 // todo
 JSValue Interpreter::ApplyUnaryOperator(TokenType op, JSValue val) {
   return {};
+}
+
+// Identifier Resolution
+// Defined in ECMAScript 5.1 Chapter 10.3.1
+JSValue Interpreter::IdentifierResolution(String* ident) {
+  // 1. Let env be the running execution context’s LexicalEnvironment.
+  auto env = vm_->GetExecutionContext()->GetLexicalEnvironment();
+
+  // 2. If the syntactic production that is being evaluated is contained in a strict mode code,
+  //    then let strict be true, else let strict be false.
+  // todo
+  auto strict = false;
+
+  // 3. Return the result of calling GetIdentifierReference function passing env,
+  //    Identifier, and strict as arguments.
+  
 }
 
 // GetValue(V)

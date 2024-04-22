@@ -8,6 +8,7 @@
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/array.h"
 #include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/types/internal_types/binding.h"
 
 namespace voidjs {
 
@@ -82,6 +83,15 @@ PropertyMap* ObjectFactory::NewPropertyMap() {
   auto map = NewArray(2 * PropertyMap::DEFAULT_ENTRY_NUM)->AsPropertyMap();
   map->SetType(JSType::PROPERTY_MAP);
   return map;
+}
+
+Binding* ObjectFactory::NewBinding(JSValue value, bool _mutable, bool deletable) {
+  auto binding = NewHeapObject(Binding::SIZE)->AsBinding();
+  binding->SetType(JSType::BINDING);
+  binding->SetMutable(_mutable);
+  binding->SetDeletable(deletable);
+  binding->SetValue(value);
+  return binding;
 }
 
 }  // namespace voidjs

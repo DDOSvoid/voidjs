@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "voidjs/parser/parser.h"
 #include "voidjs/interpreter/interpreter.h"
+#include "voidjs/types/spec_types/completion.h"
 #include "voidjs/utils/helper.h"
 
 using namespace voidjs;
@@ -22,7 +23,19 @@ TEST(Interpreter, EvalBlockStatement) {
   }
 }
 
-TEST(Intepreter, EvalBinaryExpression) {
+TEST(Interpreter, EvalEmptyStatement) {
+  Parser parser(u";");
+  
+  Interpreter interpreter;
+
+  auto ast_node = parser.ParseEmptyStatement();
+  ASSERT_TRUE(ast_node->IsEmptyStatement());
+
+  auto comp = interpreter.EvalEmptyStatement(ast_node->AsEmptyStatement());
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
+TEST(Interpreter, EvalBinaryExpression) {
   {
     Parser parser(u"1 + (2 + 3)");
   

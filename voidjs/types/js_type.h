@@ -13,6 +13,7 @@ enum class JSType : std::uint8_t {
   ACCESSOR_PROPERTY_DESCRIPTOR,
   GENERIC_PROPERTY_DESCRIPTOR,
   PROPERTY_MAP,
+  BINDING,
 };
 
 }  // namespace voidjs

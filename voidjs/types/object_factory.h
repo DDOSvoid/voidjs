@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 
 namespace voidjs {
@@ -33,6 +34,7 @@ class ObjectFactory {
   static types::AccessorPropertyDescriptor* NewAccessorPropertyDescriptor(const types::PropertyDescriptor& desc);
   static types::GenericPropertyDescriptor* NewGenericPropertyDescriptor(const types::PropertyDescriptor& desc);
   static types::PropertyMap* NewPropertyMap();
+  static types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable); 
 };
 
 }  // namespace voidjs
