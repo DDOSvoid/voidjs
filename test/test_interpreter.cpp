@@ -125,6 +125,60 @@ count;
   }
 }
 
+TEST(Interpreter, EvalWhileStatement) {
+  {
+    std::u16string source = uR"(
+var i = 0;
+var n = i;
+while (i < n) {
+    i += 1; 
+}
+i;
+)";
+
+    Parser parser(source);
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(0, comp.GetValue().GetInt());
+  }
+}
+
+TEST(Interpreter, EvalForStatement) {
+  {
+    std::u16string source = uR"(
+var count = 0;
+var n = 1000000000;
+var f = 1, g = 1;
+for (; g < n; count += 1) {
+    f = f + g;
+    var tmp = f;
+    f = g;
+    g = tmp;
+}
+count;
+)";
+    
+    Parser parser(source);
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(43, comp.GetValue().GetInt());
+  }
+}
+
 TEST(Interpreter, EvalBinaryExpression) {
   {
     Parser parser(u"1 + (2 + 3)");
