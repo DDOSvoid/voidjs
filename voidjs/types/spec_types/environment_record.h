@@ -41,6 +41,10 @@ class DeclarativeEnvironmentRecord : public EnvironmentRecord {
 
 class ObjectEnvironmentRecord : public EnvironmentRecord {
  public:
+  ObjectEnvironmentRecord(Object* object)
+    : object_(object)
+  {}
+  
   // Inherited from base class 
   virtual bool HasBinding(String* N) const override;
   virtual void CreateMutableBinding(String* N, bool D) override;

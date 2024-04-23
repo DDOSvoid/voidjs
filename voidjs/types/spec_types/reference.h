@@ -13,7 +13,7 @@ namespace types {
 class Reference {
  public:
   Reference(const std::variant<JSValue, EnvironmentRecord*>& base,
-            std::u16string_view name, bool is_strict)
+            String* name, bool is_strict)
     : base_(base), name_(name), is_strict_(is_strict)
   {}
   
@@ -23,7 +23,7 @@ class Reference {
 
   // GetReferencedName
   // Returns the referenced name component of the reference V.
-  std::u16string_view GetReferencedName() const { return name_; }
+  String* GetReferencedName() const { return name_; }
 
   // IsStrictReference
   // Returns the strict reference component of the reference V.
@@ -32,7 +32,7 @@ class Reference {
   // HasPrimitiveBase
   // Returns true if the base value is a Boolean, String, or Number.
   bool HasPrimitiveBase() const {
-    if (auto val = std::get_if<JSValue>(&base_); val) {
+    if (auto val = std::get_if<JSValue>(&base_); !val) {
       return false;
     } else {
       return val->IsBoolean() || val->IsString() || val->IsNumber();
@@ -56,7 +56,7 @@ class Reference {
 
  private:
   std::variant<JSValue, EnvironmentRecord*> base_;
-  std::u16string_view name_;
+  String* name_;
   bool is_strict_ {};
 };
 

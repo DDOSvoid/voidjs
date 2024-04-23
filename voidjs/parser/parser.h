@@ -1,12 +1,11 @@
 #ifndef VOIDJS_PARSER_PARSER_H
 #define VOIDJS_PARSER_PARSER_H
 
+#include "voidjs/lexer/lexer.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
-#include "voidjs/lexer/lexer.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/utils/error.h"
-#include <initializer_list>
 
 namespace voidjs {
 
@@ -67,17 +66,29 @@ class Parser {
   ast::CaseClauses ParseCaseClauses();
   ast::CaseClause* ParseCaseClause();
   ast::Statement* ParsePotentialLabelledStatement();
-  ast::Statement* ParseFunctionDeclaraion();
+  ast::Statement* ParseFunctionDeclaration();
   ast::Expressions ParseFormalParameterList();
   ast::Properties ParsePropertyNameAndValueList();
   ast::Property* ParsePropertyAssignment();
   ast::Expression* ParsePropertyName();
+  
+ private:
+  struct FunctionScopeInfo {
+    ast::VariableDeclarations variable_declarations;
+    ast::AstNodes function_declarations;
+  };
 
  private:
-  void ThrowSyntaxError(std::string msg); 
+  void ThrowSyntaxError(std::string msg);
+  void EnterFunctionScope();
+  void AddVariableDeclaration(ast::VariableDeclaration* var_decl);
+  void AddFunctionDeclaration(ast::AstNode* func_decl);
+  FunctionScopeInfo ExitFunctionScope();
 
  private:
   Lexer lexer_;
+
+  std::vector<FunctionScopeInfo> function_scode_infos_;
 
   utils::Error error_;
 };

@@ -38,11 +38,12 @@ Program* Parser::ParseProgram() {
     lexer_.NextToken();
   }
   
+  EnterFunctionScope();
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::EOS) {
     try {
       if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
-        stmts.push_back(ParseFunctionDeclaraion());
+        stmts.push_back(ParseFunctionDeclaration());
       } else {
         stmts.push_back(ParseStatement());
       }
@@ -51,7 +52,8 @@ Program* Parser::ParseProgram() {
       return nullptr;
     }
   }
-  return new Program(std::move(stmts), is_strict); 
+  auto [var_decls, func_decls] = ExitFunctionScope();
+  return new Program(std::move(stmts), is_strict, std::move(var_decls), std::move(func_decls)); 
 }
 
 Statement* Parser::ParseStatement() {
@@ -1048,10 +1050,11 @@ Expression* Parser::ParseFunctionExpression() {
   }
   lexer_.NextToken();
 
+  EnterFunctionScope();
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
-      stmts.push_back(ParseFunctionDeclaraion());
+      stmts.push_back(ParseFunctionDeclaration());
     } else {
       stmts.push_back(ParseStatement());
     }
@@ -1062,7 +1065,9 @@ Expression* Parser::ParseFunctionExpression() {
   }
   lexer_.NextToken();
 
-  return new FunctionExpression(ident, std::move(params), std::move(stmts));
+  auto [var_decls, func_decls] = ExitFunctionScope();
+  return new FunctionExpression(ident, std::move(params), std::move(stmts),
+                                std::move(var_decls), std::move(func_decls));
 }
 
 // Parse Identifier
@@ -1108,7 +1113,9 @@ VariableDeclaration* Parser::ParseVariableDeclaration(bool allow_in) {
 
   auto init = ParseAssignmentExpression(allow_in);
 
-  return new VariableDeclaration(ident, init); 
+  auto var_decl = new VariableDeclaration(ident, init);
+  AddVariableDeclaration(var_decl);
+  return var_decl;
 }
 
 // Parse ArrayLiteral
@@ -1321,7 +1328,7 @@ Statement* Parser::ParsePotentialLabelledStatement() {
 // Defined in ECMAScript 5.1 Chapter 13
 //  FunctionExpression :
 //    function Identifieropt ( FormalParameterList_opt ) { FunctionBody }
-Statement* Parser::ParseFunctionDeclaraion() {
+Statement* Parser::ParseFunctionDeclaration() {
   // begin with function
   lexer_.NextToken();
 
@@ -1362,10 +1369,11 @@ Statement* Parser::ParseFunctionDeclaraion() {
     lexer_.NextToken();
   }
 
+  EnterFunctionScope();
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
-      stmts.push_back(ParseFunctionDeclaraion());
+      stmts.push_back(ParseFunctionDeclaration());
     } else {
       stmts.push_back(ParseStatement());
     }
@@ -1376,7 +1384,11 @@ Statement* Parser::ParseFunctionDeclaraion() {
   }
   lexer_.NextToken();
 
-  return new FunctionDeclaration(ident, std::move(params), std::move(stmts), is_strict);
+  auto [var_decls, func_decls] = ExitFunctionScope();
+  auto func_decl = new FunctionDeclaration(ident, std::move(params), std::move(stmts), is_strict,
+                                           std::move(var_decls), std::move(func_decls));
+  AddFunctionDeclaration(func_decl);
+  return func_decl;
 }
 
 // Parse FormalParameterList
@@ -1455,10 +1467,11 @@ Property* Parser::ParsePropertyAssignment() {
     }
     lexer_.NextToken();
 
+    EnterFunctionScope();
     Statements stmts;
     while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
       if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
-        stmts.push_back(ParseFunctionDeclaraion());
+        stmts.push_back(ParseFunctionDeclaration());
       } else {
         stmts.push_back(ParseStatement());
       }
@@ -1468,8 +1481,11 @@ Property* Parser::ParsePropertyAssignment() {
       ThrowSyntaxError("expects a '}'");
     }
     lexer_.NextToken();
+    
+    auto [var_decls, func_decls] = ExitFunctionScope();
 
-    auto value = new FunctionExpression(nullptr, Expressions{}, std::move(stmts));
+    auto value = new FunctionExpression(nullptr, Expressions{}, std::move(stmts),
+                                        std::move(var_decls), std::move(func_decls));
 
     return new Property(type, key, value);
   } else if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
@@ -1506,10 +1522,11 @@ Property* Parser::ParsePropertyAssignment() {
     }
     lexer_.NextToken();
 
+    EnterFunctionScope();
     Statements stmts;
     while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
       if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {
-        stmts.push_back(ParseFunctionDeclaraion());
+        stmts.push_back(ParseFunctionDeclaration());
       } else {
         stmts.push_back(ParseStatement());
       }
@@ -1520,7 +1537,10 @@ Property* Parser::ParsePropertyAssignment() {
     }
     lexer_.NextToken();
 
-    auto value = new FunctionExpression(nullptr, std::move(params), std::move(stmts));
+    auto [var_decls, func_decls] = ExitFunctionScope();
+      
+    auto value = new FunctionExpression(nullptr, std::move(params), std::move(stmts),
+                                        std::move(var_decls), std::move(func_decls));
 
     return new Property(type, key, value);
   } else {
@@ -1554,7 +1574,6 @@ Expression* Parser::ParsePropertyName() {
   if (lexer_.GetToken().IsIdentifierName()) {
     key = new Identifier(lexer_.GetToken().GetString());
     lexer_.NextToken();
-    
   } else if (lexer_.GetToken().GetType() == TokenType::NUMBER) {
     key = new NumericLiteral(lexer_.GetToken().GetNumber());
     lexer_.NextToken();
@@ -1567,6 +1586,26 @@ Expression* Parser::ParsePropertyName() {
 
 void Parser::ThrowSyntaxError(std::string msg) {
   throw utils::Error{utils::ErrorType::SYNTAX_ERROR, std::move(msg)};
+}
+
+void Parser::EnterFunctionScope() {
+  function_scode_infos_.emplace_back();
+}
+
+void Parser::AddVariableDeclaration(VariableDeclaration* var_decl) {
+  auto& func = function_scode_infos_.back();
+  func.variable_declarations.push_back(var_decl);
+}
+
+void Parser::AddFunctionDeclaration(AstNode* func_decl) {
+  auto& func = function_scode_infos_.back();
+  func.function_declarations.push_back(func_decl);
+}
+
+Parser::FunctionScopeInfo Parser::ExitFunctionScope() {
+  auto info = function_scode_infos_.back();
+  function_scode_infos_.pop_back();
+  return info;
 }
 
 }  // namespace voidjs

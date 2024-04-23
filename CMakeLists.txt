@@ -19,6 +19,7 @@ add_library(voidjs_obj OBJECT
   voidjs/types/object_factory.cpp
   voidjs/types/lang_types/object.cpp
   voidjs/types/spec_types/environment_record.cpp
+  voidjs/types/spec_types/lexical_environment.cpp
   voidjs/types/internal_types/array.cpp
   voidjs/interpreter/interpreter.cpp
 )

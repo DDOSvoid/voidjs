@@ -23,6 +23,21 @@ TEST(Interpreter, EvalBlockStatement) {
   }
 }
 
+TEST(Interpreter, EvalVariableStatement) {
+  {
+    Parser parser(u"var i = 42; i;");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(42, comp.GetValue().GetInt());
+  }
+}
+
 TEST(Interpreter, EvalEmptyStatement) {
   Parser parser(u";");
   

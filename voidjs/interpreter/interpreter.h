@@ -20,7 +20,7 @@ namespace voidjs {
 
 class Interpreter {
  public:
-  void Execute();
+  types::Completion Execute(ast::AstNode* ast_node);
   void EnterGlobalCode();
   void EnterEvalCode();
   void EnterFunctionCode();
@@ -62,10 +62,11 @@ class Interpreter {
   JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyUnaryOperator(TokenType op, JSValue val);
 
-  JSValue IdentifierResolution(types::String* ident);
+  types::Reference IdentifierResolution(types::String* ident);
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
+  void Put(JSValue base, JSValue P, JSValue W, bool Throw);
 
  private:
   VM* vm_;

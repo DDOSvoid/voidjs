@@ -1,6 +1,8 @@
-#include <variant>
-
 #include "voidjs/interpreter/interpreter.h"
+
+#include <variant>
+#include <iostream>
+
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/literal.h"
@@ -8,24 +10,49 @@
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
+#include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/spec_types/completion.h"
 #include "voidjs/types/spec_types/reference.h"
+#include "voidjs/types/spec_types/lexical_environment.h"
+#include "voidjs/types/spec_types/environment_record.h"
+#include "voidjs/interpreter/execution_context.h"
 
 namespace voidjs {
 
 using namespace ast;
 using namespace types;
 
-void Interpreter::Execute() {
-  
+Completion Interpreter::Execute(AstNode* ast_node) {
+  auto global_object = ObjectFactory::NewObject();
+  auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(JSValue(global_object), nullptr);
+  vm_ = new VM(global_object, global_env);
+  EnterGlobalCode();
+  return EvalProgram(ast_node);
 }
 
+void Interpreter::EnterGlobalCode() {
+  // 1. Initialize the execution context using the global code as described in 10.4.1.1.
+  auto global_ctx = new ExecutionContext(vm_->GetGlobalEnv(), vm_->GetGlobalEnv(), vm_->GetGlobalObject());
+  vm_->PushExecutionContext(global_ctx);
+
+  // 2. Perform Declaration Binding Instantiation as described in 10.5 using the global code.
+  DeclarationBindingInstantiation();
+}
+
+void Interpreter::DeclarationBindingInstantiation() {
+}
+  
 // Eval Program
 // Defined in ECMAScript 5.1 Chapter 14
 Completion Interpreter::EvalProgram(AstNode *ast_node) {
   auto prog = ast_node->AsProgram();
 
-  // 1. strict mode
+  // 1. The code of this Program is strict mode code
+  //    if the Directive Prologue (14.1) of its SourceElements contains a Use Strict Directive or
+  //    if any of the conditions of 10.1.1 apply.
+  //    If the code of this Program is strict mode code,
+  //    SourceElements is evaluated in the following steps as strict mode code.
+  //    Otherwise SourceElements is evaluated in the following steps as non-strict mode code.
   bool is_strict = prog->IsStrict();
 
   // 2. If SourceElements is not present, return (normal, empty, empty).
@@ -451,11 +478,11 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
     //      Type(GetBase(lref)) is Environment Record
     //      GetReferencedName(lref) is either "eval" or "arguments"
     if (auto plref = std::get_if<Reference>(&lref);
-        plref                                                &&
-        plref->IsStrictReference()                           &&
-        std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
-        (plref->GetReferencedName() == u"eval"               ||
-         plref->GetReferencedName() == u"arguments")) {
+        plref                                                   &&
+        plref->IsStrictReference()                              &&
+        std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
+        (plref->GetReferencedName()->GetString() == u"eval"     ||
+         plref->GetReferencedName()->GetString() == u"arguments")) {
         
     }
 
@@ -488,11 +515,11 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
     //      Type(GetBase(lref)) is Environment Record
     //      GetReferencedName(lref) is either "eval" or "arguments"
     if (auto plref = std::get_if<Reference>(&lref);
-        plref                                                &&
-        plref->IsStrictReference()                           &&
-        std::get_if<EnvironmentRecord*>(&(plref->GetBase())) &&
-        (plref->GetReferencedName() == u"eval"               ||
-         plref->GetReferencedName() == u"arguments")) {
+        plref                                                     &&
+        plref->IsStrictReference()                                &&
+        std::get_if<EnvironmentRecord*>(&(plref->GetBase()))      &&
+        (plref->GetReferencedName()->GetString() == u"eval"       ||
+         plref->GetReferencedName()->GetString() == u"arguments")) {
         
     }
 
@@ -580,7 +607,7 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   // 8. Return a value of type Reference
   //    whose base value is baseValue and whose referenced name is propertyNameString,
   //    and whose strict mode flag is strict.
-  return Reference(base_val, prop_name_str.GetHeapObject()->AsString()->GetString(), strict);
+  return Reference(base_val, prop_name_str.GetHeapObject()->AsString(), strict);
 }
 
 // Eval NullLiteral
@@ -613,8 +640,8 @@ JSValue Interpreter::EvalStringLiteral(StringLiteral* str) {
 
 // Eval Identifier
 // Defined in ECMAScript 5.1 Chapter 11.1.2
-// todo
 Reference Interpreter::EvalIdentifier(Identifier* ident) {
+  return IdentifierResolution(ObjectFactory::NewString(ident->GetName()));
 }
 
 // Apply Compound Assignment
@@ -720,7 +747,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, JSValue val) {
 
 // Identifier Resolution
 // Defined in ECMAScript 5.1 Chapter 10.3.1
-JSValue Interpreter::IdentifierResolution(String* ident) {
+Reference Interpreter::IdentifierResolution(String* ident) {
   // 1. Let env be the running execution context’s LexicalEnvironment.
   auto env = vm_->GetExecutionContext()->GetLexicalEnvironment();
 
@@ -731,7 +758,8 @@ JSValue Interpreter::IdentifierResolution(String* ident) {
 
   // 3. Return the result of calling GetIdentifierReference function passing env,
   //    Identifier, and strict as arguments.
-  
+  return LexicalEnvironment::GetIdentifierReference(
+    vm_->GetExecutionContext()->GetLexicalEnvironment(), ident, strict);
 }
 
 // GetValue(V)
@@ -768,10 +796,12 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
   }
 }
 
+// PutValue
+// Defined in ECMAScript 5.1 Chapter 8.7.2
 void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W) {
   // 1. If Type(V) is not Reference, throw a ReferenceError exception.
-  if (std::get_if<Reference>(&V)) {
-    
+  if (!std::get_if<Reference>(&V)) {
+    // todo
   }
 
   auto ref = std::get_if<Reference>(&V);
@@ -784,36 +814,100 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     // a. If IsStrictReference(V) is true, then
     if (ref->IsStrictReference()) {
       // i. Throw ReferenceError exception.
-      
+      // todo
     }
     // b. Call the [[Put]] internal method of the global object,
     //    passing GetReferencedName(V) for the property name,
     //    W for the value, and false for the Throw flag.
     else {
-      
+      auto global_obj = vm_->GetGlobalObject();
+      global_obj->Put(JSValue(ref->GetReferencedName()), W, false);
     }
   }
   // 4. Else if IsPropertyReference(V), then
   else if (ref->IsPropertyReference()) {
     // a. If HasPrimitiveBase(V) is false,
-    // then let put be the [[Put]] internal method of base,
-    // otherwise let put be the special [[Put]] internal method defined below.
-    if (ref->HasPrimitiveBase()) {
-      
+    //    then let put be the [[Put]] internal method of base,
+    //    otherwise let put be the special [[Put]] internal method defined below.
+    // b. Call the put internal method using base as its this value,
+    //    and passing GetReferencedName(V) for the property name,
+    //    W for the value, and IsStrictReference(V) for the Throw flag.
+    if (!ref->HasPrimitiveBase()) {
+      auto base_obj = std::get<JSValue>(base).GetHeapObject()->AsObject();
+      base_obj->Put(JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
     } else {
+      auto base_prim = std::get<JSValue>(base);
+      Put(base_prim, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
     }
 
-    // b. Call the put internal method using base as its this value,
-    // and passing GetReferencedName(V) for the property name,
-    // W for the value, and IsStrictReference(V) for the Throw flag.
   }
   // 5. Else base must be a reference whose base is an environment record. So,
   else {
     // a. Call the SetMutableBinding (10.2.1) concrete method of base,
     //    passing GetReferencedName(V), W, and IsStrictReference(V) as arguments.
+    auto base_env = std::get<EnvironmentRecord*>(base);
+    base_env->SetMutableBinding(ref->GetReferencedName(), W, ref->IsStrictReference());
   }
 
   // 6. Return
+}
+
+// Put
+// Defined in ECMAScript 5.1 Chapter 8.7.2
+// used by PutValue when V is a property reference with primitive base value
+void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
+  // 1. Let O be ToObject(base).
+  auto O = JSValue::ToObject(base);
+
+  // 2. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
+  if (!O->CanPut(P)) {
+    // a. If Throw is true, then throw a TypeError exception.
+    if (Throw) {
+      // todo
+    }
+    // b. Else return.
+    else {
+      return ;
+    }
+  }
+
+  // 3. Let ownDesc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
+  auto own_desc = O->GetOwnProperty(P);
+
+  // 4. If IsDataDescriptor(ownDesc) is true, then
+  if (own_desc.IsDataDescriptor()) {
+    // a. If Throw is true, then throw a TypeError exception.
+    if (Throw) {
+      // todo
+    }
+    // b. Else return.
+    else {
+      return ;
+    }
+  }
+
+  // 5. Let desc be the result of calling the [[GetProperty]] internal method of O with argument P.
+  //    This may be either an own or inherited accessor property descriptor or an inherited data property descriptor.
+  auto desc = O->GetProperty(P);
+
+  // 6. If IsAccessorDescriptor(desc) is true, then
+  if (desc.IsAccessorDescriptor()) {
+    // a. Let setter be desc.[[Set]] which cannot be undefined.
+    auto setter = desc.GetSetter();
+
+    // b. Call the [[Call]] internal method of setter providing base
+    //    as the this value and an argument list containing only W.
+    // todo
+  }
+  // 7. Else, this is a request to create an own property on the transient object O
+  else {
+    // a. If Throw is true, then throw a TypeError exception.
+    if (Throw) {
+      // todo
+    }
+  }
+
+  // 8. Return.
 }
 
 }  // namespace voidjs

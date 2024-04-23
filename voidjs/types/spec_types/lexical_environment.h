@@ -10,15 +10,16 @@ namespace types {
 
 class LexicalEnvironment {
  public:
+  LexicalEnvironment(LexicalEnvironment* outer, EnvironmentRecord* env_rec)
+    : outer_(outer), env_rec_(env_rec)
+  {}
+  
+  static Reference GetIdentifierReference(LexicalEnvironment* lex, String* name, bool strict);
+  static LexicalEnvironment* NewDeclarativeEnvironmentRecord(LexicalEnvironment* E);
+  static LexicalEnvironment* NewObjectEnvironmentRecord(JSValue O, LexicalEnvironment* E);
 
-  // Defined in ECMAScript 5.1 Chapter 10.2.2.1
-  Reference GetIdentifierReference(std::u16string_view name, bool strict);
-
-  // Defined in ECMAScript 5.1 Chapter 10.2.2.2
-  EnvironmentRecord* NewDeclarativeEnvironmentRecord(LexicalEnvironment* E);
-
-  // Defined in ECMAScript 5.1 Chapter 10.2.2.3
-  EnvironmentRecord* NewObjectEnvironmentRecord(JSValue O, LexicalEnvironment* E);
+  EnvironmentRecord* GetEnvRec() const { return env_rec_; }
+  LexicalEnvironment* GetOuter() const { return outer_; }
 
  private:
   LexicalEnvironment* outer_;

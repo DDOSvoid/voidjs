@@ -569,7 +569,12 @@ TEST(parser, ParseBlockStatement) {
 TEST(parser, ParseVariableStatement) {
   Parser parser(u"var i = 'test', j = i + 1;");
 
-  auto stmt = parser.ParseVariableStatement();
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->GetStatements().size() == 1);
+
+  const auto stmts = prog->GetStatements();
+  
+  auto stmt = stmts[0];
   ASSERT_TRUE(stmt->IsVariableStatement());
 
   auto var_stmt = stmt->AsVariableStatement();
@@ -632,7 +637,12 @@ if (true) {
 
   Parser parser(source);
 
-  auto stmt = parser.ParseIfStatement();
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->GetStatements().size() == 1);
+
+  const auto& stmts = prog->GetStatements();
+
+  auto stmt = stmts[0];
   ASSERT_TRUE(stmt->IsIfStatement());
 
   auto if_stmt = stmt->AsIfStatement();
@@ -815,7 +825,12 @@ for (var i = 1; (i << 1) < n; i <<= 1)
 
     Parser parser(source);
 
-    auto stmt = parser.ParseForStatement();
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->GetStatements().size() == 1);
+
+    const auto& stmts = prog->GetStatements();
+
+    auto stmt = stmts[0];
     ASSERT_TRUE(stmt->IsForStatement());
 
     auto for_stmt = stmt->AsForStatement();
@@ -854,7 +869,12 @@ for (var item = 0 in arr) {
 
     Parser parser(source);
 
-    auto stmt = parser.ParseForStatement();
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->GetStatements().size() == 1);
+
+    const auto& stmts = prog->GetStatements();
+
+    auto stmt = stmts[0];
     ASSERT_TRUE(stmt->IsForInStatement());
 
     auto for_stmt = stmt->AsForInStatement();

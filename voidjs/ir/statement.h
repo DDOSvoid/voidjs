@@ -329,15 +329,21 @@ class CaseClause : public Statement {
 class FunctionDeclaration : public Statement {
  public:
   FunctionDeclaration(Expression* name, Expressions parameters,
-                      Statements statements, bool is_strict)
+                      Statements statements, bool is_strict,
+                      VariableDeclarations var_decls,
+                      AstNodes func_decls)
     : Statement(AstNodeType::FUNCTION_DECLARATION),
       name_(name), parameters_(parameters),
-      statements_(std::move(statements)), is_strict_(is_strict)
+      statements_(std::move(statements)), is_strict_(is_strict),
+      variable_declarations_(std::move(var_decls)),
+      function_declarations_(std::move(func_decls))
   {}
 
   Expression* GetName() const { return name_; }
   const Expressions& GetParameters() const { return parameters_; }
   const Statements& GetStatements() const { return statements_; }
+  const VariableDeclarations& GetVariableDeclarations() const { return variable_declarations_; }
+  const AstNodes& GetFunctionDeclarations() const { return function_declarations_; }
 
   bool IsStrict() const { return is_strict_; }
 
@@ -346,6 +352,9 @@ class FunctionDeclaration : public Statement {
   Expressions parameters_;
   Statements statements_;
   bool is_strict_;
+  
+  VariableDeclarations variable_declarations_;
+  AstNodes function_declarations_;
 };
 
 }  // namespace voidjs

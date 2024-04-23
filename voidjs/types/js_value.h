@@ -133,7 +133,7 @@ class JSValue {
   static bool ToBoolean(JSValue val);
   static JSValue ToNumber(JSValue val); 
   static JSValue ToString(JSValue val);
-  static JSValue ToObject(JSValue val);
+  static types::Object* ToObject(JSValue val);
 
   // Type Testing
   // Defined in ECMAScript 5.1 Chapter 9

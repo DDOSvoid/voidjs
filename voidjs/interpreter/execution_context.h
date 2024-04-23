@@ -10,6 +10,15 @@ namespace voidjs {
 
 class ExecutionContext {
  public:
+  ExecutionContext(types::LexicalEnvironment* lex_env,
+                   types::LexicalEnvironment* var_env,
+                   types::Object* obj)
+    : lexical_environment_(lex_env),
+      variable_environment_(var_env),
+      this_binding_(obj) {
+    label_set_.insert(u"");
+  }
+  
   void AddLabel(const std::u16string& label) {
     cur_label_ = label;
     label_set_.insert(label);
@@ -33,7 +42,7 @@ class ExecutionContext {
   
   types::LexicalEnvironment* lexical_environment_;
   types::LexicalEnvironment* variable_environment_;
-  JSValue this_binding_;
+  types::Object* this_binding_;
 };
 
 }  // namespace voidjs

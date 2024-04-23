@@ -101,7 +101,7 @@ JSValue JSValue::ToString(JSValue val) {
 
 // ToObject
 // Defined in ECMAScript 5.1 Chapter 9.9
-JSValue JSValue::ToObject(JSValue val) {
+types::Object* JSValue::ToObject(JSValue val) {
   if (val.IsUndefined() || val.IsNull()) {
     // todo
   }
@@ -115,11 +115,11 @@ JSValue JSValue::ToObject(JSValue val) {
     // todo
   }
   if (val.IsObject()) {
-    return val;
+    return val.GetHeapObject()->AsObject();
   }
   
   // this branch is unreachable
-  return JSValue{};
+  return nullptr;
 }
 
 // Check Object Coercible
