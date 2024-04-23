@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <limits>
+#include <iostream>
 
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/heap_object.h"
@@ -36,7 +37,7 @@ bool JSValue::ToBoolean(JSValue val) {
     return val == True();
   } else if (val.IsNumber()) {
     if (val.IsInt()) {
-      return val.GetInt() == 0;
+      return val.GetInt() != 0;
     }
     if (val.IsDouble()) {
       auto d = val.GetDouble();

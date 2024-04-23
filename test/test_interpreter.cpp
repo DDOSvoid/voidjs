@@ -2,9 +2,13 @@
 
 #include "gtest/gtest.h"
 #include "voidjs/parser/parser.h"
-#include "voidjs/interpreter/interpreter.h"
+#include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/spec_types/completion.h"
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/interpreter/interpreter.h"
 #include "voidjs/utils/helper.h"
 
 using namespace voidjs;
@@ -31,11 +35,26 @@ TEST(Interpreter, EvalVariableStatement) {
     Interpreter interpreter;
 
     auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
     ASSERT_TRUE(comp.GetValue().IsInt());
     EXPECT_EQ(44, comp.GetValue().GetInt());
+  }
+
+  {
+    Parser parser(u"var i = 42, j = i - i; j;");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(0, comp.GetValue().GetInt());
   }
 }
 
@@ -49,6 +68,61 @@ TEST(Interpreter, EvalEmptyStatement) {
 
   auto comp = interpreter.EvalEmptyStatement(ast_node->AsEmptyStatement());
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
+TEST(Interpreter, EvalExpressionStatement) {
+}
+
+TEST(Itnerpreter, EvalIfStatement) {
+  {
+    std::u16string source = uR"(
+var i = 42, j = i - 40;
+if (i - 42) {
+  i;
+} else {
+  j;
+}
+)";
+
+    Parser parser(source);
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(2, comp.GetValue().GetInt());
+  }
+}
+
+TEST(Interpreter, EvalDoWhileStatement) {
+  {
+    std::u16string source = uR"(
+var i = 0;
+var n = 10;
+var count = 0;
+do {
+    i += 1;
+    count += i;
+} while (i < n);
+count;
+)";
+
+    Parser parser(source);
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(55, comp.GetValue().GetInt());
+  }
 }
 
 TEST(Interpreter, EvalBinaryExpression) {

@@ -1,8 +1,9 @@
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
-#include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/types/object_factory.h"
+#include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/internal_types/property_map.h"
 
 namespace voidjs {
 namespace types {

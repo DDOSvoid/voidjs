@@ -69,6 +69,9 @@ class JSValue {
     : value_(value)
   {}
 
+  // used to avoid implicit conversion from pointer to bool
+  explicit JSValue(void*) = delete;
+  
   explicit JSValue(HeapObject* value)
     : value_(reinterpret_cast<std::uintptr_t>(value))
   {}

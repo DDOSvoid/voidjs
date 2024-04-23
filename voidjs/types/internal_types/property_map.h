@@ -7,6 +7,7 @@
 #include "voidjs/types/internal_types/array.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
+#include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 
 namespace voidjs {
@@ -41,7 +42,7 @@ class PropertyMap : public Array {
     auto len = prop_map->GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
       auto cur_key = prop_map->Get(idx);
-      if (JSValue::SameValue(cur_key, key)) {
+      if (cur_key.IsEmpty() || JSValue::SameValue(cur_key, key)) {
         if (cur_key.IsEmpty()) {
           prop_map->Set(idx, key);
         }

@@ -5,6 +5,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
 namespace types {
@@ -104,7 +105,7 @@ void DeclarativeEnvironmentRecord::InitializeImmutableBinding(String* N, JSValue
 }
 
 
-bool ObjectEnvironmentRecord::HasBinding(String *N) const {
+bool ObjectEnvironmentRecord::HasBinding(String* N) const {
   // 1. Let envRec be the object environment record for which the method was invoked.
   // 2. Let bindings be the binding object for envRec.
   // 3. Return the result of calling the [[HasProperty]] internal method of bindings, passing N as the property name.

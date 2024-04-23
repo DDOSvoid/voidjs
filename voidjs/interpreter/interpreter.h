@@ -68,6 +68,8 @@ class Interpreter {
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
   void Put(JSValue base, JSValue P, JSValue W, bool Throw);
 
+  VM* GetVm() const { return vm_; }
+
  private:
   VM* vm_;
 };

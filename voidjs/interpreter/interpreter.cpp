@@ -78,7 +78,7 @@ void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
 
   // 6. Let argumentsAlreadyDeclared be the result of
   //    calling env’s HasBinding concrete method passing "arguments" as the argument
-  auto args_already_declared_ = env->HasBinding(ObjectFactory::NewString(u"arguments"));
+  // auto args_already_declared_ = env->HasBinding(ObjectFactory::NewString(u"arguments"));
 
   // 7. If code is function code and argumentsAlreadyDeclared is false, then
   // todo
@@ -181,6 +181,9 @@ Completion Interpreter::EvalProgram(AstNode *ast_node) {
 // Defined in ECMAScript 5.1 Chapter 12
 Completion Interpreter::EvalStatement(Statement* stmt) {
   switch (stmt->GetType()) {
+    case AstNodeType::BLOCK_STATEMENT: {
+      return EvalBlockStatement(stmt->AsBlockStatement());
+    }
     case AstNodeType::EXPRESSION_STATEMENT: {
       return EvalExpressionStatement(stmt->AsExpressionStatement());
     }
@@ -192,6 +195,18 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     }
     case AstNodeType::IF_STATEMENT: {
       return EvalIfStatement(stmt->AsIfStatement());
+    }
+    case AstNodeType::DO_WHILE_STATEMENT: {
+      return EvalDoWhileStatement(stmt->AsDoWhileStatement());
+    }
+    case AstNodeType::WHILE_STATEMENT: {
+      return EvalWhileStatement(stmt->AsWhileStatement());
+    }
+    case AstNodeType::FOR_STATEMENT: {
+      return EvalForStatement(stmt->AsForStatement());
+    }
+    case AstNodeType::FOR_IN_STATEMENT: {
+      return EvalForInStatement(stmt->AsForInStatement());
     }
     default: {
       return Completion();
@@ -258,7 +273,7 @@ Completion Interpreter::EvalIfStatement(ast::IfStatement* if_stmt) {
   // 3. Else
   else {
     // a. Return the result of evaluating the second Statement.
-    if (if_stmt->GetConsequent()) {
+    if (if_stmt->GetAlternate()) {
       return EvalStatement(if_stmt->GetAlternate());
     } else {
       return Completion(CompletionType::NORMAL);
@@ -596,10 +611,10 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
         
     }
 
-    // 5. Call PutValue(lref, rval).
-    PutValue(lref, rval);
+    // 5. Call PutValue(lref, r).
+    PutValue(lref, r);
 
-    // 6. Return rval.
+    // 6. Return r.
     return rval;
   }
 }
@@ -717,39 +732,6 @@ Reference Interpreter::EvalIdentifier(Identifier* ident) {
   return IdentifierResolution(ObjectFactory::NewString(ident->GetName()));
 }
 
-// Apply Compound Assignment
-// todo
-JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
-  switch (op) {
-    case TokenType::ADD_ASSIGN: {
-      if (lval.IsInt() && rval.IsInt()) {
-        return JSValue(lval.GetInt() + rval.GetInt());
-      } else {
-        return {};
-      }
-    }
-    default: {
-      return {};
-    }
-  }
-}
-
-// ApplyBinaryOperator
-// todo
-JSValue Interpreter::ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval) {
-  switch (op) {
-    case TokenType::ADD: {
-      if (lval.IsInt() && rval.IsInt()) {
-        return JSValue(lval.GetInt() + rval.GetInt());
-      } else {
-        return {};
-      }
-    }
-    default: {
-      return {};
-    }
-  }
-}
 
 // Eval StatementList
 // Defined in ECMAScript 5.1 Chapter 12.1
@@ -797,7 +779,7 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
   auto lhs = EvalExpression(decl->GetIdentifier());
 
   // 2. Let rhs be the result of evaluating Initialiser.
-  if (decl->GetInitializer() == nullptr) {
+  if (!decl->GetInitializer()) {
     return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
   }
   auto rhs = EvalExpression(decl->GetInitializer());
@@ -812,10 +794,69 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
   return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
 }
 
+// Apply Compound Assignment
+// todo
+JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
+  switch (op) {
+    case TokenType::ADD_ASSIGN: {
+      if (lval.IsInt() && rval.IsInt()) {
+        return JSValue(lval.GetInt() + rval.GetInt());
+      } else {
+        return {};
+      }
+    }
+    default: {
+      return {};
+    }
+  }
+}
+
+// ApplyBinaryOperator
+// todo
+JSValue Interpreter::ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval) {
+  switch (op) {
+    case TokenType::ADD: {
+      if (lval.IsInt() && rval.IsInt()) {
+        return JSValue(lval.GetInt() + rval.GetInt());
+      } else {
+        return {};
+      }
+    }
+    case TokenType::SUB: {
+      if (lval.IsInt() && rval.IsInt()) {
+        return JSValue(lval.GetInt() - rval.GetInt());
+      } else {
+        return {};
+      }
+    }
+    case TokenType::LESS_THAN: {
+      if (lval.IsInt() && rval.IsInt()) {
+        return JSValue(lval.GetInt() < rval.GetInt());
+      } else {
+        return {};
+      }
+    }
+    default: {
+      return {};
+    }
+  }
+}
+
 // ApplyUnaryOperator
 // todo
 JSValue Interpreter::ApplyUnaryOperator(TokenType op, JSValue val) {
-  return {};
+  switch (op) {
+    case TokenType::INC: {
+      if (val.IsInt()) {
+        return JSValue(val.GetInt() + 1);
+      } else {
+        return {};
+      }
+    }
+    default: {
+      return {};
+    }
+  }
 }
 
 // Identifier Resolution
@@ -850,7 +891,7 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
 
   // 3. If IsUnresolvableReference(V), throw a ReferenceError exception.
   if (ref.IsUnresolvableReference()) {
-    
+    // todo
   }
 
   // 4. If IsPropertyReference(V), then
