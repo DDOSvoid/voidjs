@@ -2,12 +2,14 @@
 
 #include <variant>
 #include <iostream>
+#include <functional>
 
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/literal.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/lexer/token_type.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
@@ -23,23 +25,94 @@ using namespace ast;
 using namespace types;
 
 Completion Interpreter::Execute(AstNode* ast_node) {
-  auto global_object = ObjectFactory::NewObject();
+  auto global_object = ObjectFactory::NewGlobalObject();
   auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(JSValue(global_object), nullptr);
   vm_ = new VM(global_object, global_env);
-  EnterGlobalCode();
+  EnterGlobalCode(ast_node);
   return EvalProgram(ast_node);
 }
 
-void Interpreter::EnterGlobalCode() {
+void Interpreter::EnterGlobalCode(AstNode* ast_node) {
   // 1. Initialize the execution context using the global code as described in 10.4.1.1.
   auto global_ctx = new ExecutionContext(vm_->GetGlobalEnv(), vm_->GetGlobalEnv(), vm_->GetGlobalObject());
   vm_->PushExecutionContext(global_ctx);
 
   // 2. Perform Declaration Binding Instantiation as described in 10.5 using the global code.
-  DeclarationBindingInstantiation();
+  DeclarationBindingInstantiation(ast_node);
 }
 
-void Interpreter::DeclarationBindingInstantiation() {
+void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
+  // 1. Let env be the environment record component of the running execution context’s VariableEnvironment.
+  auto env = vm_->GetExecutionContext()->GetVariableEnvironment()->GetEnvRec();
+
+  // 2. If code is eval code, then let configurableBindings be true else let configurableBindings be false.
+  // todo
+  bool configurable_bindings = false;
+
+  // 3. If code is strict mode code, then let strict be true else let strict be false.
+  // todo
+  auto strict = false;
+
+  // 4. If code is function code, then
+  // todo
+
+  // 5. For each FunctionDeclaration f in code, in source text order do
+  const auto& func_decls = std::invoke([](AstNode* ast_node) -> const FunctionDeclarations& {
+    if (ast_node->IsProgram()) {
+      return ast_node->AsProgram()->GetFunctionDeclarations();
+    } else if ( ast_node->IsFunctionDeclaration()) {
+      return ast_node->AsFunctionDeclaration()->GetFunctionDeclarations();
+    } else {
+      // ast_node must be FunctionExpression
+      return ast_node->AsFunctionExpression()->GetFunctionDeclarations();
+    }
+  }, ast_node);
+  
+  for (auto func : func_decls) {
+    // a. Let fn be the Identifier in FunctionDeclaration f.
+    auto fn = func->GetName();
+
+    // b. Let fo be the result of instantiating FunctionDeclaration f as described in Clause 13.
+    // todo
+  }
+
+  // 6. Let argumentsAlreadyDeclared be the result of
+  //    calling env’s HasBinding concrete method passing "arguments" as the argument
+  auto args_already_declared_ = env->HasBinding(ObjectFactory::NewString(u"arguments"));
+
+  // 7. If code is function code and argumentsAlreadyDeclared is false, then
+  // todo
+
+  // 8. For each VariableDeclaration and VariableDeclarationNoIn d in code, in source text order do
+  const auto& var_decls = std::invoke([](AstNode* ast_node) -> const VariableDeclarations& {
+    if (ast_node->IsProgram()) {
+      return ast_node->AsProgram()->GetVariableDeclarations();
+    } else if ( ast_node->IsFunctionDeclaration()) {
+      return ast_node->AsFunctionDeclaration()->GetVariableDeclarations();
+    } else {
+      // ast_node must be FunctionExpression
+      return ast_node->AsFunctionExpression()->GetVariableDeclarations();
+    }
+  }, ast_node);
+
+  for (auto var_decl : var_decls) {
+    // a. Let dn be the Identifier in d.
+    auto dn = var_decl->GetIdentifier()->AsIdentifier();
+    auto dn_str = ObjectFactory::NewString(dn->GetName());
+
+    // b. Let varAlreadyDeclared be the result of calling env’s HasBinding concrete method passing dn as the argument.
+    auto var_already_declared = env->HasBinding(dn_str);
+
+    // c. If varAlreadyDeclared is false, then
+    if (!var_already_declared) {
+      // i. Call env’s CreateMutableBinding concrete method
+      //    passing dn and configurableBindings as the arguments.
+      env->CreateMutableBinding(dn_str, configurable_bindings);
+
+      // ii. Call env’s SetMutableBinding concrete method passing dn, undefined, and strict as the arguments.
+      env->SetMutableBinding(dn_str, JSValue::Undefined(), strict);
+    }
+  }
 }
   
 // Eval Program
@@ -769,30 +842,33 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
   if (auto ptr = std::get_if<JSValue>(&V)) {
     return *ptr;
   }
+
+  auto ref = std::get<Reference>(V);
   
   // 2. Let base be the result of calling GetBase(V).
-  auto base = std::get_if<Reference>(&V)->GetBase();
+  auto base = ref.GetBase();
 
   // 3. If IsUnresolvableReference(V), throw a ReferenceError exception.
-  if (std::get_if<Reference>(&V)->IsUnresolvableReference()) {
+  if (ref.IsUnresolvableReference()) {
     
   }
 
   // 4. If IsPropertyReference(V), then
-  if (std::get_if<Reference>(&V)->IsPropertyReference()) {
+  if (ref.IsPropertyReference()) {
+    // todo
     // a. If HasPrimitiveBase(V) is false,
     //    then let get be the [[Get]] internal method of base,
     //    otherwise let get be the special [[Get]] internal method defined below.
 
     // b. Return the result of calling the get internal method
     //    using base as its this value, and passing GetReferencedName(V) for the argument.
-
   }
   // 5. Else, base must be an environment record.
   else { 
     // a. Return the result of calling the GetBindingValue concrete method of
     //    base passing GetReferencedName(V) and IsStrictReference(V) as arguments.
-    
+    auto env = std::get<EnvironmentRecord*>(base);
+    return env->GetBindingValue(ref.GetReferencedName(), ref.IsStrictReference());
   }
 }
 

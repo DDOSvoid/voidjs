@@ -18,6 +18,14 @@ std::byte* ObjectFactory::Allocate(std::size_t size) {
   return new std::byte[size];
 }
 
+Object* ObjectFactory::NewGlobalObject() {
+  auto obj = NewHeapObject(Object::SIZE)->AsObject();
+  obj->SetProperties(JSValue(NewPropertyMap()));
+  obj->SetExtensible(true);
+  obj->SetProtoType(JSValue::Null());
+  return obj;
+}
+
 HeapObject* ObjectFactory::NewHeapObject(std::size_t size) {
   auto obj = reinterpret_cast<HeapObject*>(Allocate(HeapObject::SIZE + size));
   obj->SetMetaData(0);

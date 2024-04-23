@@ -75,14 +75,14 @@ class Parser {
  private:
   struct FunctionScopeInfo {
     ast::VariableDeclarations variable_declarations;
-    ast::AstNodes function_declarations;
+    ast::FunctionDeclarations function_declarations;
   };
 
  private:
   void ThrowSyntaxError(std::string msg);
   void EnterFunctionScope();
   void AddVariableDeclaration(ast::VariableDeclaration* var_decl);
-  void AddFunctionDeclaration(ast::AstNode* func_decl);
+  void AddFunctionDeclaration(ast::FunctionDeclaration* func_decl);
   FunctionScopeInfo ExitFunctionScope();
 
  private:

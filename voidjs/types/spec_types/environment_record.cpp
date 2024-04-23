@@ -1,5 +1,7 @@
 #include "voidjs/types/spec_types/environment_record.h"
 
+#include <iostream>
+
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"

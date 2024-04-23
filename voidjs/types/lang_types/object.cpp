@@ -58,7 +58,7 @@ PropertyDescriptor Object::GetProperty(JSValue P) const {
   auto prop = GetOwnProperty(P);
 
   // 2. If prop is not undefined, return prop.
-  if (prop.IsEmpty()) {
+  if (!prop.IsEmpty()) {
     return prop;
   }
 
@@ -109,7 +109,7 @@ bool Object::CanPut(JSValue P) const {
   auto desc = GetOwnProperty(P);
 
   // 2. If desc is not undefined, then
-  if (desc.IsEmpty()) {
+  if (!desc.IsEmpty()) {
     // a. If IsAccessorDescriptor(desc) is true, then
     if (desc.IsAccessorDescriptor()) {
       // i. If desc.[[Set]] is undefined, then return false.
@@ -162,11 +162,14 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
   // 1. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
   if (!CanPut(P)) {
     // a. If Throw is true, then throw a TypeError exception.
-    // todo
-
     // b. Else return.
+    if (Throw) {
+      // todo
+    } else {
+      return ;
+    }
   }
-
+  
   // 2. Let ownDesc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
   auto own_desc = GetOwnProperty(P);
 
@@ -176,9 +179,10 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
     auto value_desc = PropertyDescriptor(V);
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, valueDesc, and Throw as arguments.
-    // todo
+    DefineOwnProperty(P, value_desc, Throw);
 
     // c. Return.
+    return ;
   }
 
   // 4. Let desc be the result of calling the [[GetProperty]] internal method of O with argument P.
@@ -200,7 +204,7 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
     auto new_desc = PropertyDescriptor(V, true, true, true);
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, newDesc, and Throw as arguments.
-    // todo
+    DefineOwnProperty(P, new_desc, Throw);
   }
 
   // 7. Return.
@@ -320,8 +324,37 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
   //    if every field in Desc also occurs in current and
   //    the value of every field in Desc is the same value as the corresponding field in current
   //    when compared using the SameValue algorithm (9.12).
-  // todo
-
+  {
+    bool flag = true;
+    if (Desc.HasValue() && !current.HasValue() ||
+        Desc.HasValue() && current.HasValue() && !JSValue::SameValue(Desc.GetValue(), current.GetValue())) {
+      flag = false;
+    }
+    if (Desc.HasGetter() && !current.HasGetter() ||
+        Desc.HasGetter() && current.HasGetter() && !JSValue::SameValue(Desc.GetGetter(), current.GetGetter())) {
+      flag = false;
+    }
+    if (Desc.HasSetter() && !current.HasSetter() ||
+        Desc.HasSetter() && current.HasSetter() && !JSValue::SameValue(Desc.GetSetter(), current.GetSetter())) {
+      flag = false;
+    }
+    if (Desc.HasWritable() && !current.HasWritable() ||
+        Desc.HasWritable() && current.HasWritable() && Desc.GetWritable() != current.GetWritable()) {
+      flag = false;
+    }
+    if (Desc.HasEnumerable() && !current.HasEnumerable() ||
+        Desc.HasEnumerable() && current.HasEnumerable() && Desc.GetEnumerable() != current.GetEnumerable()) {
+      flag = false;
+    }
+    if (Desc.HasConfigurable() && !current.HasConfigurable() ||
+        Desc.HasConfigurable() && current.HasConfigurable() && Desc.GetConfigurable() != current.GetConfigurable()) {
+      flag = false;
+    }
+    if (flag) {
+      return true;
+    }
+  }
+  
   // 7. If the [[Configurable]] field of current is false then
   if (!current.GetConfigurable()) {
     // a. Reject, if the [[Configurable]] field of Desc is true.
@@ -343,14 +376,14 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
   // 9. Else, if IsDataDescriptor(current) and IsDataDescriptor(Desc) have different results, then
   else if (current.IsDataDescriptor() != Desc.IsDataDescriptor()) {
     // a. Reject, if the [[Configurable]] field of current is false.
-    if (current.GetConfigurable()) {
+    if (!current.GetConfigurable()) {
       if (Throw) {
         // todo
       } else {
         return false;
       }
     }
-
+    
     // b. If IsDataDescriptor(current) is true, then
     if (current.IsDataDescriptor()) {
       // i. Convert the property named P of object O from a data property to an accessor property.
@@ -387,7 +420,7 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
           return false;
         }
       }
-
+      
       // ii. If the [[Writable]] field of current is false, then
       if (!current.GetWritable()) {
         // 1. Reject, if the [[Value]] field of Desc is present
@@ -434,7 +467,28 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
 
   // 12. For each attribute field of Desc that is present,
   //     set the correspondingly named attribute of the property named P of object O to the value of the field.
-  // todo
+  {
+    if (Desc.HasValue()) {
+      current.SetValue(Desc.GetValue());
+    }
+    if (Desc.HasGetter()) {
+      current.SetGetter(Desc.GetGetter());
+    }
+    if (Desc.HasSetter()) {
+      current.SetSetter(Desc.GetSetter());
+    }
+    if (Desc.HasWritable()) {
+      current.SetWritable(Desc.GetWritable());
+    }
+    if (Desc.HasEnumerable()) {
+      current.SetEnumerable(Desc.GetEnumerable());
+    }
+    if (Desc.HasConfigurable()) {
+      current.SetConfigurable(Desc.GetConfigurable());
+    }
+    auto prop_map = GetProperties().GetHeapObject()->AsPropertyMap();
+    SetProperties(JSValue(PropertyMap::SetProperty(prop_map, P, current)));
+  }
 
   // 13. Return true.
   return true;

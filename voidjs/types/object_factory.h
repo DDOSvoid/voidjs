@@ -25,6 +25,8 @@ class HeapObject;
 class ObjectFactory {
  public:
   static std::byte* Allocate(std::size_t size);
+
+  static types::Object* NewGlobalObject();
   
   static HeapObject* NewHeapObject(std::size_t size);
   static types::String* NewString(std::u16string_view source);

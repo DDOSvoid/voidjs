@@ -179,7 +179,7 @@ class This: public Expression {
 class FunctionExpression : public Expression {
   public:
   FunctionExpression(Expression* name, Expressions parameters, Statements statements,
-                     VariableDeclarations var_decls, AstNodes func_decls)
+                     VariableDeclarations var_decls, FunctionDeclarations func_decls)
     : Expression(AstNodeType::FUNCTION_EXPRESSION),
       name_(name), parameters_(parameters), statements_(statements),
       variable_declarations_(std::move(var_decls)),
@@ -190,7 +190,7 @@ class FunctionExpression : public Expression {
   const Expressions& GetParameters() const { return parameters_; }
   const Statements& GetStatements() const { return statements_; }
   const VariableDeclarations& GetVariableDeclarations() const { return variable_declarations_; }
-  const AstNodes& GetFunctionDeclarations() const { return function_declarations_; }
+  const FunctionDeclarations& GetFunctionDeclarations() const { return function_declarations_; }
 
  private:
   Expression* name_;
@@ -198,7 +198,7 @@ class FunctionExpression : public Expression {
   Statements statements_;
   
   VariableDeclarations variable_declarations_;
-  AstNodes function_declarations_;
+  FunctionDeclarations function_declarations_;
 };
 
 class Identifier : public Expression {

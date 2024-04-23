@@ -4,6 +4,7 @@
 #include "voidjs/parser/parser.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/types/spec_types/completion.h"
+#include "voidjs/types/lang_types/string.h"
 #include "voidjs/utils/helper.h"
 
 using namespace voidjs;
@@ -25,7 +26,7 @@ TEST(Interpreter, EvalBlockStatement) {
 
 TEST(Interpreter, EvalVariableStatement) {
   {
-    Parser parser(u"var i = 42; i;");
+    Parser parser(u"var i = 42; i + 2;");
 
     Interpreter interpreter;
 
@@ -34,7 +35,7 @@ TEST(Interpreter, EvalVariableStatement) {
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
     ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(42, comp.GetValue().GetInt());
+    EXPECT_EQ(44, comp.GetValue().GetInt());
   }
 }
 

@@ -1597,7 +1597,7 @@ void Parser::AddVariableDeclaration(VariableDeclaration* var_decl) {
   func.variable_declarations.push_back(var_decl);
 }
 
-void Parser::AddFunctionDeclaration(AstNode* func_decl) {
+void Parser::AddFunctionDeclaration(FunctionDeclaration* func_decl) {
   auto& func = function_scode_infos_.back();
   func.function_declarations.push_back(func_decl);
 }

@@ -331,7 +331,7 @@ class FunctionDeclaration : public Statement {
   FunctionDeclaration(Expression* name, Expressions parameters,
                       Statements statements, bool is_strict,
                       VariableDeclarations var_decls,
-                      AstNodes func_decls)
+                      FunctionDeclarations func_decls)
     : Statement(AstNodeType::FUNCTION_DECLARATION),
       name_(name), parameters_(parameters),
       statements_(std::move(statements)), is_strict_(is_strict),
@@ -343,7 +343,7 @@ class FunctionDeclaration : public Statement {
   const Expressions& GetParameters() const { return parameters_; }
   const Statements& GetStatements() const { return statements_; }
   const VariableDeclarations& GetVariableDeclarations() const { return variable_declarations_; }
-  const AstNodes& GetFunctionDeclarations() const { return function_declarations_; }
+  const FunctionDeclarations& GetFunctionDeclarations() const { return function_declarations_; }
 
   bool IsStrict() const { return is_strict_; }
 
@@ -354,7 +354,7 @@ class FunctionDeclaration : public Statement {
   bool is_strict_;
   
   VariableDeclarations variable_declarations_;
-  AstNodes function_declarations_;
+  FunctionDeclarations function_declarations_;
 };
 
 }  // namespace voidjs

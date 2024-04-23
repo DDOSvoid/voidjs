@@ -21,10 +21,10 @@ namespace voidjs {
 class Interpreter {
  public:
   types::Completion Execute(ast::AstNode* ast_node);
-  void EnterGlobalCode();
+  void EnterGlobalCode(ast::AstNode* ast_node);
   void EnterEvalCode();
   void EnterFunctionCode();
-  void DeclarationBindingInstantiation();
+  void DeclarationBindingInstantiation(ast::AstNode* ast_node);
 
   types::Completion EvalProgram(ast::AstNode* ast_node);
 

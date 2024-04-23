@@ -110,12 +110,12 @@ class Property;
 class CaseClause;
 class FunctionDeclaration;
 
-using AstNodes = std::vector<AstNode*>;
 using Statements = std::vector<Statement*>;
 using Expressions = std::vector<Expression*>;
 using VariableDeclarations = std::vector<VariableDeclaration*>;
 using CaseClauses = std::vector<CaseClause*>;
 using Properties = std::vector<Property*>;
+using FunctionDeclarations = std::vector<FunctionDeclaration*>;
 
 class AstNode {
  public:

@@ -35,6 +35,10 @@ class ExecutionContext {
   types::LexicalEnvironment* GetLexicalEnvironment() const {
     return lexical_environment_;
   }
+
+  types::LexicalEnvironment* GetVariableEnvironment() const {
+    return variable_environment_;
+  }
   
  private:
   std::unordered_set<std::u16string> label_set_;  // contain "" initially
