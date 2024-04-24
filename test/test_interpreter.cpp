@@ -73,7 +73,7 @@ TEST(Interpreter, EvalEmptyStatement) {
 TEST(Interpreter, EvalExpressionStatement) {
 }
 
-TEST(Itnerpreter, EvalIfStatement) {
+TEST(Interpreter, EvalIfStatement) {
   {
     std::u16string source = uR"(
 var i = 42, j = i - 40;

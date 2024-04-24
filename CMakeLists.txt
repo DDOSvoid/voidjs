@@ -43,6 +43,7 @@ add_executable(
   test/test_lexer.cpp
   test/test_parser.cpp
   test/test_interpreter.cpp
+  test/test_js_value.cpp
   test/test_internal_types.cpp
 )
 target_link_libraries(

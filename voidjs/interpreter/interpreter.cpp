@@ -713,7 +713,7 @@ JSValue Interpreter::EvalBooleanLiteral(BooleanLiteral* boolean) {
 // Eval NumericLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
-  if (num->IsInteger()) {
+  if (num->IsInt32()) {
     return JSValue(num->GetNumber<std::int32_t>());
   } else {
     return JSValue(num->GetNumber<double>());

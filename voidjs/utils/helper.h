@@ -27,7 +27,7 @@ inline std::string U16StrToU8Str(std::u16string u16str) {
   return convert.to_bytes(u16str);
 }
 
-inline bool IsInteger(double number) {
+inline bool IsInt32(double number) {
   if (std::fabs(number) <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
     auto int_num = static_cast<std::int32_t>(number);
     return static_cast<double>(int_num) == number;

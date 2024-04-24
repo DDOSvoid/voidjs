@@ -1,13 +1,18 @@
 #include "voidjs/types/js_value.h"
 
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <iostream>
+#include <locale>
+#include <unistd.h>
 
+#include "voidjs/lexer/character.h"
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/utils/helper.h"
 
 namespace voidjs {
 
@@ -15,7 +20,7 @@ bool JSValue::IsString() const {
   return IsHeapObject() && GetHeapObject()->IsString();
 }
 
-// To Primitive
+// ToPrimitive
 // Defined in ECMAScript 5.1 Chapter 9.1
 JSValue JSValue::ToPrimitive(JSValue val, PreferredType type) {
   if (val.IsPrimitive()) {
@@ -28,7 +33,7 @@ JSValue JSValue::ToPrimitive(JSValue val, PreferredType type) {
   return JSValue{};
 }
 
-// To Boolean
+// ToBoolean
 // Defined in ECMAScript 5.1 Chapter 9.2
 bool JSValue::ToBoolean(JSValue val) {
   if (val.IsUndefined() || val.IsNull()) {
@@ -38,8 +43,8 @@ bool JSValue::ToBoolean(JSValue val) {
   } else if (val.IsNumber()) {
     if (val.IsInt()) {
       return val.GetInt() != 0;
-    }
-    if (val.IsDouble()) {
+    } else {
+      // val.IsDouble must be true
       auto d = val.GetDouble();
       return !std::isnan(d) && d != 0;
     }
@@ -53,7 +58,7 @@ bool JSValue::ToBoolean(JSValue val) {
   return false;
 }
 
-// To Number
+// ToNumber
 // Defined in ECMAScript 5.1 Chapter 9.3
 JSValue JSValue::ToNumber(JSValue val) {
   if (val.IsUndefined()) {
@@ -65,7 +70,12 @@ JSValue JSValue::ToNumber(JSValue val) {
   } else if (val.IsNumber()) {
     return val;
   } else if (val.IsString()) {
-    // todo
+    auto num = StringToNumber(val.GetHeapObject()->AsString());
+    if (utils::IsInt32(num)) {
+      return JSValue(static_cast<std::int32_t>(num)); 
+    } else {
+      return JSValue(num);
+    }
   } else if (val.IsObject()) {
     auto prim_val = ToPrimitive(val, PreferredType::NUMBER);
     return ToNumber(prim_val);
@@ -75,7 +85,119 @@ JSValue JSValue::ToNumber(JSValue val) {
   return JSValue{};
 }
 
-// To String
+// ToInteger
+// Defined in ECMAScript 5.1 Chapter 9.4
+JSValue JSValue::ToInteger(JSValue val) {
+  // 1. Let number be the result of calling ToNumber on the input argument.
+  // 2. If number is NaN, return +0.
+  // 3. If number is +0, −0, +∞, or −∞, return number.
+  // 4. Return the result of computing sign(number) * floor(abs(number)).
+  auto num = ToNumber(val);
+  if (num.IsDouble() && std::isnan(num.GetDouble())) {
+    return JSValue(0);
+  } else if (num.IsInt() && num.GetInt() == 0 ||
+             num.IsDouble() && (std::isinf(num.GetDouble()) || num.GetDouble() == 0)) {
+    return num;
+  } else {
+    auto ret = num.GetDouble() > 0 ?
+      std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+    return JSValue(ret);
+  }
+}
+
+// ToInt32
+// Defined in ECMAScript 5.1 Chapter 9.5
+JSValue JSValue::ToInt32(JSValue val) {
+  // 1. Let number be the result of calling ToNumber on the input argument.
+  // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
+  // 3. Let posInt be sign(number) * floor(abs(number)).
+  // 4. Let int32bit be posInt modulo 2^32;
+  //    that is, a finite integer value k of Number type with positive sign and
+  //    less than 2^32 in magnitude such that the mathematical difference of posInt and
+  //    k is mathematically an integer multiple of 2^32.
+  // 5. If int32bit is greater than or equal to 2^31,
+  //    return int32bit − 2^32, otherwise return int32bit.
+  auto num = ToNumber(val);
+  
+  if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
+      num.IsInt() && num.GetInt() == 0) {
+    return num;
+  }
+  
+  auto pos_int = num.GetDouble() > 0 ?
+    std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+  
+  auto int32_bit = std::fmod(pos_int, std::pow(2, 32));
+  if (int32_bit < 0) {
+    int32_bit += std::pow(2, 32);
+  }
+
+  if (int32_bit > pow(2, 31)) {
+    return JSValue(int32_bit - std::pow(2, 32));
+  } else {
+    return JSValue(int32_bit);
+  }
+}
+
+// ToUint32
+// Defined in ECMAScript 5.1 Chapter 9.6
+JSValue JSValue::ToUint32(JSValue val) {
+  // 1. Let number be the result of calling ToNumber on the input argument.
+  // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
+  // 3. Let posInt be sign(number) * floor(abs(number)).
+  // 4. Let int32bit be posInt modulo 2^32;
+  //    that is, a finite integer value k of Number type with positive sign and
+  //    less than 2^32 in magnitude such that the mathematical difference of posInt and
+  //    k is mathematically an integer multiple of 2^32.
+  // 5. Return int32bit.
+  auto num = ToNumber(val);
+
+  if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
+      num.IsInt() && num.GetInt() == 0) {
+    return num;
+  }
+
+  auto pos_int = num.GetDouble() > 0 ?
+    std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+
+  auto int32_bit = std::fmod(pos_int, std::pow(2, 32));
+  if (int32_bit < 0) {
+    int32_bit += std::pow(2, 32);
+  }
+
+  return JSValue(int32_bit);
+}
+
+// ToUint16
+// Defined in ECMAScript 5.1 Chapter 9.7
+JSValue JSValue::ToUint16(JSValue val) {
+  // 1. Let number be the result of calling ToNumber on the input argument.
+  // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
+  // 3. Let posInt be sign(number) * floor(abs(number)).
+  // 4. Let int16bit be posInt modulo 2^16;
+  //    that is, a finite integer value k of Number type with positive sign and
+  //    less than 2^16 in magnitude such that the mathematical difference of posInt and
+  //    k is mathematically an integer multiple of 2^16.
+  // 5. Return int16bit.
+  auto num = ToNumber(val);
+
+  if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
+      num.IsInt() && num.GetInt() == 0) {
+    return num;
+  }
+
+  auto pos_int = num.GetDouble() > 0 ?
+    std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+
+  auto int16_bit = std::fmod(pos_int, std::pow(2, 16));
+  if (int16_bit < 0) {
+    int16_bit += std::pow(2, 16);
+  }
+
+  return JSValue(int16_bit);
+}
+
+// ToString
 // Defined in ECMAScript 5.1 Chapter 9.8
 JSValue JSValue::ToString(JSValue val) {
   if (val.IsUndefined()) {
@@ -89,11 +211,12 @@ JSValue JSValue::ToString(JSValue val) {
       return JSValue(ObjectFactory::NewString(u"false"));
     }
   } else if (val.IsNumber()) {
-    // todo
+    return JSValue(NumberToString(val.IsInt() ? val.GetInt() : val.GetDouble()));
   } else if (val.IsString()) {
     return val;
   } else if (val.IsObject()) {
-    // todo
+    auto prim_val = ToPrimitive(val, PreferredType::STRING);
+    return ToString(prim_val);
   }
 
   // this branch is unreachable
@@ -121,6 +244,245 @@ types::Object* JSValue::ToObject(JSValue val) {
   
   // this branch is unreachable
   return nullptr;
+}
+
+// StringToNumber
+// Defined in ECMAScript 5.1 Chapter 9.3.1
+double JSValue::StringToNumber(types::String* str) {
+  auto source = str->GetString();
+  std::size_t start = 0, end = source.size();
+
+  // skip whitespace and line terminator 
+  while (start < end &&
+         (character::IsWhitespace(source[start]) || character::IsLineTerminator(source[start]))) {
+    ++start;
+  }
+
+  while (start < end &&
+         (character::IsWhitespace(source[end - 1]) || character::IsLineTerminator(source[end - 1]))) {
+    --end;
+  }
+
+  if (start == end) {
+    return 0;
+  }
+
+  auto ToDigit = [](char16_t ch) -> std::int32_t {
+    if (u'0' <= ch && ch <= u'9') {
+      return ch - u'0';
+    }
+    if (u'a' <= ch && ch <= u'f') {
+      return ch - u'a' + 10;
+    }
+    if (u'A' <= ch && ch <= u'F') {
+      return ch - u'A' + 10;
+    }
+    return 0; 
+  };
+
+  auto nan = std::numeric_limits<double>::quiet_NaN();
+  auto inf = std::numeric_limits<double>::infinity();
+  auto ret = 0.0;
+  auto num = 0.0;
+  auto base = 10.0;
+  auto sign = false;
+  if (source[start] == u'-') {
+    sign = true;
+    ++start;
+  } else if (source[start] == u'+') {
+    ++start;
+  } else if (end - start > 2 && source[start] == u'0' &&
+             (source[start + 1] == u'x' || source[start + 1] == u'X')) {
+    start += 2;
+
+    num = 0.0;
+    base = 16;
+    for (auto idx = start; idx < end; ++idx) {
+      if (!character::IsHexDigit(source[idx])) {
+        return nan;
+      }
+      num = num * base + ToDigit(source[idx]);
+    }
+    return num;
+  }
+
+  if (source.substr(start, end - start) == u"Infinity") {
+    return sign ? -inf : inf;
+  }
+
+  while (start < end && character::IsDecimalDigit(source[start])) {
+    num = num * base + ToDigit(source[start]);
+    ++start;
+  }
+  ret += num;
+
+  if (start == end) {
+    return sign ? -ret : ret;
+  }
+
+  if (source[start] == u'.') {
+    ++start;
+    
+    num = 0.0;
+    base = 0.1;
+    while (start < end && character::IsDecimalDigit(source[start])) {
+      num += ToDigit(source[start]) * base;
+      base *= 0.1;
+      ++start;
+    }
+    ret += num;
+  }
+
+  if (start == end) {
+    return sign ? -ret : ret;
+  }
+
+  if (source[start] == u'e' || source[start] == u'E') {
+    ++start;
+    if (start == end) {
+      return nan;
+    }
+
+    bool exp_sign = false;
+    if (source[start] == u'-') {
+      exp_sign = true;
+      ++start;
+    } else if (source[start] == u'+') {
+      ++start;
+    }
+    
+    num = 0.0;
+    base = 10;
+    while (start < end && character::IsDecimalDigit(source[start])) {
+      num = num * base + ToDigit(source[start]);
+      ++start;
+    }
+    ret = ret * std::pow(10, exp_sign ? -num : num);
+  }
+
+  if (start == end) {
+    return sign ? -ret : ret;
+  }
+
+  return nan;
+}
+
+// NumberToString
+// Defined in ECMAScript 5.1 Chapter 9.8.1
+// The following code comes from https://github.com/zhuzilin/es/blob/67fb4d579bb142669acd8384ea34c62cd052945c/es/types/conversion.h#L284
+types::String* JSValue::NumberToString(double num) {
+  if (std::isnan(num)) {
+    return ObjectFactory::NewString(u"NAN");
+  }
+
+  if (num == 0) {
+    return ObjectFactory::NewString(u"0");
+  }
+
+  if (std::isinf(num)) {
+    return std::signbit(num) ?
+      ObjectFactory::NewString(u"-Infinity") :
+      ObjectFactory::NewString(u"Infinity");
+  }
+
+  std::u16string sign = u"";
+  if (num < 0) {
+    num = -num;
+    sign = u"-";
+  }
+
+  // the fraction digits, e.g. 1.23's frac_digit = 2, 4200's = -2
+  std::int32_t frac_digit = 0;
+  // the total digits, e.g. 1.23's k = 3, 4200's k = 2
+  std::int32_t k = 0;
+  // n - k = -frac_digit
+  std::int32_t n = 0;
+  double tmp;
+  while (std::modf(num, &tmp) != 0) {
+    frac_digit++;
+    num *= 10;
+  }
+  while (num != 0 && std::fmod(num, 10) < 1e-6) {
+    frac_digit--;
+    num /= 10;
+  }
+  double s = num;
+  while (num > 0.5) {
+    k++;
+    num /= 10;
+    std::modf(num, &tmp);
+    num = tmp;
+  }
+  n = k - frac_digit;
+
+  std::u16string ret = u"";
+  
+  if (k <= n && n <= 21) {
+    while (s > 0.5) {
+      ret += u'0' + static_cast<char16_t>(std::fmod(s, 10));
+      s /= 10;
+      std::modf(s, &tmp);
+      s = tmp;
+    }
+    std::reverse(ret.begin(), ret.end());
+    ret += std::u16string(n - k, u'0');
+    return ObjectFactory::NewString(sign + ret);
+  }
+  
+  if (0 < n && n <= 21) {
+    for (int i = 0; i < k; i++) {
+      ret += u'0' + static_cast<char16_t>(std::fmod(s, 10));
+      if (i + 1 == k - n) {
+        ret += u'.';
+      }
+      s /= 10;
+      std::modf(s, &tmp);
+      s = tmp;
+    }
+    std::reverse(ret.begin(), ret.end());
+    return ObjectFactory::NewString(sign + ret);
+  }
+  
+  if (-6 < n && n <= 0) {
+    for (int i = 0; i < k; i++) {
+      ret += u'0' + static_cast<char16_t>(std::fmod(s, 10));
+      s /= 10;
+      std::modf(s, &tmp);
+      s = tmp;
+    }
+    std::reverse(ret.begin(), ret.end());
+    ret = u"0." + std::u16string(-n, u'0') + ret;
+    return ObjectFactory::NewString(sign + ret);
+  }
+  
+  if (k == 1) {
+    ret += u'0' + static_cast<char16_t>(s);
+    ret += u"e";
+    if (n - 1 > 0) {
+      ret += u"+" + std::u16string(NumberToString(n - 1)->GetString());
+    } else {
+      ret += u"-" + std::u16string(NumberToString(1 - n)->GetString());
+    }
+    return ObjectFactory::NewString(sign + ret);
+  }
+  
+  for (int i = 0; i < k; i++) {
+    ret += u'0' + static_cast<char16_t>(std::fmod(s, 10));
+    if (i + 1 == k - 1) {
+      ret += u'.';
+    }
+    s /= 10;
+    std::modf(s, &tmp);
+    s = tmp;
+  }
+  
+  ret += u"e";
+  if (n - 1 > 0) {
+    ret += u"+" + std::u16string(NumberToString(n - 1)->GetString());
+  } else {
+    ret += u"-" + std::u16string(NumberToString(1 - n)->GetString());
+  }
+  return ObjectFactory::NewString(sign + ret);
 }
 
 // Check Object Coercible

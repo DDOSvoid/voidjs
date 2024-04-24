@@ -81,7 +81,10 @@ class JSValue {
   {}
     
   explicit JSValue(std::int32_t value)
-    : value_(static_cast<JSValueType>(value) | jsvalue::TAG_INT)
+    : value_((value < 0 ?
+              static_cast<JSValueType>(static_cast<std::uint32_t>(value)):
+              static_cast<JSValueType>(value))
+             | jsvalue::TAG_INT)
   {}
 
   explicit JSValue(std::uint32_t value) {
@@ -135,8 +138,14 @@ class JSValue {
   static JSValue ToPrimitive(JSValue val, PreferredType type);
   static bool ToBoolean(JSValue val);
   static JSValue ToNumber(JSValue val); 
+  static JSValue ToInteger(JSValue val);
+  static JSValue ToInt32(JSValue val);
+  static JSValue ToUint32(JSValue val);
+  static JSValue ToUint16(JSValue val);
   static JSValue ToString(JSValue val);
   static types::Object* ToObject(JSValue val);
+  static double StringToNumber(types::String* str);
+  static types::String* NumberToString(double num);
 
   // Type Testing
   // Defined in ECMAScript 5.1 Chapter 9
