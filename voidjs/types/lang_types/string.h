@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <string>
+#include <string_view>
 
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
@@ -24,6 +25,9 @@ class String : public HeapObject {
   char16_t* GetData() const { return utils::BitGet<char16_t*>(this, DATA_OFFSET); }
   char16_t GetByIndex(std::size_t idx) const { return *(GetData() + idx); } 
   void SetByIndex(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
+
+  bool Equal(std::u16string_view str) const { return GetString() == str; }
+  bool Equal(String* str) const { return Equal(str); }
 
   // used for print 
   std::u16string_view GetString() const {

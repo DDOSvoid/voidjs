@@ -59,6 +59,8 @@ class Interpreter {
   JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl); 
   
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
+  JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSValue ApplyBitwiseOperator(TokenType op, ast::Expression* left, ast::Expression* right);
   JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyUnaryOperator(TokenType op, JSValue val);
 

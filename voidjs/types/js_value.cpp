@@ -12,6 +12,7 @@
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/lang_types/number.h"
 #include "voidjs/utils/helper.h"
 
 namespace voidjs {
@@ -60,21 +61,21 @@ bool JSValue::ToBoolean(JSValue val) {
 
 // ToNumber
 // Defined in ECMAScript 5.1 Chapter 9.3
-JSValue JSValue::ToNumber(JSValue val) {
+types::Number JSValue::ToNumber(JSValue val) {
   if (val.IsUndefined()) {
-    return JSValue(std::numeric_limits<double>::quiet_NaN());
+    return types::Number(std::numeric_limits<double>::quiet_NaN());
   } else if (val.IsNull()) {
-    return JSValue(0);
+    return types::Number(0);
   } else if (val.IsBoolean()) {
-    return JSValue(val.GetBoolean() ? 1 : 0);
+    return types::Number(val.GetBoolean() ? 1 : 0);
   } else if (val.IsNumber()) {
-    return val;
+    return types::Number(val);
   } else if (val.IsString()) {
     auto num = StringToNumber(val.GetHeapObject()->AsString());
-    if (utils::IsInt32(num)) {
-      return JSValue(static_cast<std::int32_t>(num)); 
+    if (utils::IsDoubleWithinRangeInt32(num)) {
+      return types::Number(static_cast<std::int32_t>(num)); 
     } else {
-      return JSValue(num);
+      return types::Number(num);
     }
   } else if (val.IsObject()) {
     auto prim_val = ToPrimitive(val, PreferredType::NUMBER);
@@ -82,7 +83,7 @@ JSValue JSValue::ToNumber(JSValue val) {
   }
 
   // this branch is unreachable
-  return JSValue{};
+  return types::Number{};
 }
 
 // ToInteger
@@ -92,22 +93,25 @@ JSValue JSValue::ToInteger(JSValue val) {
   // 2. If number is NaN, return +0.
   // 3. If number is +0, −0, +∞, or −∞, return number.
   // 4. Return the result of computing sign(number) * floor(abs(number)).
-  auto num = ToNumber(val);
-  if (num.IsDouble() && std::isnan(num.GetDouble())) {
-    return JSValue(0);
-  } else if (num.IsInt() && num.GetInt() == 0 ||
-             num.IsDouble() && (std::isinf(num.GetDouble()) || num.GetDouble() == 0)) {
-    return num;
-  } else {
-    auto ret = num.GetDouble() > 0 ?
-      std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
-    return JSValue(ret);
-  }
+  
+  // auto num = ToNumber(val);
+  // if (num.IsDouble() && std::isnan(num.GetDouble())) {
+  //   return JSValue(0);
+  // } else if (num.IsInt() && num.GetInt() == 0 ||
+  //            num.IsDouble() && (std::isinf(num.GetDouble()) || num.GetDouble() == 0)) {
+  //   return num;
+  // } else {
+  //   auto ret = num.GetDouble() > 0 ?
+  //     std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+  //   return JSValue(ret);
+  // }
+
+  return JSValue(utils::TruncateDouble(val.GetNumber()));
 }
 
 // ToInt32
 // Defined in ECMAScript 5.1 Chapter 9.5
-JSValue JSValue::ToInt32(JSValue val) {
+std::int32_t JSValue::ToInt32(JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
   // 3. Let posInt be sign(number) * floor(abs(number)).
@@ -117,31 +121,36 @@ JSValue JSValue::ToInt32(JSValue val) {
   //    k is mathematically an integer multiple of 2^32.
   // 5. If int32bit is greater than or equal to 2^31,
   //    return int32bit − 2^32, otherwise return int32bit.
-  auto num = ToNumber(val);
   
-  if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
-      num.IsInt() && num.GetInt() == 0) {
-    return num;
-  }
+  // auto num = ToNumber(val);
   
-  auto pos_int = num.GetDouble() > 0 ?
-    std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
-  
-  auto int32_bit = std::fmod(pos_int, std::pow(2, 32));
-  if (int32_bit < 0) {
-    int32_bit += std::pow(2, 32);
-  }
+  // if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
+  //     num.IsInt() && num.GetInt() == 0) {
+  //   return 0;
+  // }
 
-  if (int32_bit > pow(2, 31)) {
-    return JSValue(int32_bit - std::pow(2, 32));
-  } else {
-    return JSValue(int32_bit);
-  }
+  // double number = num.IsInt() ? num.GetInt() : num.GetDouble();
+  
+  // auto pos_int = number > 0?
+  //   std::floor(std::fabs(number)) : -std::floor(std::fabs(number));
+  
+  // auto int32_bit = std::fmod(pos_int, std::pow(2, 32));
+  // if (int32_bit < 0) {
+  //   int32_bit += std::pow(2, 32);
+  // }
+
+  // if (int32_bit > pow(2, 31)) {
+  //   return int32_bit - std::pow(2, 32);
+  // } else {
+  //   return int32_bit;
+  // }
+
+  return utils::DoubleToInt<32>(val.GetNumber());
 }
 
 // ToUint32
 // Defined in ECMAScript 5.1 Chapter 9.6
-JSValue JSValue::ToUint32(JSValue val) {
+std::uint32_t JSValue::ToUint32(JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
   // 3. Let posInt be sign(number) * floor(abs(number)).
@@ -150,27 +159,32 @@ JSValue JSValue::ToUint32(JSValue val) {
   //    less than 2^32 in magnitude such that the mathematical difference of posInt and
   //    k is mathematically an integer multiple of 2^32.
   // 5. Return int32bit.
-  auto num = ToNumber(val);
+  
+  // auto num = ToNumber(val);
 
-  if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
-      num.IsInt() && num.GetInt() == 0) {
-    return num;
-  }
+  // if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
+  //     num.IsInt() && num.GetInt() == 0) {
+  //   return 0;
+  // }
 
-  auto pos_int = num.GetDouble() > 0 ?
-    std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+  // double number = num.IsInt() ? num.GetInt() : num.GetDouble();
 
-  auto int32_bit = std::fmod(pos_int, std::pow(2, 32));
-  if (int32_bit < 0) {
-    int32_bit += std::pow(2, 32);
-  }
+  // auto pos_int = number > 0 ? 
+  //   std::floor(std::fabs(number)) : -std::floor(std::fabs(number));
 
-  return JSValue(int32_bit);
+  // auto int32_bit = std::fmod(pos_int, std::pow(2, 32));
+  // if (int32_bit < 0) {
+  //   int32_bit += std::pow(2, 32);
+  // }
+
+  // return int32_bit;
+
+  return utils::DoubleToInt<32>(val.GetNumber());
 }
 
 // ToUint16
 // Defined in ECMAScript 5.1 Chapter 9.7
-JSValue JSValue::ToUint16(JSValue val) {
+std::uint16_t JSValue::ToUint16(JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
   // 3. Let posInt be sign(number) * floor(abs(number)).
@@ -179,22 +193,27 @@ JSValue JSValue::ToUint16(JSValue val) {
   //    less than 2^16 in magnitude such that the mathematical difference of posInt and
   //    k is mathematically an integer multiple of 2^16.
   // 5. Return int16bit.
-  auto num = ToNumber(val);
+  
+  // auto num = ToNumber(val);
 
-  if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
-      num.IsInt() && num.GetInt() == 0) {
-    return num;
-  }
+  // if (num.IsDouble() && (std::isnan(num.GetDouble()) || std::isinf(num.GetDouble()) || num.GetDouble() == 0) ||
+  //     num.IsInt() && num.GetInt() == 0) {
+  //   return 0;
+  // }
+  
+  // double number = num.IsInt() ? num.GetInt() : num.GetDouble();
 
-  auto pos_int = num.GetDouble() > 0 ?
-    std::floor(std::fabs(num.GetDouble())) : -std::floor(std::fabs(num.GetDouble()));
+  // auto pos_int = number > 0 ?
+  //   std::floor(std::fabs(number)) : -std::floor(std::fabs(number));
 
-  auto int16_bit = std::fmod(pos_int, std::pow(2, 16));
-  if (int16_bit < 0) {
-    int16_bit += std::pow(2, 16);
-  }
+  // auto int16_bit = std::fmod(pos_int, std::pow(2, 16));
+  // if (int16_bit < 0) {
+  //   int16_bit += std::pow(2, 16);
+  // }
 
-  return JSValue(int16_bit);
+  // return int16_bit;
+
+  return utils::DoubleToInt<16>(val.GetNumber());
 }
 
 // ToString
@@ -524,8 +543,14 @@ bool JSValue::SameValue(JSValue x, JSValue y) {
     return x.GetBoolean() == y.GetBoolean();
   }
 
-  // todo
+  // If Type(x) is Number, then.
   if (x.IsNumber() && y.IsNumber()) {
+    // If x is NaN and y is NaN, return true.
+    // If x is +0 and y is -0, return false.
+    // If x is -0 and y is +0, return false.
+    // If x is the same Number value as y, return true.
+    // Return false.
+
     if (x.IsInt() && y.IsInt()) {
       return x.GetInt() == y.GetInt();
     }

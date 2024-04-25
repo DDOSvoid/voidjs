@@ -125,7 +125,8 @@ class JSValue {
   bool IsEmpty() const { return value_ == jsvalue::VALUE_EMPTY; }
   bool IsPropertyName() const { return IsString() || IsNumber(); }
 
-  bool GetBoolean()const { return value_ == jsvalue::VALUE_TRUE; }
+  bool GetBoolean() const { return value_ == jsvalue::VALUE_TRUE; }
+  double GetNumber() const { return IsInt() ? GetInt() : GetDouble(); } 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
   double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }
 
@@ -137,11 +138,11 @@ class JSValue {
   // Defined in ECMAScript 5.1 Chapter 9
   static JSValue ToPrimitive(JSValue val, PreferredType type);
   static bool ToBoolean(JSValue val);
-  static JSValue ToNumber(JSValue val); 
+  static types::Number ToNumber(JSValue val); 
   static JSValue ToInteger(JSValue val);
-  static JSValue ToInt32(JSValue val);
-  static JSValue ToUint32(JSValue val);
-  static JSValue ToUint16(JSValue val);
+  static std::int32_t ToInt32(JSValue val);
+  static std::uint32_t ToUint32(JSValue val);
+  static std::uint16_t ToUint16(JSValue val);
   static JSValue ToString(JSValue val);
   static types::Object* ToObject(JSValue val);
   static double StringToNumber(types::String* str);

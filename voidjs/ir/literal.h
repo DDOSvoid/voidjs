@@ -40,8 +40,8 @@ class NumericLiteral : public Expression {
 
   template <typename T, typename = std::enable_if_t<std::is_arithmetic_v<T>>>
   T GetNumber() const { return static_cast<T>(number_); }
-
-  bool IsInt32() const { return utils::IsInt32(number_); }
+  std::int32_t GetInt32() const { return number_; }
+  double GetDouble() const { return number_; }
 
  private:
   double number_; 

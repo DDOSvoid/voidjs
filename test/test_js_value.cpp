@@ -6,6 +6,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/lang_types/number.h"
 
 using namespace voidjs;
 
@@ -83,6 +84,60 @@ TEST(JSValue, ToNumber) {
 
     ASSERT_TRUE(num.IsInt());
     EXPECT_EQ(64180, num.GetInt());
+  }
+}
+
+TEST(JSValue, ToInteger) {
+  auto inf = 1.0 / 0.0;
+
+  {
+    auto val = JSValue(inf);
+    EXPECT_DOUBLE_EQ(inf, JSValue::ToInteger(val).GetDouble());
+  }
+
+  {
+    auto val = JSValue(-2.3);
+    EXPECT_DOUBLE_EQ(-2, JSValue::ToInteger(val).GetDouble());
+  }
+}
+
+TEST(JSValue, ToInt32) {
+  {
+    auto val = JSValue(std::pow(2, 32) + 3);
+    EXPECT_EQ(3, JSValue::ToInt32(val));
+  }
+
+  {
+    auto val = JSValue(-2.3);
+    EXPECT_EQ(-2, JSValue::ToInt32(val));
+  }
+}
+
+TEST(JSValue, ToUint32) {
+  auto ui32_max = std::numeric_limits<std::uint32_t>::max();
+  
+  {
+    auto val = JSValue(std::pow(2, 32) + 3);
+    EXPECT_EQ(3, JSValue::ToInt32(val));
+  }
+
+  {
+    auto val = JSValue(-2.3);
+    EXPECT_EQ(ui32_max - 1, JSValue::ToUint32(val));
+  }
+}
+
+TEST(JSValue, ToUint16) {
+  auto ui16_max = std::numeric_limits<std::uint16_t>::max();
+  
+  {
+    auto val = JSValue(std::pow(2, 16) + 3);
+    EXPECT_EQ(3, JSValue::ToUint16(val));
+  }
+
+  {
+    auto val = JSValue(-2.3);
+    EXPECT_EQ(ui16_max - 1, JSValue::ToUint16(val));
   }
 }
 

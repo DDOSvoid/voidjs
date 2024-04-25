@@ -569,9 +569,9 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
         plref                                                   &&
         plref->IsStrictReference()                              &&
         std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
-        (plref->GetReferencedName()->GetString() == u"eval"     ||
-         plref->GetReferencedName()->GetString() == u"arguments")) {
-        
+        (plref->GetReferencedName()->Equal(u"eval")     ||
+         plref->GetReferencedName()->Equal(u"arguments"))) {
+      // todo
     }
 
     // 5. Call PutValue(lref, rval).
@@ -603,12 +603,12 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
     //      Type(GetBase(lref)) is Environment Record
     //      GetReferencedName(lref) is either "eval" or "arguments"
     if (auto plref = std::get_if<Reference>(&lref);
-        plref                                                     &&
-        plref->IsStrictReference()                                &&
-        std::get_if<EnvironmentRecord*>(&(plref->GetBase()))      &&
-        (plref->GetReferencedName()->GetString() == u"eval"       ||
-         plref->GetReferencedName()->GetString() == u"arguments")) {
-        
+        plref                                                   &&
+        plref->IsStrictReference()                              &&
+        std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
+        (plref->GetReferencedName()->Equal(u"eval")     ||
+         plref->GetReferencedName()->Equal(u"arguments"))) {
+      // todo
     }
 
     // 5. Call PutValue(lref, r).
@@ -713,10 +713,10 @@ JSValue Interpreter::EvalBooleanLiteral(BooleanLiteral* boolean) {
 // Eval NumericLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
-  if (num->IsInt32()) {
-    return JSValue(num->GetNumber<std::int32_t>());
+  if (utils::IsDoubleWithinRangeInt32(num->GetDouble())) {
+    return JSValue(num->GetInt32());
   } else {
-    return JSValue(num->GetNumber<double>());
+    return JSValue(num->GetDouble());
   }
 }
 
@@ -794,7 +794,7 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
   return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
 }
 
-// Apply Compound Assignment
+// ApplyCompoundAssignment
 // todo
 JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
   switch (op) {
@@ -808,6 +808,84 @@ JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue
     default: {
       return {};
     }
+  }
+}
+
+
+// ApplyLogicalOperator
+// Defind in ECMAScript 5.1 Chatper 11.11
+// Note that the value produced by a && or || operator is not necessarily of type Boolean.
+// The value produced will always be the value of one of the two operand expressions.
+JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expression* right) {
+  if (op == TokenType::LOGICAL_AND) {
+    // 1. Let lref be the result of evaluating LogicalANDExpression.
+    auto lref = EvalExpression(left);
+    
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+    
+    // 3. If ToBoolean(lval) is false, return lval.
+    if (!JSValue::ToBoolean(lval)) {
+      return lval;
+    }
+    
+    // 4. Let rref be the result of evaluating BitwiseORExpression.
+    auto rref = EvalExpression(right);
+    
+    // 5. Return GetValue(rref).
+    return GetValue(rref);
+  } else {
+    // op must be TokenType::Logical_OR
+
+    // 1. Let lref be the result of evaluating LogicalORExpression.
+    auto lref = EvalExpression(left);
+    
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+    
+    // 3. If ToBoolean(lval) is true, return lval.
+    if (JSValue::ToBoolean(lval)) {
+      return lval;
+    }
+    
+    // 4. Let rref be the result of evaluating LogicalANDExpression.
+    auto rref = EvalExpression(right);
+    
+    // 5. Return GetValue(rref).
+    return GetValue(rref);
+  }
+}
+
+// ApplyBitwiseOperator
+// Defined in ECMAScript 5.1 Chapter 11.10
+JSValue Interpreter::ApplyBitwiseOperator(TokenType op, Expression* left, Expression* right) {
+  // 1. Let lref be the result of evaluating A.
+  auto lref = EvalExpression(left);
+  
+  // 2. Let lval be GetValue(lref).
+  auto lval = GetValue(lref);
+  
+  // 3. Let rref be the result of evaluating B.
+  auto rref = EvalExpression(right);
+  
+  // 4. Let rval be GetValue(rref).
+  auto rval = GetValue(rref);
+  
+  // 5. Let lnum be ToInt32(lval).
+  auto lnum = JSValue::ToInt32(lval);
+  
+  // 6. Let rnum be ToInt32(rval).
+  auto rnum = JSValue::ToInt32(rval);
+  
+  // 7. Return the result of applying the bitwise operator @ to lnum and rnum.
+  //    The result is a signed 32 bit integer.
+  if (op == TokenType::BIT_AND) {
+    return JSValue(lnum & rnum);
+  } else if (op == TokenType::BIT_XOR) {
+    return JSValue(lnum ^ rnum);
+  } else {
+    // op must bt TokenType::BIT_OR
+    return JSValue(lnum | rnum);
   }
 }
 
