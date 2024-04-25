@@ -1,5 +1,7 @@
 #include "voidjs/interpreter/interpreter.h"
 
+#include <cmath>
+#include <sched.h>
 #include <variant>
 #include <iostream>
 #include <functional>
@@ -13,6 +15,8 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/spec_types/completion.h"
 #include "voidjs/types/spec_types/reference.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
@@ -506,6 +510,9 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
     case AstNodeType::MEMBER_EXPRESSION: {
       return EvalMemberExpression(expr->AsMemberExpression());
     }
+    case AstNodeType::OBJECT_LITERAL: {
+      return EvalObjectLiteral(expr->AsObjectLiteral());
+    }
     case AstNodeType::NULL_LITERAL: {
       return EvalNullLiteral(expr->AsNullLiteral());
     }
@@ -645,22 +652,63 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(Conditio
 
 // Eval BinaryExpression
 std::variant<JSValue, Reference> Interpreter::EvalBinaryExpression(BinaryExpression* binary_expr) {
-  auto lval = GetValue(EvalExpression(binary_expr->GetLeft()));
-  auto rval = GetValue(EvalExpression(binary_expr->GetRight()));
-  return ApplyBinaryOperator(binary_expr->GetOperator(), lval, rval);
+  auto op = binary_expr->GetOperator();
+  auto left = binary_expr->GetLeft();
+  auto right = binary_expr->GetRight();
+  switch (auto op = binary_expr->GetOperator()) {
+    case TokenType::LOGICAL_OR:
+    case TokenType::LOGICAL_AND: {
+      return ApplyLogicalOperator(op, left, right);
+    }
+    case TokenType::BIT_OR:
+    case TokenType::BIT_AND:
+    case TokenType::BIT_NOT: {
+      return ApplyBitwiseOperator(op, left, right);
+    }
+    case TokenType::EQUAL:
+    case TokenType::NOT_EQUAL:
+    case TokenType::STRICT_EQUAL:
+    case TokenType::NOT_STRICT_EQUAL: {
+      return ApplyEqualityOperator(op, left, right);
+    }
+    case TokenType::LESS_THAN:
+    case TokenType::GREATER_THAN:
+    case TokenType::LESS_EQUAL:
+    case TokenType::GREATER_EQUAL: {
+      return ApplyRelationalOperator(op, left, right);
+    }
+    case TokenType::LEFT_SHIFT:
+    case TokenType::RIGHT_SHIFT:
+    case TokenType::U_RIGHT_SHIFT: {
+      return ApplyShiftOperator(op, left, right);
+    }
+    case TokenType::ADD:
+    case TokenType::SUB: {
+      return ApplyAdditiveOperator(op, left, right);
+    }
+    case TokenType::MUL:
+    case TokenType::DIV:
+    case TokenType::MOD: {
+      return ApplyMultiplicativeOperator(op, left, right);
+    }
+    default: {
+      // unreachable branch
+      // todo
+      return {};
+    }
+  }
 }
 
 // Eval UnaryExpression
 // Defined in ECMAScript 5.1 Chapter 11.4
 std::variant<JSValue, Reference> Interpreter::EvalUnaryExpression(UnaryExpression* unary_expr) {
-  auto val = GetValue(EvalExpression(unary_expr->GetExpression()));
-  return ApplyUnaryOperator(unary_expr->GetOperator(), val);
+  return ApplyUnaryOperator(unary_expr->GetOperator(), unary_expr->GetExpression());
 }
 
 // Eval PostfixExpression
 // Defined in ECMAScript 5.1 Chapter 11.3
 std::variant<JSValue, Reference> Interpreter::EvalPostfixExpression(PostfixExpression* post_expr) {
-  
+  return ApplyPostfixOperator(post_expr->GetOperator(), post_expr->GetExpression());
 }
 
 // Eval MemberExpression
@@ -698,6 +746,11 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   return Reference(base_val, prop_name_str.GetHeapObject()->AsString(), strict);
 }
 
+// EvalObjectLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1.5
+JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
+}
+
 // Eval NullLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNullLiteral(NullLiteral* nul) {
@@ -713,7 +766,7 @@ JSValue Interpreter::EvalBooleanLiteral(BooleanLiteral* boolean) {
 // Eval NumericLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
-  if (utils::IsDoubleWithinRangeInt32(num->GetDouble())) {
+  if (utils::CanDoubleConvertToInt32(num->GetDouble())) {
     return JSValue(num->GetInt32());
   } else {
     return JSValue(num->GetDouble());
@@ -798,14 +851,74 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
 // todo
 JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
   switch (op) {
+    case TokenType::MUL_ASSIGN: {
+      auto lnum = JSValue::ToNumber(lval);
+      auto rnum = JSValue::ToNumber(rval);
+      return JSValue(lnum * rnum);
+    }
+    case TokenType::DIV_ASSIGN: {
+      auto lnum = JSValue::ToNumber(lval);
+      auto rnum = JSValue::ToNumber(rval);
+      return JSValue(lnum / rnum);
+    }
     case TokenType::ADD_ASSIGN: {
-      if (lval.IsInt() && rval.IsInt()) {
-        return JSValue(lval.GetInt() + rval.GetInt());
+      auto lprim = JSValue::ToPrimitive(lval, PreferredType::NUMBER);
+      auto rprim = JSValue::ToPrimitive(rval, PreferredType::NUMBER);
+    
+      if (lprim.IsString() || rprim.IsString()) {
+        return JSValue(String::Concat(lprim.GetHeapObject()->AsString(),
+                                      rprim.GetHeapObject()->AsString()));
       } else {
-        return {};
+        return JSValue::ToNumber(lprim) + JSValue::ToNumber(rprim);
       }
     }
+    case TokenType::SUB_ASSIGN: {
+      auto lnum = JSValue::ToNumber(lval);
+      auto rnum = JSValue::ToNumber(rval);
+      return JSValue(lnum - rnum);
+    }
+    case TokenType::LEFT_SHIFT_ASSIGN: {
+      auto lnum = JSValue::ToInt32(lval);
+      auto rnum = JSValue::ToUint32(rval);
+      auto shift_count = rnum & 0x1F;
+      
+      return JSValue(lnum << shift_count);
+    }
+    case TokenType::RIGHT_SHIFT_ASSIGN: {
+      auto lnum = JSValue::ToInt32(lval);
+      auto rnum = JSValue::ToUint32(rval);
+      auto shift_count = rnum & 0x1F;
+      
+      return JSValue(lnum >> shift_count);
+    }
+    case TokenType::U_RIGHT_SHIFT_ASSIGN: {
+      auto lnum = JSValue::ToUint32(lval);
+      auto rnum = JSValue::ToUint32(rval);
+      auto shift_count = rnum & 0x1F;
+      
+      return JSValue(lnum >> shift_count);
+    }
+    case TokenType::BIT_AND_ASSIGN: {
+      auto lnum = JSValue::ToInt32(lval);
+      auto rnum = JSValue::ToInt32(rval);
+
+      return JSValue(lnum & rnum);
+    }
+    case TokenType::BIT_XOR_ASSIGN: {
+      auto lnum = JSValue::ToInt32(lval);
+      auto rnum = JSValue::ToInt32(rval);
+
+      return JSValue(lnum ^ rnum);
+    }
+    case TokenType::BIT_OR_ASSIGN: {
+      auto lnum = JSValue::ToInt32(lval);
+      auto rnum = JSValue::ToInt32(rval);
+
+      return JSValue(lnum | rnum);
+    }
     default: {
+      // unreachable branch
+      // todo
       return {};
     }
   }
@@ -889,30 +1002,383 @@ JSValue Interpreter::ApplyBitwiseOperator(TokenType op, Expression* left, Expres
   }
 }
 
-// ApplyBinaryOperator
+// ApplyEqualityOperator
+// Defined in ECMAScript 5.1 Chapter 11.9
+JSValue Interpreter::ApplyEqualityOperator(TokenType op, Expression* left, Expression* right) {
+  // EqualityExpression op RelationalExpression
+
+  // 1. Let lref be the result of evaluating EqualityExpression.
+  auto lref = EvalExpression(left);
+  
+  // 2. Let lval be GetValue(lref).
+  auto lval = GetValue(lref);
+  
+  // 3. Let rref be the result of evaluating RelationalExpression.
+  auto rref = EvalExpression(right);
+  
+  // 4. Let rval be GetValue(rref).
+  auto rval = GetValue(rref);
+
+  if (op == TokenType::EQUAL) {
+    return JSValue(AbstractEqualityComparison(lval, rval));
+  } else if (op == TokenType::NOT_EQUAL) {
+    return JSValue(!AbstractEqualityComparison(lval, rval));
+  } else if (op == TokenType::STRICT_EQUAL) {
+    return JSValue(StrictEqualityComparison(lval, rval));
+  } else {
+    // op must be TokenType::NOT_STRICT_EQUAL
+    return JSValue(!StrictEqualityComparison(lval, rval));
+  }
+}
+
+// ApplyRelationalOperator
+// Defined in ECMAScript 5.1 Chapter 11.8
+JSValue Interpreter::ApplyRelationalOperator(TokenType op, Expression* left, Expression* right) {
+  // RelationalExpression op ShiftExpression
+
+  if (op != TokenType::KEYWORD_INSTANCEOF && op != TokenType::KEYWORD_IN) {
+    // 1. Let lref be the result of evaluating RelationalExpression.
+    auto lref = EvalExpression(left);
+    
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+    
+    // 3. Let rref be the result of evaluating ShiftExpression.
+    auto rref = EvalExpression(right);
+    
+    // 4. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
+    
+    // 5. Let r be the result of performing abstract relational comparison lval op rval. (see 11.8.5)
+    if (op == TokenType::LESS_THAN) {
+      auto r = AbstractRelationalComparison(lval, rval, true);
+      return r.IsUndefined() ? JSValue::False() : r;
+    } else if (op == TokenType::GREATER_THAN) {
+      auto r = AbstractRelationalComparison(rval, lval, false);
+      return r.IsUndefined() ? JSValue::False() : r;
+    } else if (op == TokenType::LESS_EQUAL) {
+      auto r = AbstractRelationalComparison(rval, lval, false);
+      return r.IsTrue() || r.IsUndefined() ? JSValue::False() : JSValue::True();
+    } else {
+      // op must be TokenType::GREAT_EQUAL
+      auto r = AbstractRelationalComparison(lval, rval, true);
+      return r.IsTrue() || r.IsUndefined() ? JSValue::False() : JSValue::True();
+    }
+  } else if (op == TokenType::KEYWORD_INSTANCEOF) {
+    // 1. Let lref be the result of evaluating RelationalExpression.
+    auto lref = EvalExpression(left);
+    
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+    // 3. Let rref be the result of evaluating ShiftExpression.
+    auto rref = EvalExpression(right);
+    
+    // 4. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
+    
+    // 5. If Type(rval) is not Object, throw a TypeError exception.
+    if (!rval.IsObject()) {
+      // todo
+    }
+    
+    // 6. If rval does not have a [[HasInstance]] internal method, throw a TypeError exception.
+    // todo
+    
+    // 7. Return the result of calling the [[HasInstance]] internal method of rval with argument lval.
+    // todo
+  } else {
+    // op must be TokenType::KEYWORD_IN
+    
+    // 1. Let lref be the result of evaluating RelationalExpression.
+    auto lref = EvalExpression(left);
+    
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+    
+    // 3. Let rref be the result of evaluating ShiftExpression.
+    auto rref = EvalExpression(right);
+    
+    // 4. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
+    
+    // 5. If Type(rval) is not Object, throw a TypeError exception.
+    if (!rval.IsObject()) {
+      // todo
+    }
+    
+    // 6. Return the result of calling the [[HasProperty]] internal method of rval with argument ToString(lval).
+    // todo
+  }
+}
+
+// ApplyShiftOperator
+// Defind in ECMAScript 5.1 Chapter 11.7
+JSValue Interpreter::ApplyShiftOperator(TokenType op, Expression* left, Expression* right) {
+  // ShiftExpression op AdditiveExpression
+
+  // 1. Let lref be the result of evaluating ShiftExpression.
+  auto lref = EvalExpression(left);
+  
+  // 2. Let lval be GetValue(lref).
+  auto lval = GetValue(lref);
+  
+  // 3. Let rref be the result of evaluating AdditiveExpression.
+  auto rref = EvalExpression(right);
+  
+  // 4. Let rval be GetValue(rref).
+  auto rval = GetValue(rref);
+  
+  // 5. Let lnum be ToInt32(lval).
+  auto lnum = JSValue::ToInt32(lval);
+  
+  // 6. Let rnum be ToUint32(rval).
+  auto rnum = JSValue::ToUint32(rval);
+
+  // 7. Let shiftCount be the result of masking out all but the least significant 5 bits of rnum,
+  //    that is, compute rnum & 0x1F.
+  auto shift_count = rnum & 0x1F;
+
+  if (op == TokenType::LEFT_SHIFT) {
+    // Return the result of left shifting lnum by shiftCount bits.
+    // The result is a signed 32-bit integer.
+    return JSValue(lnum << shift_count);
+  } else if (op == TokenType::RIGHT_SHIFT) {
+    // Return the result of performing a sign-extending right shift of lnum by shiftCount bits.
+    // The most significant bit is propagated. The result is a signed 32-bit integer.
+    return JSValue(rnum >> shift_count);
+  } else {
+    // op must be TokenType::U_RIGHT_SHIFT
+
+    // Return the result of performing a zero-filling right shift of lnum by shiftCount bits.
+    // Vacated bits are filled with zero. The result is an unsigned 32-bit integer.
+    return JSValue(JSValue::ToUint32(lval) >> rnum);
+  }
+}
+
+// ApplyAdditiveOperator
+JSValue Interpreter::ApplyAdditiveOperator(TokenType op, Expression* left, Expression* right) {
+  // AdditiveExpression op MultiplicativeExpression
+
+  if (op == TokenType::ADD) {
+    // 1. Let lref be the result of evaluating AdditiveExpression.
+    auto lref = EvalExpression(left);
+    
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+    
+    // 3. Let rref be the result of evaluating MultiplicativeExpression.
+    auto rref = EvalExpression(right);
+    
+    // 4. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
+    
+    // 5. Let lprim be ToPrimitive(lval).
+    auto lprim = JSValue::ToPrimitive(lval, PreferredType::NUMBER);
+    
+    // 6. Let rprim be ToPrimitive(rval).
+    auto rprim = JSValue::ToPrimitive(rval, PreferredType::NUMBER);
+    
+    // 7. If Type(lprim) is String or Type(rprim) is String, then
+    if (lprim.IsString() || rprim.IsString()) {
+      // a. Return the String that is the result of
+      //    concatenating ToString(lprim) followed by ToString(rprim)
+      return JSValue(String::Concat(lprim.GetHeapObject()->AsString(),
+                                    rprim.GetHeapObject()->AsString()));
+    }
+    // 8. Return the result of applying the addition operation to ToNumber(lprim) and ToNumber(rprim).
+    //    See the Note below 11.6.3 (under IEE754 rules).
+    else {
+      return JSValue::ToNumber(lprim) + JSValue::ToNumber(rprim);
+    }
+  } else {
+    // op must be TokenType::SUB
+
+    // 1. Let lref be the result of evaluating AdditiveExpression.
+    auto lref = EvalExpression(left);
+      
+    // 2. Let lval be GetValue(lref).
+    auto lval = GetValue(lref);
+      
+    // 3. Let rref be the result of evaluating MultiplicativeExpression.
+    auto rref = EvalExpression(right);
+      
+    // 4. Let rval be GetValue(rref).
+    auto rval = GetValue(rref);
+      
+    // 5. Let lnum be ToNumber(lval).
+    auto lnum = JSValue::ToNumber(lval);
+      
+    // 6. Let rnum be ToNumber(rval).
+    auto rnum = JSValue::ToNumber(rval);
+      
+    // 7. Return the result of applying the subtraction operation to lnum and rnum.
+    //    See the note below 11.6.3 (under IEE754 rules).
+    return lnum - rnum;
+  }
+}
+
+// AppplyMultiplicativeOperator
+// Defined in ECMAScript 5.1 Chapter 11.5
+JSValue Interpreter::ApplyMultiplicativeOperator(TokenType op, Expression* left, Expression* right) {
+  // MultiplicativeExpression * UnaryExpression
+
+  // 1. Let left be the result of evaluating MultiplicativeExpression.
+  auto lref = EvalExpression(left);
+  
+  // 2. Let leftValue be GetValue(left).
+  auto lval = GetValue(lref);
+  
+  // 3. Let right be the result of evaluating UnaryExpression.
+  auto rref = EvalExpression(right);
+  
+  // 4. Let rightValue be GetValue(right).
+  auto rval = GetValue(rref);
+  
+  // 5. Let leftNum be ToNumber(leftValue).
+  auto lnum = JSValue::ToNumber(lval);
+  
+  // 6. Let rightNum be ToNumber(rightValue).
+  auto rnum = JSValue::ToNumber(rval);
+  
+  // 7. Return the result of applying the specified operation (*, /, or %) to leftNum and rightNum.
+  //    See the Notes below 11.5.1, 11.5.2, 11.5.3.
+  if (op == TokenType::MUL) {
+    return lnum * rnum;
+  } else if (op == TokenType::DIV) {
+    return lnum / rnum;
+  } else {
+    // op must be TokenType::MOD
+    if (lnum.IsInt() && rnum.IsInt()) {
+      return JSValue(lnum.GetInt() % rnum.GetInt());
+    } else {
+      return JSValue(std::fmod(lnum.GetNumber(), rnum.GetNumber()));
+    }
+  }
+}
+
+// ApplyUnaryOperator
 // todo
-JSValue Interpreter::ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval) {
+JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
+  auto ref = EvalExpression(expr);
   switch (op) {
-    case TokenType::ADD: {
-      if (lval.IsInt() && rval.IsInt()) {
-        return JSValue(lval.GetInt() + rval.GetInt());
-      } else {
-        return {};
+    case TokenType::KEYWORD_DELETE: {
+      // todo
+      return {};
+    }
+    case TokenType::KEYWORD_VOID: {
+      // 1. Call GetValue(expr)
+      GetValue(ref);
+
+      // 2. Return undefined
+      return JSValue::Undefined();
+    }
+    case TokenType::KEYWORD_TYPEOF: {
+      // 1. If Type(val) is Reference, then
+      if (auto pref = std::get_if<Reference>(&ref)) {
+        // a. If IsUnresolvableReference(val) is true, return "undefined".
+        if (pref->IsUnresolvableReference()) {
+          return JSValue(ObjectFactory::NewString(u"undefined"));
+        }
+        // b. Let val be GetValue(val).
       }
+      auto val = GetValue(ref);
+      
+      // 4. Return a String determined by Type(val) according to Table 20.
+      // todo
+    }
+    case TokenType::INC: {
+      // 1. Throw a SyntaxError exception if the following conditions are all true:
+      //      Type(expr) is Reference is true
+      //      IsStrictReference(expr) is true
+      //      Type(GetBase(expr)) is Environment Record
+      //      GetReferencedName(expr) is either "eval" or "arguments"
+      if (auto plref = std::get_if<Reference>(&ref);
+          plref                                                   &&
+          plref->IsStrictReference()                              &&
+          std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
+          (plref->GetReferencedName()->Equal(u"eval")     ||
+           plref->GetReferencedName()->Equal(u"arguments"))) {
+        // todo
+      }
+
+      // 2. Let oldValue be ToNumber(GetValue(expr)).
+      auto old_val = JSValue::ToNumber(GetValue(ref));
+
+      // 3. Let newValue be the result of adding the value 1 to oldValue,
+      //    using the same rules as for the + operator (see 11.6.3).
+      auto new_val = ++old_val;
+
+      // 4. Call PutValue(expr, newValue).
+      PutValue(ref, new_val);
+
+      // 5. Return newValue.
+      return new_val;
+    }
+    case TokenType::DEC: {
+      // 1. Throw a SyntaxError exception if the following conditions are all true:
+      //      Type(expr) is Reference is true
+      //      IsStrictReference(expr) is true
+      //      Type(GetBase(expr)) is Environment Record
+      //      GetReferencedName(expr) is either "eval" or "arguments"
+      if (auto plref = std::get_if<Reference>(&ref);
+          plref                                                   &&
+          plref->IsStrictReference()                              &&
+          std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
+          (plref->GetReferencedName()->Equal(u"eval")     ||
+           plref->GetReferencedName()->Equal(u"arguments"))) {
+        // todo
+      }
+
+      // 2. Let oldValue be ToNumber(GetValue(expr)).
+      auto old_val = JSValue::ToNumber(GetValue(ref));
+
+      // 3. Let newValue be the result of subtracting the value 1 to oldValue,
+      //    using the same rules as for the + operator (see 11.6.3).
+      auto new_val = --old_val;
+
+      // 4. Call PutValue(expr, newValue).
+      PutValue(ref, new_val);
+
+      // 5. Return newValue.
+      return new_val;
+    }
+    case TokenType::ADD: {
+      // 1. Return ToNumber(GetValue(expr)).
+      return JSValue::ToNumber(GetValue(ref));
     }
     case TokenType::SUB: {
-      if (lval.IsInt() && rval.IsInt()) {
-        return JSValue(lval.GetInt() - rval.GetInt());
+      // 1. Let oldValue be ToNumber(GetValue(expr)).
+      auto old_val = JSValue::ToNumber(GetValue(ref));
+      
+      // 2. If oldValue is NaN, return NaN.
+      if (std::isnan(old_val.GetNumber())) {
+        return old_val;
+      }
+      
+      // 3. Return the result of negating oldValue;
+      //    that is, compute a Number with the same magnitude but opposite sign.
+      if (old_val.IsInt()) {
+        return JSValue(-old_val.GetInt());
       } else {
-        return {};
+        // old_val must be Double
+        return JSValue(-old_val.GetDouble());
       }
     }
-    case TokenType::LESS_THAN: {
-      if (lval.IsInt() && rval.IsInt()) {
-        return JSValue(lval.GetInt() < rval.GetInt());
-      } else {
-        return {};
-      }
+    case TokenType::BIT_NOT: {
+      // 1. Let oldValue be ToInt32(GetValue(expr)).
+      auto old_val = JSValue::ToInt32(GetValue(ref));
+      
+      // 2. Return the result of applying bitwise complement to oldValue.
+      //    The result is a signed 32-bit integer.
+      return JSValue(~old_val);
+    }
+    case TokenType::LOGICAL_AND: {
+      // 1. Let oldValue be ToBoolean(GetValue(expr)).
+      auto old_val = JSValue::ToBoolean(GetValue(ref));
+      
+      // 2. If oldValue is true, return false.
+      // 3. Return true.
+      return JSValue(old_val);
     }
     default: {
       return {};
@@ -920,21 +1386,43 @@ JSValue Interpreter::ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rva
   }
 }
 
-// ApplyUnaryOperator
-// todo
-JSValue Interpreter::ApplyUnaryOperator(TokenType op, JSValue val) {
-  switch (op) {
-    case TokenType::INC: {
-      if (val.IsInt()) {
-        return JSValue(val.GetInt() + 1);
-      } else {
-        return {};
-      }
-    }
-    default: {
-      return {};
-    }
+// ApplyPostfixOperator
+// Defined in ECMAScript 5.1 Chapter 11.3
+JSValue Interpreter::ApplyPostfixOperator(TokenType op, Expression* expr) {
+  // 1. Let lhs be the result of evaluating LeftHandSideExpression.
+  auto lhs = EvalExpression(expr);
+  
+  // 2. Throw a SyntaxError exception if the following conditions are all true:
+  //      Type(lhs) is Reference is true
+  //      IsStrictReference(lhs) is true
+  //      Type(GetBase(lhs)) is Environment Record
+  //      GetReferencedName(lhs) is either "eval" or "arguments"
+  if (auto plref = std::get_if<Reference>(&lhs);
+      plref                                                   &&
+      plref->IsStrictReference()                              &&
+      std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
+      (plref->GetReferencedName()->Equal(u"eval")     ||
+       plref->GetReferencedName()->Equal(u"arguments"))) {
+    // todo
   }
+  
+  // 3. Let oldValue be ToNumber(GetValue(lhs)).
+  auto old_val = JSValue::ToNumber(GetValue(lhs));
+  
+  // 4. Let newValue be the result of adding the value 1 to oldValue, using the same rules as for the + operator (see 11.6.3).
+  Number new_val;
+  if (op == TokenType::INC) {
+    new_val = ++old_val;
+  } else {
+    // op must be TokenType::DEC
+    new_val = --old_val;
+  }
+  
+  // 5. Call PutValue(lhs, newValue).
+  PutValue(lhs, new_val);
+  
+  // 6. Return oldValue.
+  return old_val;
 }
 
 // Identifier Resolution
@@ -952,6 +1440,253 @@ Reference Interpreter::IdentifierResolution(String* ident) {
   //    Identifier, and strict as arguments.
   return LexicalEnvironment::GetIdentifierReference(
     vm_->GetExecutionContext()->GetLexicalEnvironment(), ident, strict);
+}
+
+// AbstractEqualityComparison
+// Defined in ECMAScript 5.1 Chapter 11.9.3
+bool Interpreter::AbstractEqualityComparison(JSValue x, JSValue y) {
+  // 1. If Type(x) is the same as Type(y), then
+  {
+    // a. If Type(x) is Undefined, return true.
+    if (x.IsUndefined() && y.IsUndefined()) {
+      return true;
+    }
+    
+    // b. If Type(x) is Null, return true.
+    if (x.IsNull() && y.IsNull()) {
+      return true;
+    }
+    
+    // c.If Type(x) is Number, then
+    if (x.IsNumber() && y.IsNumber()) {
+      // i. If x is NaN, return false.
+      // ii. If y is NaN, return false.
+      if (std::isnan(x.GetNumber()) || std::isnan(y.GetNumber())) {
+          return false;
+      }
+      
+      // iii. If x is the same Number value as y, return true.
+      // iv. If x is +0 and y is −0, return true.
+      // v. If x is −0 and y is +0, return true.
+      if (x.GetNumber() == y.GetNumber()) {
+        return true;
+      }
+      
+      // vi. Return false.
+      return false;
+    }
+    
+    // d. If Type(x) is String, then return true if x and y are exactly the same sequence of characters
+    //    (same length and same characters in corresponding positions).
+    //    Otherwise, return false.
+    if (x.IsString() && y.IsString()) {
+      return
+        x.GetHeapObject()->AsString()->GetString() ==
+        y.GetHeapObject()->AsString()->GetString();
+    }
+    
+    // e. If Type(x) is Boolean, return true if x and y are both true or both false. Otherwise, return false.
+    if (x.IsBoolean() && y.IsBoolean()) {
+      return x.GetBoolean() == y.GetBoolean();
+    }
+    
+    // f. Return true if x and y refer to the same object. Otherwise, return false.
+    if (x.IsObject() && y.IsObject()) {
+      return x.GetRawData() == y.GetRawData();
+    }
+  }
+
+  // 2. If x is null and y is undefined, return true.
+  if (x.IsNull() && y.IsUndefined()) {
+    return true;
+  }
+
+  // 3. If x is undefined and y is null, return true.
+  if (x.IsUndefined() && y.IsNull()) {
+    return true;
+  }
+
+  // 4. If Type(x) is Number and Type(y) is String,
+  //    return the result of the comparison x == ToNumber(y).
+  if (x.IsNumber() && y.IsString()) {
+    return AbstractEqualityComparison(x, JSValue::ToNumber(y));
+  }
+
+  // 5. If Type(x) is String and Type(y) is Number,
+  //    return the result of the comparison ToNumber(x) == y.
+  if (x.IsString() && y.IsNumber()) {
+    return AbstractEqualityComparison(JSValue::ToNumber(x), y);
+  }
+
+  // 6. If Type(x) is Boolean, return the result of the comparison ToNumber(x) == y.
+  if (x.IsBoolean()) {
+    return AbstractEqualityComparison(JSValue::ToNumber(x), y);
+  }
+
+  // 7. If Type(y) is Boolean, return the result of the comparison x == ToNumber(y).
+  if (y.IsBoolean()) {
+    return AbstractEqualityComparison(x, JSValue::ToNumber(y));
+  }
+
+  // 8. If Type(x) is either String or Number and Type(y) is Object,
+  //    return the result of the comparison x == ToPrimitive(y).
+  if ((x.IsString() || x.IsNumber()) && y.IsObject()) {
+    if (x.IsString()) {
+      return AbstractEqualityComparison(x, JSValue::ToPrimitive(y, PreferredType::STRING));
+    } else {
+      return AbstractEqualityComparison(x, JSValue::ToPrimitive(y, PreferredType::NUMBER));
+    }
+  }
+
+  // 9. If Type(x) is Object and Type(y) is either String or Number,
+  //    return the result of the comparison ToPrimitive(x) == y.
+  if (x.IsObject() && (y.IsString() || y.IsNumber())) {
+    if (y.IsString()) {
+      return AbstractEqualityComparison(JSValue::ToPrimitive(y, PreferredType::STRING), x);
+    } else {
+      return AbstractEqualityComparison(JSValue::ToPrimitive(y, PreferredType::NUMBER), x);
+    }
+  }
+
+  // 10. Return false.
+  return false;
+}
+
+// StrictEqualityComparision
+bool Interpreter::StrictEqualityComparison(JSValue x, JSValue y) {
+  // 1. If Type(x) is different from Type(y), return false.
+  
+  // 2. If Type(x) is Undefined, return true.
+  if (x.IsUndefined() && y.IsUndefined()) {
+    return true;
+  }
+  
+  // 3. If Type(x) is Null, return true.
+  if (x.IsNull() && y.IsNull()) {
+    return true;
+  }
+  
+  // 4. If Type(x) is Number, then
+  if (x.IsNumber() && y.IsNumber()) {
+    // a. If x is NaN, return false.
+    // b. If y is NaN, return false.
+    if (std::isnan(x.GetNumber()) || std::isnan(y.GetNumber())) {
+      return false;
+    }
+    
+    // c. If x is the same Number value as y, return true.
+    // d. If x is +0 and y is −0, return true.
+    // e. If x is −0 and y is +0, return true.
+    // f. Return false.
+    return x.GetNumber() == y.GetNumber();
+  }
+  
+  // 5. If Type(x) is String,
+  //    then return true if x and y are exactly the same sequence of characters
+  //    (same length and same characters in corresponding positions);
+  //    otherwise, return false.
+  if (x.IsString() && y.IsString()) {
+    return x.GetHeapObject()->AsString()->Equal(y.GetHeapObject()->AsString());
+  }
+
+  // 6. If Type(x) is Boolean, return true if x and y are both true or both false;
+  //    otherwise, return false.
+  if (x.IsBoolean() && y.IsBoolean()) {
+    return x.GetBoolean() == y.GetBoolean();
+  }
+
+  // 7. Return true if x and y refer to the same object. Otherwise, return false.
+  if (x.IsObject() && y.IsObject()) {
+    return x.GetRawData() == y.GetRawData();
+  }
+
+  // If Type(x) is different from Type(y), return false.
+  return false;
+}
+
+// AbstractRelationalComparison
+// Defined in ECMAScript 5.1 Chapter 11.8.5
+JSValue Interpreter::AbstractRelationalComparison(JSValue x, JSValue y, bool left_first) {
+  // 1. If the LeftFirst flag is true, then
+  JSValue px;
+  JSValue py;
+  if (left_first) {
+    // a. Let px be the result of calling ToPrimitive(x, hint Number).
+    px = JSValue::ToPrimitive(x, PreferredType::NUMBER);
+    
+    // b. Let py be the result of calling ToPrimitive(y, hint Number).
+    py = JSValue::ToPrimitive(y, PreferredType::NUMBER);
+  } 
+  // 2.  Else the order of evaluation needs to be reversed to preserve left to right evaluation
+  else {
+    // a. Let py be the result of calling ToPrimitive(y, hint Number).
+    py = JSValue::ToPrimitive(y, PreferredType::NUMBER);
+    
+    // b. Let px be the result of calling ToPrimitive(x, hint Number).
+    px = JSValue::ToPrimitive(x, PreferredType::NUMBER);
+  }
+
+  // 3. If it is not the case that both Type(px) is String and Type(py) is String, then
+  if (!px.IsString() || !py.IsString()) {
+    // a. Let nx be the result of calling ToNumber(px).
+    //    Because px and py are primitive values evaluation order is not important.
+    auto nx = JSValue::ToNumber(px);
+    
+    // b. Let ny be the result of calling ToNumber(py).
+    auto ny = JSValue::ToNumber(py);
+    
+    // c. If nx is NaN, return undefined.
+    // d. If ny is NaN, return undefined.
+    if (std::isnan(nx.GetNumber()) || std::isnan(ny.GetNumber())) {
+      return JSValue::Undefined();
+    }
+    
+    // e. If nx and ny are the same Number value, return false.
+    // f. If nx is +0 and ny is −0, return false.
+    // g. If nx is −0 and ny is +0, return false.
+    if (nx.GetNumber() == ny.GetNumber()) {
+      return JSValue::False();
+    }
+    
+    // h. If nx is +∞, return false.
+    // i. If ny is +∞, return true.
+    // j. If ny is −∞, return false.
+    // k. If nx is −∞, return true.
+    if (std::isinf(nx.GetNumber()) && !std::signbit(nx.GetNumber())) {
+      return JSValue::False();
+    }
+    if (std::isinf(ny.GetNumber()) && !std::signbit(ny.GetNumber())) {
+      return JSValue::True();
+    }
+    if (std::isinf(ny.GetNumber()) && std::signbit(ny.GetNumber())) {
+      return JSValue::False();
+    }
+    if (std::isinf(nx.GetNumber()) && std::signbit(nx.GetNumber())) {
+      return JSValue::True();
+    }
+    
+    // l. If the mathematical value of nx is less than the mathematical value of ny
+    //    note that these mathematical values are both finite and not both zero
+    //    return true. Otherwise, return false.
+    return nx.GetNumber() < ny.GetNumber() ? JSValue::True() : JSValue::False();
+  }
+  // 4. Else, both px and py are Strings
+  else {
+    // a. If py is a prefix of px, return false.
+    //    (A String value p is a prefix of String value q
+    //    if q can be the result of concatenating p and some other String r.
+    //    Note that any String is a prefix of itself, because r may be the empty String.)
+    // b. If px is a prefix of py, return true.
+    // c. Let k be the smallest nonnegative integer such that
+    //    the character at position k within px is different from the character at position k within py.
+    //    (There must be such a k, for neither String is a prefix of the other.)
+    // d. Let m be the integer that is the code unit value for the character at position k within px.
+    // e. Let n be the integer that is the code unit value for the character at position k within py.
+    // f. If m < n, return true. Otherwise, return false.
+    return
+      px.GetHeapObject()->AsString()->GetString() <
+      py.GetHeapObject()->AsString()->GetString()   ? JSValue::True() : JSValue::False();
+  }
 }
 
 // GetValue(V)

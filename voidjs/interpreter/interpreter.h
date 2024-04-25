@@ -3,6 +3,7 @@
 
 #include <variant>
 
+#include "voidjs/lexer/token.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/program.h"
@@ -48,6 +49,7 @@ class Interpreter {
   std::variant<JSValue, types::Reference> EvalUnaryExpression(ast::UnaryExpression* unary_expr);
   std::variant<JSValue, types::Reference> EvalPostfixExpression(ast::PostfixExpression* post_expr);
   std::variant<JSValue, types::Reference> EvalMemberExpression(ast::MemberExpression* ast_node);
+  JSValue EvalObjectLiteral(ast::ObjectLiteral* object); 
   JSValue EvalNullLiteral(ast::NullLiteral* nul);
   JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
   JSValue EvalNumericLiteral(ast::NumericLiteral* num);
@@ -61,10 +63,18 @@ class Interpreter {
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
   JSValue ApplyBitwiseOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyBinaryOperator(TokenType op, JSValue lval, JSValue rval);
-  JSValue ApplyUnaryOperator(TokenType op, JSValue val);
+  JSValue ApplyEqualityOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSValue ApplyRelationalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSValue ApplyShiftOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSValue ApplyAdditiveOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSValue ApplyMultiplicativeOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSValue ApplyUnaryOperator(TokenType op, ast::Expression* expr);
+  JSValue ApplyPostfixOperator(TokenType op, ast::Expression* expr);
 
   types::Reference IdentifierResolution(types::String* ident);
+  bool AbstractEqualityComparison(JSValue x, JSValue y);
+  bool StrictEqualityComparison(JSValue x, JSValue y);
+  JSValue AbstractRelationalComparison(JSValue x, JSValue y, bool left_first); 
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);

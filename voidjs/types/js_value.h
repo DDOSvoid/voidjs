@@ -116,7 +116,7 @@ class JSValue {
   bool IsNumber() const { return IsInt() || IsDouble(); }
   bool IsString() const;
   bool IsPrimitive() const { return IsUndefined() || IsNull() || IsBoolean() || IsNumber() || IsString(); }
-  bool IsObject() const { return !IsPrimitive(); }
+  bool IsObject() const { return !IsPrimitive() && !IsEmpty(); }
 
   // internal checks
   bool IsHeapObject() const { return (value_ & jsvalue::TAG_HEAP_OBJECT_MASK) == jsvalue::TAG_HEAP_OBJECT; }

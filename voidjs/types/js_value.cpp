@@ -72,7 +72,7 @@ types::Number JSValue::ToNumber(JSValue val) {
     return types::Number(val);
   } else if (val.IsString()) {
     auto num = StringToNumber(val.GetHeapObject()->AsString());
-    if (utils::IsDoubleWithinRangeInt32(num)) {
+    if (utils::CanDoubleConvertToInt32(num)) {
       return types::Number(static_cast<std::int32_t>(num)); 
     } else {
       return types::Number(num);

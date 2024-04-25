@@ -9,6 +9,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/object_factory.h"
 
 namespace voidjs {
 namespace types {
@@ -26,8 +27,16 @@ class String : public HeapObject {
   char16_t GetByIndex(std::size_t idx) const { return *(GetData() + idx); } 
   void SetByIndex(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
 
+  
   bool Equal(std::u16string_view str) const { return GetString() == str; }
-  bool Equal(String* str) const { return Equal(str); }
+  bool Equal(String* str) const { return Equal(str->GetString()); }
+
+  static String* Concat(String* str1, String* str2) {
+    std::u16string str;
+    str += str1->GetString();
+    str += str2->GetString();
+    return ObjectFactory::NewString(str);
+  }
 
   // used for print 
   std::u16string_view GetString() const {

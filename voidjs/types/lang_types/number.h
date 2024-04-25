@@ -33,6 +33,20 @@ class Number : public JSValue {
     // assert value.IsNumber()
   }
 
+  Number operator+(Number number) const {
+    if (IsInt() && number.IsInt()) {
+      std::int64_t num0 = GetInt();
+      std::int64_t num1 = number.GetInt();
+      std::int64_t res = num0 + num1;
+      if (res > std::numeric_limits<std::int32_t>::max() ||
+          res < std::numeric_limits<std::int32_t>::min()) {
+        return Number(static_cast<double>(res));
+      }
+      return Number(static_cast<std::int32_t>(res));
+    }
+    return Number(GetNumber() + number.GetNumber());
+  }
+
   Number operator-(Number number) const {
     if (IsInt() && number.IsInt()) {
       std::int64_t num0 = GetInt();
@@ -63,6 +77,10 @@ class Number : public JSValue {
       return Number(static_cast<std::int32_t>(res));
     }
     return Number(GetNumber() * number.GetNumber());
+  }
+
+  Number operator/(Number number) const {
+    return Number(GetNumber() / number.GetNumber());
   }
 
   Number operator++() const {

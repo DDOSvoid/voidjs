@@ -119,10 +119,13 @@ inline std::int32_t DoubleToInt(double d) {
   return ret;
 }
 
-inline bool IsDoubleWithinRangeInt32(double number) {
+// CanDoubleConvertToInt32
+// If number is an integer in the range of std::int32_t, return true;
+// otherwise, return fales.
+inline bool CanDoubleConvertToInt32(double number) {
   if (std::fabs(number) <= static_cast<double>(std::numeric_limits<std::int32_t>::max())) {
-    auto int_num = static_cast<std::int32_t>(number);
-    return static_cast<double>(int_num) == number;
+    auto num = static_cast<std::int32_t>(number);
+    return static_cast<double>(num) == number;
   } else {
     return false;
   }

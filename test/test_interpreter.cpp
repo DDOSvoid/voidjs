@@ -179,6 +179,38 @@ count;
   }
 }
 
+TEST(Interpreter, EvalPostfixExpression) {
+  Parser parser(uR"(
+var i = 14.2857;
+--i;
+++i;
+i;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+  
+  auto comp = interpreter.Execute(prog);
+  EXPECT_TRUE(comp.GetType() == types::CompletionType::NORMAL);
+  ASSERT_TRUE(comp.GetValue().IsDouble());
+  EXPECT_DOUBLE_EQ(14.2857, comp.GetValue().GetDouble());
+}
+
+TEST(Interpreter, EvalUnaryExpresion) {
+  Parser parser(u"1 + -2");
+
+  Interpreter interpreter;
+
+  auto ast_node = parser.ParseBinaryExpression();
+  ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+  auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+  ASSERT_TRUE(val.IsInt());
+  EXPECT_EQ(-1, val.GetInt());
+}
+
 TEST(Interpreter, EvalBinaryExpression) {
   {
     Parser parser(u"1 + (2 + 3)");
@@ -191,6 +223,114 @@ TEST(Interpreter, EvalBinaryExpression) {
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
     ASSERT_TRUE(val.IsInt());
     EXPECT_EQ(6, val.GetInt());
+  }
+
+  {
+    Parser parser(u"true || false");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsBoolean());
+    EXPECT_EQ(true, val.GetBoolean());
+  }
+
+  {
+    Parser parser(u"0x7 | 8");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(15, val.GetInt());
+  }
+
+  {
+    Parser parser(u"0.00000001 == 0.0");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsBoolean());
+    EXPECT_EQ(false, val.GetBoolean());
+  }
+
+  {
+    Parser parser(uR"(
+"12.3e3" == 12300
+)");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsBoolean());
+    EXPECT_EQ(true, val.GetBoolean());
+  }
+
+  {
+    Parser parser(u"3 * 4 < 12");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsBoolean());
+    EXPECT_EQ(false, val.GetBoolean());
+  }
+
+  {
+    Parser parser(u"0x7ff << 3");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(16376, val.GetInt());
+  }
+
+  {
+    Parser parser(u"(1 + 2) * 3 / 5");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsDouble());
+    EXPECT_DOUBLE_EQ(1.8, val.GetDouble());
+  }
+
+  {
+    Parser parser(uR"(
+("1" + ".5") * 3
+)");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsDouble());
+    EXPECT_DOUBLE_EQ(4.5, val.GetDouble());
   }
 }
 
