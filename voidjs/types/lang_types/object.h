@@ -16,8 +16,8 @@ namespace types {
 
 class String;
 
-// JSValue properties
-// JSValue prototype
+// properties
+// prototype
 class Object : public HeapObject {
  public:
   static constexpr std::size_t PROPERTIES_OFFSET = HeapObject::SIZE;
@@ -31,7 +31,8 @@ class Object : public HeapObject {
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
   static constexpr std::size_t OFFSET = PROTOTYPE_OFFSET + sizeof(JSValue);
 
-  // 
+  // Internal function Properties common to all Objects
+  // Defined in ECMAScript 5.1 Chapter 8.12
   PropertyDescriptor GetOwnProperty(JSValue P) const;
   PropertyDescriptor GetProperty(JSValue P) const;
   JSValue Get(JSValue P) const;

@@ -95,7 +95,25 @@ class PropertyDescriptor {
 
   // FromPropertyDescriptor
   // Defined in ECMAScript 5.1 Chapter 8.10.4
-  
+  JSValue FromPropertyDescriptor() const {
+    // 1. If Desc is undefined, then return undefined.
+    // 2. Let obj be the result of creating a new object as if by the expression new Object() where Object is the standard built-in constructor with that name.
+    // 3. If IsDataDescriptor(Desc) is true, then
+    // a. Call the [[DefineOwnProperty]] internal method of obj with arguments "value", Property Descriptor {[[Value]]: Desc.[[Value]], [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    // b. Call the [[DefineOwnProperty]] internal method of obj with arguments "writable", Property Descriptor {[[Value]]: Desc.[[Writable]], [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    // 4. Else, IsAccessorDescriptor(Desc) must be true, so
+    // a. Call the [[DefineOwnProperty]] internal method of obj with arguments "get", Property Descriptor {[[Value]]: Desc.[[Get]], [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    // b. Call the [[DefineOwnProperty]] internal method of obj with arguments "set", Property Descriptor {[[Value]]: Desc.[[Set]], [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    // 5. Call the [[DefineOwnProperty]] internal method of obj with arguments "enumerable", Property Descriptor {[[Value]]: Desc.[[Enumerable]], [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    // 6. Call the [[DefineOwnProperty]] internal method of obj with arguments "configurable", Property Descriptor {[[Value]]: Desc.[[Configurable]], [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    // 7. Return obj.
+  }
+
+  // ToPropertyDescriptor
+  // Defind in ECMAScript 5.1 Chapter 8.10.5
+  static PropertyDescriptor ToPropertyDescriptor(JSValue ) {
+    
+  }
   
   bool IsEmpty() const {
     return

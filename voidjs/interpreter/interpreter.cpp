@@ -749,6 +749,9 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
 // EvalObjectLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1.5
 JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
+  // ObjectLiteral : { }
+  // 1. Return a new object created as if by the expression
+  //    new Object() where Object is the standard built-in constructor with that name.
 }
 
 // Eval NullLiteral

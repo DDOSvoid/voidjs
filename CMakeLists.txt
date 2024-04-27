@@ -22,6 +22,7 @@ add_library(voidjs_obj OBJECT
   voidjs/types/spec_types/lexical_environment.cpp
   voidjs/types/internal_types/array.cpp
   voidjs/interpreter/interpreter.cpp
+  voidjs/builtins/js_object.cpp
 )
 target_include_directories(voidjs_obj PUBLIC .)
 

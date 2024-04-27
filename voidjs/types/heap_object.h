@@ -22,20 +22,30 @@ class Binding;
 
 }  // namespace types
 
+namespace builtins {
+
+class JSObject;
+class JSFunction;
+
+}  // namespace builtins
+
 class HeapObject {
  public:
-  // meta data
+  // meta data               64 bits
   
   // JSType type             8 bits
-  
+
+  // Object internal properties
   // bool extensible         1 bit
   // bool callable           1 bit
   // bool is_constructor     1 bit
 
+  // Property attributes
   // bool writable           1 bit
   // bool enumerable         1 bit
   // bool configurable       1 bit
 
+  // Binding attributes
   // bool deletable          1 bit
   // bool mutable            1 bit
   
@@ -93,6 +103,8 @@ class HeapObject {
   bool IsGenericPropertyDescriptor() const { return GetType() == JSType::GENERIC_PROPERTY_DESCRIPTOR; }
   bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
   bool IsBindgin() const { return GetType() == JSType::BINDING; }
+  bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
+  bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -103,6 +115,8 @@ class HeapObject {
   types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() { return reinterpret_cast<types::GenericPropertyDescriptor*>(this); }
   types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
   types::Binding* AsBinding() { return reinterpret_cast<types::Binding*>(this); }
+  builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
+  builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
 
   // As Cast
   const types::String* AsString() const { return reinterpret_cast<const types::String*>(this); }
@@ -113,6 +127,8 @@ class HeapObject {
   const types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() const { return reinterpret_cast<const types::GenericPropertyDescriptor*>(this); }
   const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
   const types::Binding* AsBinding() const { return reinterpret_cast<const types::Binding*>(this); }
+  const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
+  const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }
 };
 
 }  // namespace voidjs
