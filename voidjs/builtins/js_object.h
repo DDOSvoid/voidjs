@@ -11,17 +11,9 @@ namespace builtins {
 
 class JSObject : public types::Object {
  public:
-  static constexpr std::size_t CALLABLE_OFFSET = types::Object::OFFSET;
-  InternalFunctionType GetCallable() const {
-    return *utils::BitGet<InternalFunctionType*>(this, CALLABLE_OFFSET);
-  }
-  void SetCallable(InternalFunctionType callable) {
-    *utils::BitGet<InternalFunctionType*>(this, CALLABLE_OFFSET) = callable;
-  }
-
-  static constexpr std::size_t SIZE = sizeof(InternalFunctionType);
+  static constexpr std::size_t SIZE = 0;
   static constexpr std::size_t OFFSET = types::Object::OFFSET + SIZE;
-  static_assert(SIZE == 8);
+  static_assert(SIZE == 0);
 
   // The Object Constructor
   static JSValue ObjectConstructor(RuntimeCallInfo* argv);
