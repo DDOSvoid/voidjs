@@ -13,27 +13,27 @@ class EnvironmentRecord {
  public:
   // Abstract methods of EnvironmentRecord
   // Defined in ECMAScript 5.1 Chapter 10.2.1
-  virtual bool HasBinding(String* N) const = 0;
-  virtual void CreateMutableBinding(String* N, bool D) = 0;
-  virtual void SetMutableBinding(String* N, JSValue V, bool S) = 0;
-  virtual JSValue GetBindingValue(String* N, bool S) const = 0;
-  virtual bool DeleteBinding(String* N) = 0;
-  virtual JSValue ImplicitThisValue() const = 0;
+  virtual bool HasBinding(VM* vm, String* N) const = 0;
+  virtual void CreateMutableBinding(VM* vm, String* N, bool D) = 0;
+  virtual void SetMutableBinding(VM* vm, String* N, JSValue V, bool S) = 0;
+  virtual JSValue GetBindingValue(VM* vm, String* N, bool S) const = 0;
+  virtual bool DeleteBinding(VM* vm, String* N) = 0;
+  virtual JSValue ImplicitThisValue(VM* vm) const = 0;
 };
 
 class DeclarativeEnvironmentRecord : public EnvironmentRecord {
  public:
   // Inherited from base class 
-  virtual bool HasBinding(String* N) const override;
-  virtual void CreateMutableBinding(String* N, bool D) override;
-  virtual void SetMutableBinding(String* N, JSValue V, bool S) override;
-  virtual JSValue GetBindingValue(String* N, bool S) const override;
-  virtual bool DeleteBinding(String* N) override;
-  virtual JSValue ImplicitThisValue() const override;
+  virtual bool HasBinding(VM* vm, String* N) const override;
+  virtual void CreateMutableBinding(VM* vm, String* N, bool D) override;
+  virtual void SetMutableBinding(VM* vm, String* N, JSValue V, bool S) override;
+  virtual JSValue GetBindingValue(VM* vm, String* N, bool S) const override;
+  virtual bool DeleteBinding(VM* vm, String* N) override;
+  virtual JSValue ImplicitThisValue(VM* vm) const override;
 
   // Additional methods of DeclarativeEnvironmentRecord
-  void CreateInmmutableBinding(String* N);
-  void InitializeImmutableBinding(String* N, JSValue V);
+  void CreateInmmutableBinding(VM* vm, String* N);
+  void InitializeImmutableBinding(VM* vm, String* N, JSValue V);
 
  private:
   std::unordered_map<String*, Binding*> binding_map_;
@@ -46,12 +46,12 @@ class ObjectEnvironmentRecord : public EnvironmentRecord {
   {}
   
   // Inherited from base class 
-  virtual bool HasBinding(String* N) const override;
-  virtual void CreateMutableBinding(String* N, bool D) override;
-  virtual void SetMutableBinding(String* N, JSValue V, bool S) override;
-  virtual JSValue GetBindingValue(String* N, bool S) const override;
-  virtual bool DeleteBinding(String* N) override;
-  virtual JSValue ImplicitThisValue() const override;
+  virtual bool HasBinding(VM* vm, String* N) const override;
+  virtual void CreateMutableBinding(VM* vm, String* N, bool D) override;
+  virtual void SetMutableBinding(VM* vm, String* N, JSValue V, bool S) override;
+  virtual JSValue GetBindingValue(VM* vm, String* N, bool S) const override;
+  virtual bool DeleteBinding(VM* vm, String* N) override;
+  virtual JSValue ImplicitThisValue(VM*) const override;
 
   bool GetProvideThis() const { return provide_this_; }
   void SetProvideThis(bool flag) { provide_this_ = flag; }

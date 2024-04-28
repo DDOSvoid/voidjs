@@ -33,15 +33,15 @@ class Object : public HeapObject {
 
   // Internal function Properties common to all Objects
   // Defined in ECMAScript 5.1 Chapter 8.12
-  PropertyDescriptor GetOwnProperty(JSValue P) const;
-  PropertyDescriptor GetProperty(JSValue P) const;
-  JSValue Get(JSValue P) const;
-  bool CanPut(JSValue P) const;
-  void Put(JSValue P, JSValue V, bool Throw);
-  bool HasProperty(JSValue P) const;
-  bool Delete(JSValue P, bool Throw);
-  JSValue DefaultValue(PreferredType hint) const;
-  bool DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool Throw); 
+  PropertyDescriptor GetOwnProperty(VM* vm, JSValue P) const;
+  PropertyDescriptor GetProperty(VM* vm, JSValue P) const;
+  JSValue Get(VM* vm, JSValue P) const;
+  bool CanPut(VM* vm, JSValue P) const;
+  void Put(VM* vm, JSValue P, JSValue V, bool Throw);
+  bool HasProperty(VM* vm, JSValue P) const;
+  bool Delete(VM* vm, JSValue P, bool Throw);
+  JSValue DefaultValue(VM* vm, PreferredType hint) const;
+  bool DefineOwnProperty(VM* vm, JSValue P, const PropertyDescriptor& Desc, bool Throw); 
 };
 
 }  // namespace types

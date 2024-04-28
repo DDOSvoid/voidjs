@@ -28,29 +28,39 @@ class JSObject;
 }  // namespace builtins
 
 class HeapObject;
-class RuntimeCallInfo; 
+class RuntimeCallInfo;
+class StringTable;
 
 class ObjectFactory {
  public:
-  static std::byte* Allocate(std::size_t size);
-
-  static builtins::GlobalObject* NewGlobalObject();
+  ObjectFactory(VM* vm, StringTable* string_table)
+    : vm_(vm), string_table_(string_table)
+  {}
   
-  static HeapObject* NewHeapObject(std::size_t size);
+  std::byte* Allocate(std::size_t size);
 
-  static RuntimeCallInfo* NewRuntimeCallInfo(std::size_t args_num);
+  builtins::GlobalObject* NewGlobalObject();
   
-  static types::String* NewString(std::u16string_view source);
-  static types::Object* NewObject(JSValue proto);
-  static types::Array* NewArray(std::size_t len);
-  static types::DataPropertyDescriptor* NewDataPropertyDescriptor(const types::PropertyDescriptor& desc);
-  static types::AccessorPropertyDescriptor* NewAccessorPropertyDescriptor(const types::PropertyDescriptor& desc);
-  static types::GenericPropertyDescriptor* NewGenericPropertyDescriptor(const types::PropertyDescriptor& desc);
-  static types::PropertyMap* NewPropertyMap();
-  static types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable);
+  HeapObject* NewHeapObject(std::size_t size);
 
-  static types::Object* NewEmptyObject(std::size_t extra_size);
-  static builtins::JSObject* NewJSObject(JSValue value);
+  RuntimeCallInfo* NewRuntimeCallInfo(std::size_t args_num);
+  
+  types::String* NewString(std::u16string_view source);
+  types::String* NewStringFromTable(std::u16string_view source);
+  types::Object* NewObject(JSValue proto);
+  types::Array* NewArray(std::size_t len);
+  types::DataPropertyDescriptor* NewDataPropertyDescriptor(const types::PropertyDescriptor& desc);
+  types::AccessorPropertyDescriptor* NewAccessorPropertyDescriptor(const types::PropertyDescriptor& desc);
+  types::GenericPropertyDescriptor* NewGenericPropertyDescriptor(const types::PropertyDescriptor& desc);
+  types::PropertyMap* NewPropertyMap();
+  types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable);
+
+  types::Object* NewEmptyObject(std::size_t extra_size);
+  builtins::JSObject* NewJSObject(JSValue value);
+
+ private:
+  VM* vm_;
+  StringTable* string_table_;
 };
 
 }  // namespace voidjs

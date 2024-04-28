@@ -13,6 +13,8 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/lang_types/number.h"
+#include "voidjs/interpreter/vm.h"
+#include "voidjs/interpreter/string_table.h"
 #include "voidjs/utils/helper.h"
 
 namespace voidjs {
@@ -23,7 +25,7 @@ bool JSValue::IsString() const {
 
 // ToPrimitive
 // Defined in ECMAScript 5.1 Chapter 9.1
-JSValue JSValue::ToPrimitive(JSValue val, PreferredType type) {
+JSValue JSValue::ToPrimitive(VM* vm, JSValue val, PreferredType type) {
   if (val.IsPrimitive()) {
     return val;
   } else if (val.IsObject()) {
@@ -36,7 +38,7 @@ JSValue JSValue::ToPrimitive(JSValue val, PreferredType type) {
 
 // ToBoolean
 // Defined in ECMAScript 5.1 Chapter 9.2
-bool JSValue::ToBoolean(JSValue val) {
+bool JSValue::ToBoolean(VM* vm, JSValue val) {
   if (val.IsUndefined() || val.IsNull()) {
     return false;
   } else if (val.IsBoolean()) {
@@ -61,7 +63,7 @@ bool JSValue::ToBoolean(JSValue val) {
 
 // ToNumber
 // Defined in ECMAScript 5.1 Chapter 9.3
-types::Number JSValue::ToNumber(JSValue val) {
+types::Number JSValue::ToNumber(VM* vm, JSValue val) {
   if (val.IsUndefined()) {
     return types::Number(std::numeric_limits<double>::quiet_NaN());
   } else if (val.IsNull()) {
@@ -71,15 +73,15 @@ types::Number JSValue::ToNumber(JSValue val) {
   } else if (val.IsNumber()) {
     return types::Number(val);
   } else if (val.IsString()) {
-    auto num = StringToNumber(val.GetHeapObject()->AsString());
+    auto num = StringToNumber(vm, val.GetHeapObject()->AsString());
     if (utils::CanDoubleConvertToInt32(num)) {
       return types::Number(static_cast<std::int32_t>(num)); 
     } else {
       return types::Number(num);
     }
   } else if (val.IsObject()) {
-    auto prim_val = ToPrimitive(val, PreferredType::NUMBER);
-    return ToNumber(prim_val);
+    auto prim_val = ToPrimitive(vm, val, PreferredType::NUMBER);
+    return ToNumber(vm, prim_val);
   }
 
   // this branch is unreachable
@@ -88,7 +90,7 @@ types::Number JSValue::ToNumber(JSValue val) {
 
 // ToInteger
 // Defined in ECMAScript 5.1 Chapter 9.4
-JSValue JSValue::ToInteger(JSValue val) {
+JSValue JSValue::ToInteger(VM* vm, JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, return +0.
   // 3. If number is +0, −0, +∞, or −∞, return number.
@@ -111,7 +113,7 @@ JSValue JSValue::ToInteger(JSValue val) {
 
 // ToInt32
 // Defined in ECMAScript 5.1 Chapter 9.5
-std::int32_t JSValue::ToInt32(JSValue val) {
+std::int32_t JSValue::ToInt32(VM* vm, JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
   // 3. Let posInt be sign(number) * floor(abs(number)).
@@ -150,7 +152,7 @@ std::int32_t JSValue::ToInt32(JSValue val) {
 
 // ToUint32
 // Defined in ECMAScript 5.1 Chapter 9.6
-std::uint32_t JSValue::ToUint32(JSValue val) {
+std::uint32_t JSValue::ToUint32(VM* vm, JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
   // 3. Let posInt be sign(number) * floor(abs(number)).
@@ -184,7 +186,7 @@ std::uint32_t JSValue::ToUint32(JSValue val) {
 
 // ToUint16
 // Defined in ECMAScript 5.1 Chapter 9.7
-std::uint16_t JSValue::ToUint16(JSValue val) {
+std::uint16_t JSValue::ToUint16(VM* vm, JSValue val) {
   // 1. Let number be the result of calling ToNumber on the input argument.
   // 2. If number is NaN, +0, −0, +∞, or −∞, return +0.
   // 3. Let posInt be sign(number) * floor(abs(number)).
@@ -218,24 +220,26 @@ std::uint16_t JSValue::ToUint16(JSValue val) {
 
 // ToString
 // Defined in ECMAScript 5.1 Chapter 9.8
-JSValue JSValue::ToString(JSValue val) {
+JSValue JSValue::ToString(VM* vm, JSValue val) {
+  auto factory = vm->GetObjectFactory();
+  
   if (val.IsUndefined()) {
-    return JSValue(ObjectFactory::NewString(u"undefined"));
+    return JSValue(factory->NewStringFromTable(u"undefined"));
   } else if (val.IsNull()) {
-    return JSValue(ObjectFactory::NewString(u"null"));
+    return JSValue(factory->NewStringFromTable(u"null"));
   } else if (val.IsBoolean()) {
     if (val.IsTrue()) {
-      return JSValue(ObjectFactory::NewString(u"true"));
+      return JSValue(factory->NewStringFromTable(u"true"));
     } else {
-      return JSValue(ObjectFactory::NewString(u"false"));
+      return JSValue(factory->NewStringFromTable(u"false"));
     }
   } else if (val.IsNumber()) {
-    return JSValue(NumberToString(val.IsInt() ? val.GetInt() : val.GetDouble()));
+    return JSValue(NumberToString(vm, val.IsInt() ? val.GetInt() : val.GetDouble()));
   } else if (val.IsString()) {
     return val;
   } else if (val.IsObject()) {
-    auto prim_val = ToPrimitive(val, PreferredType::STRING);
-    return ToString(prim_val);
+    auto prim_val = ToPrimitive(vm, val, PreferredType::STRING);
+    return ToString(vm, prim_val);
   }
 
   // this branch is unreachable
@@ -244,7 +248,7 @@ JSValue JSValue::ToString(JSValue val) {
 
 // ToObject
 // Defined in ECMAScript 5.1 Chapter 9.9
-types::Object* JSValue::ToObject(JSValue val) {
+types::Object* JSValue::ToObject(VM* vm, JSValue val) {
   if (val.IsUndefined() || val.IsNull()) {
     // todo
   }
@@ -267,7 +271,7 @@ types::Object* JSValue::ToObject(JSValue val) {
 
 // StringToNumber
 // Defined in ECMAScript 5.1 Chapter 9.3.1
-double JSValue::StringToNumber(types::String* str) {
+double JSValue::StringToNumber(VM* vm, types::String* str) {
   auto source = str->GetString();
   std::size_t start = 0, end = source.size();
 
@@ -389,19 +393,21 @@ double JSValue::StringToNumber(types::String* str) {
 // NumberToString
 // Defined in ECMAScript 5.1 Chapter 9.8.1
 // The following code comes from https://github.com/zhuzilin/es/blob/67fb4d579bb142669acd8384ea34c62cd052945c/es/types/conversion.h#L284
-types::String* JSValue::NumberToString(double num) {
+types::String* JSValue::NumberToString(VM* vm, double num) {
+  auto factory = vm->GetObjectFactory();
+  
   if (std::isnan(num)) {
-    return ObjectFactory::NewString(u"NAN");
+    return factory->NewStringFromTable(u"NAN");
   }
 
   if (num == 0) {
-    return ObjectFactory::NewString(u"0");
+    return factory->NewStringFromTable(u"0");
   }
 
   if (std::isinf(num)) {
     return std::signbit(num) ?
-      ObjectFactory::NewString(u"-Infinity") :
-      ObjectFactory::NewString(u"Infinity");
+      factory->NewStringFromTable(u"-Infinity") :
+      factory->NewStringFromTable(u"Infinity");
   }
 
   std::u16string sign = u"";
@@ -445,7 +451,7 @@ types::String* JSValue::NumberToString(double num) {
     }
     std::reverse(ret.begin(), ret.end());
     ret += std::u16string(n - k, u'0');
-    return ObjectFactory::NewString(sign + ret);
+    return factory->NewStringFromTable(sign + ret);
   }
   
   if (0 < n && n <= 21) {
@@ -459,7 +465,7 @@ types::String* JSValue::NumberToString(double num) {
       s = tmp;
     }
     std::reverse(ret.begin(), ret.end());
-    return ObjectFactory::NewString(sign + ret);
+    return factory->NewStringFromTable(sign + ret);
   }
   
   if (-6 < n && n <= 0) {
@@ -471,18 +477,18 @@ types::String* JSValue::NumberToString(double num) {
     }
     std::reverse(ret.begin(), ret.end());
     ret = u"0." + std::u16string(-n, u'0') + ret;
-    return ObjectFactory::NewString(sign + ret);
+    return factory->NewStringFromTable(sign + ret);
   }
   
   if (k == 1) {
     ret += u'0' + static_cast<char16_t>(s);
     ret += u"e";
     if (n - 1 > 0) {
-      ret += u"+" + std::u16string(NumberToString(n - 1)->GetString());
+      ret += u"+" + std::u16string(NumberToString(vm, n - 1)->GetString());
     } else {
-      ret += u"-" + std::u16string(NumberToString(1 - n)->GetString());
+      ret += u"-" + std::u16string(NumberToString(vm, 1 - n)->GetString());
     }
-    return ObjectFactory::NewString(sign + ret);
+    return factory->NewStringFromTable(sign + ret);
   }
   
   for (int i = 0; i < k; i++) {
@@ -497,11 +503,11 @@ types::String* JSValue::NumberToString(double num) {
   
   ret += u"e";
   if (n - 1 > 0) {
-    ret += u"+" + std::u16string(NumberToString(n - 1)->GetString());
+    ret += u"+" + std::u16string(NumberToString(vm, n - 1)->GetString());
   } else {
-    ret += u"-" + std::u16string(NumberToString(1 - n)->GetString());
+    ret += u"-" + std::u16string(NumberToString(vm, 1 - n)->GetString());
   }
-  return ObjectFactory::NewString(sign + ret);
+  return factory->NewStringFromTable(sign + ret);
 }
 
 // Check Object Coercible

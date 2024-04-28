@@ -32,28 +32,37 @@ namespace voidjs {
 using namespace ast;
 using namespace types;
 
-Completion Interpreter::Execute(AstNode* ast_node) {
+void Interpreter::Initialize() {
+  vm_ = new VM{};
+
+  auto string_table = new StringTable{};
+  auto object_factory = new ObjectFactory(vm_, string_table);
+
+  vm_->SetObjectFactory(object_factory);
+  
   InitializeBuiltinObjects();
-  auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(JSValue(vm_->GetGlobalObject()), nullptr);
-  auto string_table = new StringTable();
+  auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(vm_, JSValue(vm_->GetGlobalObject()), nullptr);
   
   vm_->SetGlobalEnv(global_env);
-  vm_->SetStringTable(string_table);
-  
+}
+
+Completion Interpreter::Execute(AstNode* ast_node) {
   EnterGlobalCode(ast_node);
   return EvalProgram(ast_node);
 }
 
 void Interpreter::InitializeBuiltinObjects() {
+  auto factory = vm_->GetObjectFactory();
+  
   // Initialize GlobalObject
-  auto global_obj = ObjectFactory::NewGlobalObject();
+  auto global_obj = factory->NewGlobalObject();
   vm_->SetGlobalObject(global_obj);
 
   // Initialize Object Prototype
   // The value of the [[Prototype]] internal property of the Object prototype object is null,
   // the value of the [[Class]] internal property is "Object",
   // and the initial value of the [[Extensible]] internal property is true.
-  auto obj_proto = ObjectFactory::NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
+  auto obj_proto = factory->NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
   obj_proto->SetType(JSType::JS_OBJECT);
   obj_proto->SetClassType(ObjectClassType::OBJECT);
   obj_proto->SetPrototype(JSValue::Null());
@@ -65,7 +74,7 @@ void Interpreter::InitializeBuiltinObjects() {
   // The initial value of the [[Extensible]] internal property of the Function prototype object is true.
   // The Function prototype object does not have a valueOf property of its own;
   // however, it inherits the valueOf property from the Object prototype Object.
-  auto func_proto = ObjectFactory::NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
+  auto func_proto = factory->NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
   func_proto->SetType(JSType::JS_FUNCTION);
   func_proto->SetClassType(ObjectClassType::FUNCTION);
   func_proto->SetPrototype(JSValue(obj_proto));
@@ -76,7 +85,7 @@ void Interpreter::InitializeBuiltinObjects() {
   // the standard built-in Function prototype object.
   // Besides the internal properties and the length property (whose value is 1),
   // the Object constructor has the following properties:
-  auto obj_ctor = ObjectFactory::NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
+  auto obj_ctor = factory->NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
   obj_ctor->SetType(JSType::JS_OBJECT);
   obj_ctor->SetClassType(ObjectClassType::OBJECT);
   obj_ctor->SetPrototype(JSValue(func_proto));
@@ -86,7 +95,7 @@ void Interpreter::InitializeBuiltinObjects() {
   // The value of the [[Prototype]] internal property of the Function constructor is
   // the standard built-in Function prototype object (15.3.4).
   // The value of the [[Extensible]] internal property of the Function constructor is true.
-  auto func_ctor = ObjectFactory::NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
+  auto func_ctor = factory->NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
   func_ctor->SetType(JSType::JS_FUNCTION);
   func_ctor->SetClassType(ObjectClassType::FUNCTION);
   func_ctor->SetPrototype(JSValue(func_proto));
@@ -103,6 +112,8 @@ void Interpreter::EnterGlobalCode(AstNode* ast_node) {
 }
 
 void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
+  auto factory = vm_->GetObjectFactory();
+  
   // 1. Let env be the environment record component of the running execution context’s VariableEnvironment.
   auto env = vm_->GetExecutionContext()->GetVariableEnvironment()->GetEnvRec();
 
@@ -159,19 +170,19 @@ void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
   for (auto var_decl : var_decls) {
     // a. Let dn be the Identifier in d.
     auto dn = var_decl->GetIdentifier()->AsIdentifier();
-    auto dn_str = ObjectFactory::NewString(dn->GetName());
+    auto dn_str = factory->NewString(dn->GetName());
 
     // b. Let varAlreadyDeclared be the result of calling env’s HasBinding concrete method passing dn as the argument.
-    auto var_already_declared = env->HasBinding(dn_str);
+    auto var_already_declared = env->HasBinding(vm_, dn_str);
 
     // c. If varAlreadyDeclared is false, then
     if (!var_already_declared) {
       // i. Call env’s CreateMutableBinding concrete method
       //    passing dn and configurableBindings as the arguments.
-      env->CreateMutableBinding(dn_str, configurable_bindings);
+      env->CreateMutableBinding(vm_, dn_str, configurable_bindings);
 
       // ii. Call env’s SetMutableBinding concrete method passing dn, undefined, and strict as the arguments.
-      env->SetMutableBinding(dn_str, JSValue::Undefined(), strict);
+      env->SetMutableBinding(vm_, dn_str, JSValue::Undefined(), strict);
     }
   }
 }
@@ -327,7 +338,7 @@ Completion Interpreter::EvalIfStatement(ast::IfStatement* if_stmt) {
   auto expr_ref = EvalExpression(if_stmt->GetCondition());
 
   // 2. If ToBoolean(GetValue(exprRef)) is true, then
-  if (JSValue::ToBoolean(GetValue(expr_ref))) {
+  if (JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
     // a. Return the result of evaluating the first Statement.
     return EvalStatement(if_stmt->GetConsequent());
   }
@@ -384,7 +395,7 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
     auto expr_ref = EvalExpression(do_while_stmt->GetCondition());
 
     // e. If ToBoolean(GetValue(exprRef)) is false, set iterating to false.
-    if (!JSValue::ToBoolean(GetValue(expr_ref))) {
+    if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
       iterating = false;
     }
   }
@@ -407,7 +418,7 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
     auto expr_ref = EvalExpression(while_stmt->GetCondition());
 
     // b. If ToBoolean(GetValue(exprRef)) is false, return (normal, V, empty).
-    if (!JSValue::ToBoolean(GetValue(expr_ref))) {
+    if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
       return Completion(CompletionType::NORMAL, V);
     }
 
@@ -464,7 +475,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
       auto test_expr_ref = EvalExpression(for_stmt->GetCondition());
 
       // ii. If ToBoolean(GetValue(testExprRef)) is false, return (normal, V, empty).
-      if (!JSValue::ToBoolean(GetValue(test_expr_ref))) {
+      if (!JSValue::ToBoolean(vm_, GetValue(test_expr_ref))) {
         return Completion(CompletionType::NORMAL, V);
       }
     }
@@ -529,7 +540,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   }
 
   // 5. Let obj be ToObject(experValue).
-  auto obj = JSValue::ToObject(expr_val);
+  auto obj = JSValue::ToObject(vm_, expr_val);
 
   // 6. Let V = empty.
   JSValue V;
@@ -692,7 +703,7 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(Conditio
   auto lref = EvalExpression(cond_expr->GetConditional());
 
   // 2. If ToBoolean(GetValue(lref)) is true, then
-  if (JSValue::ToBoolean(GetValue(lref))) {
+  if (JSValue::ToBoolean(vm_, GetValue(lref))) {
     // a. Let trueRef be the result of evaluating the first AssignmentExpression.
     auto true_ref = EvalExpression(cond_expr->GetConsequent());
 
@@ -790,7 +801,7 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   base_val.CheckObjectCoercible();
 
   // 6. Let propertyNameString be ToString(propertyNameValue).
-  auto prop_name_str = JSValue::ToString(prop_name_val); 
+  auto prop_name_str = JSValue::ToString(vm_, prop_name_val); 
 
   // 7. If the syntactic production that is being evaluated is contained in strict mode code,
   //    let strict be true, else let strict be false.
@@ -836,13 +847,13 @@ JSValue Interpreter::EvalNumericLiteral(NumericLiteral* num) {
 // Eval StringLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalStringLiteral(StringLiteral* str) {
-  return JSValue(ObjectFactory::NewString(str->GetString()));
+  return JSValue(vm_->GetObjectFactory()->NewStringFromTable(str->GetString()));
 }
 
 // Eval Identifier
 // Defined in ECMAScript 5.1 Chapter 11.1.2
 Reference Interpreter::EvalIdentifier(Identifier* ident) {
-  return IdentifierResolution(ObjectFactory::NewString(ident->GetName()));
+  return IdentifierResolution(vm_->GetObjectFactory()->NewStringFromTable(ident->GetName()));
 }
 
 
@@ -893,7 +904,7 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
 
   // 2. Let rhs be the result of evaluating Initialiser.
   if (!decl->GetInitializer()) {
-    return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
+    return JSValue(vm_->GetObjectFactory()->NewStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()));
   }
   auto rhs = EvalExpression(decl->GetInitializer());
 
@@ -904,7 +915,7 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
   PutValue(lhs, value);
 
   // 5. Return a String value containing the same sequence of characters as in the Identifier.
-  return JSValue(ObjectFactory::NewString(decl->GetIdentifier()->AsIdentifier()->GetName()));
+  return JSValue(vm_->GetObjectFactory()->NewStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()));
 }
 
 // ApplyCompoundAssignment
@@ -912,67 +923,68 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
 JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
   switch (op) {
     case TokenType::MUL_ASSIGN: {
-      auto lnum = JSValue::ToNumber(lval);
-      auto rnum = JSValue::ToNumber(rval);
+      auto lnum = JSValue::ToNumber(vm_, lval);
+      auto rnum = JSValue::ToNumber(vm_, rval);
       return JSValue(lnum * rnum);
     }
     case TokenType::DIV_ASSIGN: {
-      auto lnum = JSValue::ToNumber(lval);
-      auto rnum = JSValue::ToNumber(rval);
+      auto lnum = JSValue::ToNumber(vm_, lval);
+      auto rnum = JSValue::ToNumber(vm_, rval);
       return JSValue(lnum / rnum);
     }
     case TokenType::ADD_ASSIGN: {
-      auto lprim = JSValue::ToPrimitive(lval, PreferredType::NUMBER);
-      auto rprim = JSValue::ToPrimitive(rval, PreferredType::NUMBER);
+      auto lprim = JSValue::ToPrimitive(vm_, lval, PreferredType::NUMBER);
+      auto rprim = JSValue::ToPrimitive(vm_, rval, PreferredType::NUMBER);
     
       if (lprim.IsString() || rprim.IsString()) {
-        return JSValue(String::Concat(lprim.GetHeapObject()->AsString(),
+        return JSValue(String::Concat(vm_,
+                                      lprim.GetHeapObject()->AsString(),
                                       rprim.GetHeapObject()->AsString()));
       } else {
-        return JSValue::ToNumber(lprim) + JSValue::ToNumber(rprim);
+        return JSValue::ToNumber(vm_, lprim) + JSValue::ToNumber(vm_, rprim);
       }
     }
     case TokenType::SUB_ASSIGN: {
-      auto lnum = JSValue::ToNumber(lval);
-      auto rnum = JSValue::ToNumber(rval);
+      auto lnum = JSValue::ToNumber(vm_, lval);
+      auto rnum = JSValue::ToNumber(vm_, rval);
       return JSValue(lnum - rnum);
     }
     case TokenType::LEFT_SHIFT_ASSIGN: {
-      auto lnum = JSValue::ToInt32(lval);
-      auto rnum = JSValue::ToUint32(rval);
+      auto lnum = JSValue::ToInt32(vm_, lval);
+      auto rnum = JSValue::ToUint32(vm_, rval);
       auto shift_count = rnum & 0x1F;
       
       return JSValue(lnum << shift_count);
     }
     case TokenType::RIGHT_SHIFT_ASSIGN: {
-      auto lnum = JSValue::ToInt32(lval);
-      auto rnum = JSValue::ToUint32(rval);
+      auto lnum = JSValue::ToInt32(vm_, lval);
+      auto rnum = JSValue::ToUint32(vm_, rval);
       auto shift_count = rnum & 0x1F;
       
       return JSValue(lnum >> shift_count);
     }
     case TokenType::U_RIGHT_SHIFT_ASSIGN: {
-      auto lnum = JSValue::ToUint32(lval);
-      auto rnum = JSValue::ToUint32(rval);
+      auto lnum = JSValue::ToUint32(vm_, lval);
+      auto rnum = JSValue::ToUint32(vm_, rval);
       auto shift_count = rnum & 0x1F;
       
       return JSValue(lnum >> shift_count);
     }
     case TokenType::BIT_AND_ASSIGN: {
-      auto lnum = JSValue::ToInt32(lval);
-      auto rnum = JSValue::ToInt32(rval);
+      auto lnum = JSValue::ToInt32(vm_, lval);
+      auto rnum = JSValue::ToInt32(vm_, rval);
 
       return JSValue(lnum & rnum);
     }
     case TokenType::BIT_XOR_ASSIGN: {
-      auto lnum = JSValue::ToInt32(lval);
-      auto rnum = JSValue::ToInt32(rval);
+      auto lnum = JSValue::ToInt32(vm_, lval);
+      auto rnum = JSValue::ToInt32(vm_, rval);
 
       return JSValue(lnum ^ rnum);
     }
     case TokenType::BIT_OR_ASSIGN: {
-      auto lnum = JSValue::ToInt32(lval);
-      auto rnum = JSValue::ToInt32(rval);
+      auto lnum = JSValue::ToInt32(vm_, lval);
+      auto rnum = JSValue::ToInt32(vm_, rval);
 
       return JSValue(lnum | rnum);
     }
@@ -998,7 +1010,7 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
     auto lval = GetValue(lref);
     
     // 3. If ToBoolean(lval) is false, return lval.
-    if (!JSValue::ToBoolean(lval)) {
+    if (!JSValue::ToBoolean(vm_, lval)) {
       return lval;
     }
     
@@ -1017,7 +1029,7 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
     auto lval = GetValue(lref);
     
     // 3. If ToBoolean(lval) is true, return lval.
-    if (JSValue::ToBoolean(lval)) {
+    if (JSValue::ToBoolean(vm_, lval)) {
       return lval;
     }
     
@@ -1045,10 +1057,10 @@ JSValue Interpreter::ApplyBitwiseOperator(TokenType op, Expression* left, Expres
   auto rval = GetValue(rref);
   
   // 5. Let lnum be ToInt32(lval).
-  auto lnum = JSValue::ToInt32(lval);
+  auto lnum = JSValue::ToInt32(vm_, lval);
   
   // 6. Let rnum be ToInt32(rval).
-  auto rnum = JSValue::ToInt32(rval);
+  auto rnum = JSValue::ToInt32(vm_, rval);
   
   // 7. Return the result of applying the bitwise operator @ to lnum and rnum.
   //    The result is a signed 32 bit integer.
@@ -1189,10 +1201,10 @@ JSValue Interpreter::ApplyShiftOperator(TokenType op, Expression* left, Expressi
   auto rval = GetValue(rref);
   
   // 5. Let lnum be ToInt32(lval).
-  auto lnum = JSValue::ToInt32(lval);
+  auto lnum = JSValue::ToInt32(vm_, lval);
   
   // 6. Let rnum be ToUint32(rval).
-  auto rnum = JSValue::ToUint32(rval);
+  auto rnum = JSValue::ToUint32(vm_, rval);
 
   // 7. Let shiftCount be the result of masking out all but the least significant 5 bits of rnum,
   //    that is, compute rnum & 0x1F.
@@ -1211,7 +1223,7 @@ JSValue Interpreter::ApplyShiftOperator(TokenType op, Expression* left, Expressi
 
     // Return the result of performing a zero-filling right shift of lnum by shiftCount bits.
     // Vacated bits are filled with zero. The result is an unsigned 32-bit integer.
-    return JSValue(JSValue::ToUint32(lval) >> rnum);
+    return JSValue(JSValue::ToUint32(vm_, lval) >> rnum);
   }
 }
 
@@ -1233,22 +1245,23 @@ JSValue Interpreter::ApplyAdditiveOperator(TokenType op, Expression* left, Expre
     auto rval = GetValue(rref);
     
     // 5. Let lprim be ToPrimitive(lval).
-    auto lprim = JSValue::ToPrimitive(lval, PreferredType::NUMBER);
+    auto lprim = JSValue::ToPrimitive(vm_, lval, PreferredType::NUMBER);
     
     // 6. Let rprim be ToPrimitive(rval).
-    auto rprim = JSValue::ToPrimitive(rval, PreferredType::NUMBER);
+    auto rprim = JSValue::ToPrimitive(vm_, rval, PreferredType::NUMBER);
     
     // 7. If Type(lprim) is String or Type(rprim) is String, then
     if (lprim.IsString() || rprim.IsString()) {
       // a. Return the String that is the result of
       //    concatenating ToString(lprim) followed by ToString(rprim)
-      return JSValue(String::Concat(lprim.GetHeapObject()->AsString(),
+      return JSValue(String::Concat(vm_,
+                                    lprim.GetHeapObject()->AsString(),
                                     rprim.GetHeapObject()->AsString()));
     }
     // 8. Return the result of applying the addition operation to ToNumber(lprim) and ToNumber(rprim).
     //    See the Note below 11.6.3 (under IEE754 rules).
     else {
-      return JSValue::ToNumber(lprim) + JSValue::ToNumber(rprim);
+      return JSValue::ToNumber(vm_, lprim) + JSValue::ToNumber(vm_, rprim);
     }
   } else {
     // op must be TokenType::SUB
@@ -1266,10 +1279,10 @@ JSValue Interpreter::ApplyAdditiveOperator(TokenType op, Expression* left, Expre
     auto rval = GetValue(rref);
       
     // 5. Let lnum be ToNumber(lval).
-    auto lnum = JSValue::ToNumber(lval);
+    auto lnum = JSValue::ToNumber(vm_, lval);
       
     // 6. Let rnum be ToNumber(rval).
-    auto rnum = JSValue::ToNumber(rval);
+    auto rnum = JSValue::ToNumber(vm_, rval);
       
     // 7. Return the result of applying the subtraction operation to lnum and rnum.
     //    See the note below 11.6.3 (under IEE754 rules).
@@ -1295,10 +1308,10 @@ JSValue Interpreter::ApplyMultiplicativeOperator(TokenType op, Expression* left,
   auto rval = GetValue(rref);
   
   // 5. Let leftNum be ToNumber(leftValue).
-  auto lnum = JSValue::ToNumber(lval);
+  auto lnum = JSValue::ToNumber(vm_, lval);
   
   // 6. Let rightNum be ToNumber(rightValue).
-  auto rnum = JSValue::ToNumber(rval);
+  auto rnum = JSValue::ToNumber(vm_, rval);
   
   // 7. Return the result of applying the specified operation (*, /, or %) to leftNum and rightNum.
   //    See the Notes below 11.5.1, 11.5.2, 11.5.3.
@@ -1337,7 +1350,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
       if (auto pref = std::get_if<Reference>(&ref)) {
         // a. If IsUnresolvableReference(val) is true, return "undefined".
         if (pref->IsUnresolvableReference()) {
-          return JSValue(ObjectFactory::NewString(u"undefined"));
+          return JSValue(vm_->GetObjectFactory()->NewStringFromTable(u"undefined"));
         }
         // b. Let val be GetValue(val).
       }
@@ -1362,7 +1375,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
       }
 
       // 2. Let oldValue be ToNumber(GetValue(expr)).
-      auto old_val = JSValue::ToNumber(GetValue(ref));
+      auto old_val = JSValue::ToNumber(vm_, GetValue(ref));
 
       // 3. Let newValue be the result of adding the value 1 to oldValue,
       //    using the same rules as for the + operator (see 11.6.3).
@@ -1390,7 +1403,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
       }
 
       // 2. Let oldValue be ToNumber(GetValue(expr)).
-      auto old_val = JSValue::ToNumber(GetValue(ref));
+      auto old_val = JSValue::ToNumber(vm_, GetValue(ref));
 
       // 3. Let newValue be the result of subtracting the value 1 to oldValue,
       //    using the same rules as for the + operator (see 11.6.3).
@@ -1404,11 +1417,11 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
     }
     case TokenType::ADD: {
       // 1. Return ToNumber(GetValue(expr)).
-      return JSValue::ToNumber(GetValue(ref));
+      return JSValue::ToNumber(vm_, GetValue(ref));
     }
     case TokenType::SUB: {
       // 1. Let oldValue be ToNumber(GetValue(expr)).
-      auto old_val = JSValue::ToNumber(GetValue(ref));
+      auto old_val = JSValue::ToNumber(vm_, GetValue(ref));
       
       // 2. If oldValue is NaN, return NaN.
       if (std::isnan(old_val.GetNumber())) {
@@ -1426,7 +1439,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
     }
     case TokenType::BIT_NOT: {
       // 1. Let oldValue be ToInt32(GetValue(expr)).
-      auto old_val = JSValue::ToInt32(GetValue(ref));
+      auto old_val = JSValue::ToInt32(vm_, GetValue(ref));
       
       // 2. Return the result of applying bitwise complement to oldValue.
       //    The result is a signed 32-bit integer.
@@ -1434,7 +1447,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
     }
     case TokenType::LOGICAL_AND: {
       // 1. Let oldValue be ToBoolean(GetValue(expr)).
-      auto old_val = JSValue::ToBoolean(GetValue(ref));
+      auto old_val = JSValue::ToBoolean(vm_, GetValue(ref));
       
       // 2. If oldValue is true, return false.
       // 3. Return true.
@@ -1467,7 +1480,7 @@ JSValue Interpreter::ApplyPostfixOperator(TokenType op, Expression* expr) {
   }
   
   // 3. Let oldValue be ToNumber(GetValue(lhs)).
-  auto old_val = JSValue::ToNumber(GetValue(lhs));
+  auto old_val = JSValue::ToNumber(vm_, GetValue(lhs));
   
   // 4. Let newValue be the result of adding the value 1 to oldValue, using the same rules as for the + operator (see 11.6.3).
   Number new_val;
@@ -1499,6 +1512,7 @@ Reference Interpreter::IdentifierResolution(String* ident) {
   // 3. Return the result of calling GetIdentifierReference function passing env,
   //    Identifier, and strict as arguments.
   return LexicalEnvironment::GetIdentifierReference(
+    vm_, 
     vm_->GetExecutionContext()->GetLexicalEnvironment(), ident, strict);
 }
 
@@ -1569,32 +1583,32 @@ bool Interpreter::AbstractEqualityComparison(JSValue x, JSValue y) {
   // 4. If Type(x) is Number and Type(y) is String,
   //    return the result of the comparison x == ToNumber(y).
   if (x.IsNumber() && y.IsString()) {
-    return AbstractEqualityComparison(x, JSValue::ToNumber(y));
+    return AbstractEqualityComparison(x, JSValue::ToNumber(vm_, y));
   }
 
   // 5. If Type(x) is String and Type(y) is Number,
   //    return the result of the comparison ToNumber(x) == y.
   if (x.IsString() && y.IsNumber()) {
-    return AbstractEqualityComparison(JSValue::ToNumber(x), y);
+    return AbstractEqualityComparison(JSValue::ToNumber(vm_, x), y);
   }
 
   // 6. If Type(x) is Boolean, return the result of the comparison ToNumber(x) == y.
   if (x.IsBoolean()) {
-    return AbstractEqualityComparison(JSValue::ToNumber(x), y);
+    return AbstractEqualityComparison(JSValue::ToNumber(vm_, x), y);
   }
 
   // 7. If Type(y) is Boolean, return the result of the comparison x == ToNumber(y).
   if (y.IsBoolean()) {
-    return AbstractEqualityComparison(x, JSValue::ToNumber(y));
+    return AbstractEqualityComparison(x, JSValue::ToNumber(vm_, y));
   }
 
   // 8. If Type(x) is either String or Number and Type(y) is Object,
   //    return the result of the comparison x == ToPrimitive(y).
   if ((x.IsString() || x.IsNumber()) && y.IsObject()) {
     if (x.IsString()) {
-      return AbstractEqualityComparison(x, JSValue::ToPrimitive(y, PreferredType::STRING));
+      return AbstractEqualityComparison(x, JSValue::ToPrimitive(vm_, y, PreferredType::STRING));
     } else {
-      return AbstractEqualityComparison(x, JSValue::ToPrimitive(y, PreferredType::NUMBER));
+      return AbstractEqualityComparison(x, JSValue::ToPrimitive(vm_, y, PreferredType::NUMBER));
     }
   }
 
@@ -1602,9 +1616,9 @@ bool Interpreter::AbstractEqualityComparison(JSValue x, JSValue y) {
   //    return the result of the comparison ToPrimitive(x) == y.
   if (x.IsObject() && (y.IsString() || y.IsNumber())) {
     if (y.IsString()) {
-      return AbstractEqualityComparison(JSValue::ToPrimitive(y, PreferredType::STRING), x);
+      return AbstractEqualityComparison(JSValue::ToPrimitive(vm_, y, PreferredType::STRING), x);
     } else {
-      return AbstractEqualityComparison(JSValue::ToPrimitive(y, PreferredType::NUMBER), x);
+      return AbstractEqualityComparison(JSValue::ToPrimitive(vm_, y, PreferredType::NUMBER), x);
     }
   }
 
@@ -1672,28 +1686,28 @@ JSValue Interpreter::AbstractRelationalComparison(JSValue x, JSValue y, bool lef
   JSValue py;
   if (left_first) {
     // a. Let px be the result of calling ToPrimitive(x, hint Number).
-    px = JSValue::ToPrimitive(x, PreferredType::NUMBER);
+    px = JSValue::ToPrimitive(vm_, x, PreferredType::NUMBER);
     
     // b. Let py be the result of calling ToPrimitive(y, hint Number).
-    py = JSValue::ToPrimitive(y, PreferredType::NUMBER);
+    py = JSValue::ToPrimitive(vm_, y, PreferredType::NUMBER);
   } 
   // 2.  Else the order of evaluation needs to be reversed to preserve left to right evaluation
   else {
     // a. Let py be the result of calling ToPrimitive(y, hint Number).
-    py = JSValue::ToPrimitive(y, PreferredType::NUMBER);
+    py = JSValue::ToPrimitive(vm_, y, PreferredType::NUMBER);
     
     // b. Let px be the result of calling ToPrimitive(x, hint Number).
-    px = JSValue::ToPrimitive(x, PreferredType::NUMBER);
+    px = JSValue::ToPrimitive(vm_, x, PreferredType::NUMBER);
   }
 
   // 3. If it is not the case that both Type(px) is String and Type(py) is String, then
   if (!px.IsString() || !py.IsString()) {
     // a. Let nx be the result of calling ToNumber(px).
     //    Because px and py are primitive values evaluation order is not important.
-    auto nx = JSValue::ToNumber(px);
+    auto nx = JSValue::ToNumber(vm_, px);
     
     // b. Let ny be the result of calling ToNumber(py).
-    auto ny = JSValue::ToNumber(py);
+    auto ny = JSValue::ToNumber(vm_, py);
     
     // c. If nx is NaN, return undefined.
     // d. If ny is NaN, return undefined.
@@ -1782,7 +1796,7 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
     // a. Return the result of calling the GetBindingValue concrete method of
     //    base passing GetReferencedName(V) and IsStrictReference(V) as arguments.
     auto env = std::get<EnvironmentRecord*>(base);
-    return env->GetBindingValue(ref.GetReferencedName(), ref.IsStrictReference());
+    return env->GetBindingValue(vm_, ref.GetReferencedName(), ref.IsStrictReference());
   }
 }
 
@@ -1811,7 +1825,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     //    W for the value, and false for the Throw flag.
     else {
       auto global_obj = vm_->GetGlobalObject();
-      global_obj->Put(JSValue(ref->GetReferencedName()), W, false);
+      global_obj->Put(vm_, JSValue(ref->GetReferencedName()), W, false);
     }
   }
   // 4. Else if IsPropertyReference(V), then
@@ -1824,7 +1838,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     //    W for the value, and IsStrictReference(V) for the Throw flag.
     if (!ref->HasPrimitiveBase()) {
       auto base_obj = std::get<JSValue>(base).GetHeapObject()->AsObject();
-      base_obj->Put(JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
+      base_obj->Put(vm_, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
     } else {
       auto base_prim = std::get<JSValue>(base);
       Put(base_prim, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
@@ -1836,7 +1850,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     // a. Call the SetMutableBinding (10.2.1) concrete method of base,
     //    passing GetReferencedName(V), W, and IsStrictReference(V) as arguments.
     auto base_env = std::get<EnvironmentRecord*>(base);
-    base_env->SetMutableBinding(ref->GetReferencedName(), W, ref->IsStrictReference());
+    base_env->SetMutableBinding(vm_, ref->GetReferencedName(), W, ref->IsStrictReference());
   }
 
   // 6. Return
@@ -1847,10 +1861,10 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
 // used by PutValue when V is a property reference with primitive base value
 void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
   // 1. Let O be ToObject(base).
-  auto O = JSValue::ToObject(base);
+  auto O = JSValue::ToObject(vm_, base);
 
   // 2. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
-  if (!O->CanPut(P)) {
+  if (!O->CanPut(vm_, P)) {
     // a. If Throw is true, then throw a TypeError exception.
     if (Throw) {
       // todo
@@ -1862,7 +1876,7 @@ void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
   }
 
   // 3. Let ownDesc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
-  auto own_desc = O->GetOwnProperty(P);
+  auto own_desc = O->GetOwnProperty(vm_, P);
 
   // 4. If IsDataDescriptor(ownDesc) is true, then
   if (own_desc.IsDataDescriptor()) {
@@ -1878,7 +1892,7 @@ void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
 
   // 5. Let desc be the result of calling the [[GetProperty]] internal method of O with argument P.
   //    This may be either an own or inherited accessor property descriptor or an inherited data property descriptor.
-  auto desc = O->GetProperty(P);
+  auto desc = O->GetProperty(vm_, P);
 
   // 6. If IsAccessorDescriptor(desc) is true, then
   if (desc.IsAccessorDescriptor()) {

@@ -5,9 +5,11 @@
 
 #include "voidjs/types/js_value.h"
 #include "voidjs/interpreter/execution_context.h"
-#include "voidjs/interpreter/string_table.h"
 
 namespace voidjs {
+
+class StringTable;
+class ObjectFactory;
 
 class VM {
  public:
@@ -21,14 +23,14 @@ class VM {
   builtins::GlobalObject* GetGlobalObject() const { return global_obj_; }
   void SetGlobalObject(builtins::GlobalObject* obj) { global_obj_ = obj; }
 
-  StringTable* GetStringTable() const { return string_table_; }
-  void SetStringTable(StringTable* string_table) { string_table_ = string_table; }
+  ObjectFactory* GetObjectFactory() const { return object_factory_; }
+  void SetObjectFactory(ObjectFactory* object_factory) { object_factory_ = object_factory; }
   
  private:
   builtins::GlobalObject* global_obj_;
   types::LexicalEnvironment* global_env_;
   std::vector<ExecutionContext*> execution_ctxs_;
-  StringTable* string_table_;
+  ObjectFactory* object_factory_; 
 };
 
 }  // namespace voidjs

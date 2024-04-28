@@ -21,10 +21,11 @@ namespace voidjs {
 
 class Interpreter {
  public:
-  Interpreter()
-    : vm_(new VM{})
-  {}
+  Interpreter() {
+    Initialize();
+  }
   
+  void Initialize(); 
   types::Completion Execute(ast::AstNode* ast_node);
   void InitializeBuiltinObjects();
   void EnterGlobalCode(ast::AstNode* ast_node);
@@ -85,7 +86,7 @@ class Interpreter {
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
   void Put(JSValue base, JSValue P, JSValue W, bool Throw);
 
-  VM* GetVm() const { return vm_; }
+  VM* GetVM() const { return vm_; }
 
  private:
   VM* vm_;

@@ -29,14 +29,16 @@ class PropertyMap : public Array {
     return JSValue{};
   }
 
-  static PropertyMap* SetProperty(PropertyMap* prop_map, JSValue key, const PropertyDescriptor& desc) {
+  static PropertyMap* SetProperty(VM* vm, PropertyMap* prop_map, JSValue key, const PropertyDescriptor& desc) {
+    auto factory = vm->GetObjectFactory();
+    
     JSValue prop;
     if (desc.IsDataDescriptor()) {
-      prop = JSValue(ObjectFactory::NewDataPropertyDescriptor(desc));
+      prop = JSValue(factory->NewDataPropertyDescriptor(desc));
     } else if (desc.IsAccessorDescriptor()) {
-      prop = JSValue(ObjectFactory::NewAccessorPropertyDescriptor(desc));
+      prop = JSValue(factory->NewAccessorPropertyDescriptor(desc));
     } else {
-      prop = JSValue(ObjectFactory::NewGenericPropertyDescriptor(desc));
+      prop = JSValue(factory->NewGenericPropertyDescriptor(desc));
     }
     
     auto len = prop_map->GetLength();
@@ -51,11 +53,11 @@ class PropertyMap : public Array {
       }
     }
     
-    auto new_prop_map = ObjectFactory::NewPropertyMap();
+    auto new_prop_map = factory->NewPropertyMap();
     new_prop_map->Set(0, key);
     new_prop_map->Set(1, prop);
 
-    return Append(prop_map, new_prop_map)->AsPropertyMap();
+    return Append(vm, prop_map, new_prop_map)->AsPropertyMap();
   }
 
   void DeleteProperty(JSValue key) {

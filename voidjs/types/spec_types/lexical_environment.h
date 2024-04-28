@@ -14,9 +14,9 @@ class LexicalEnvironment {
     : outer_(outer), env_rec_(env_rec)
   {}
   
-  static Reference GetIdentifierReference(LexicalEnvironment* lex, String* name, bool strict);
-  static LexicalEnvironment* NewDeclarativeEnvironmentRecord(LexicalEnvironment* E);
-  static LexicalEnvironment* NewObjectEnvironmentRecord(JSValue O, LexicalEnvironment* E);
+  static Reference GetIdentifierReference(VM* vm, LexicalEnvironment* lex, String* name, bool strict);
+  static LexicalEnvironment* NewDeclarativeEnvironmentRecord(VM* vm, LexicalEnvironment* E);
+  static LexicalEnvironment* NewObjectEnvironmentRecord(VM* vm, JSValue O, LexicalEnvironment* E);
 
   EnvironmentRecord* GetEnvRec() const { return env_rec_; }
   LexicalEnvironment* GetOuter() const { return outer_; }

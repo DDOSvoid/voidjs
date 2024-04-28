@@ -9,7 +9,8 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/heap_object.h"
-#include "voidjs/types/object_factory.h"
+#include "voidjs/interpreter/vm.h"
+#include "voidjs/interpreter/string_table.h"
 
 namespace voidjs {
 namespace types {
@@ -31,11 +32,11 @@ class String : public HeapObject {
   bool Equal(std::u16string_view str) const { return GetString() == str; }
   bool Equal(String* str) const { return Equal(str->GetString()); }
 
-  static String* Concat(String* str1, String* str2) {
+  static String* Concat(VM* vm, String* str1, String* str2) {
     std::u16string str;
     str += str1->GetString();
     str += str2->GetString();
-    return ObjectFactory::NewString(str);
+    return vm->GetObjectFactory()->NewStringFromTable(str);
   }
 
   // used for print 

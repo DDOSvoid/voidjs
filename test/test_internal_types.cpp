@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "voidjs/interpreter/interpreter.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
@@ -9,10 +10,12 @@
 using namespace voidjs;
 
 TEST(InternalTypes, Array) {
-  std::size_t len = 5;
-  
-  auto arr = ObjectFactory::NewArray(len);
+  Interpreter interpreter;
 
+  auto vm = interpreter.GetVM();
+  
+  std::size_t len = 5;
+  auto arr = vm->GetObjectFactory()->NewArray(len);
   
   for (std::size_t idx = 0; idx < len; ++idx) {
     arr->Set(idx, JSValue(static_cast<std::int32_t>(idx)));
@@ -23,7 +26,7 @@ TEST(InternalTypes, Array) {
                                    arr->Get(idx)));
   }
 
-  auto new_arr = types::Array::Append(arr, arr);
+  auto new_arr = types::Array::Append(vm, arr, arr);
   EXPECT_EQ(2 * len, new_arr->GetLength());
 
   auto expect_arr = std::vector{0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
@@ -34,24 +37,29 @@ TEST(InternalTypes, Array) {
 }
 
 TEST(InternalTypes, ProperyMap) {
-  auto map = ObjectFactory::NewPropertyMap();
+  Interpreter interpreter;
+  
+  auto vm = interpreter.GetVM();
+  auto factory = vm->GetObjectFactory();
+  
+  auto map = factory->NewPropertyMap();
 
-  auto key1 = JSValue(ObjectFactory::NewString(u"key1"));
+  auto key1 = JSValue(factory->NewString(u"key1"));
   auto val1 = types::PropertyDescriptor(JSValue(42));
 
-  auto key2 = JSValue(ObjectFactory::NewString(u"key2"));
+  auto key2 = JSValue(factory->NewString(u"key2"));
   auto val2 = types::PropertyDescriptor(JSValue(2));
 
-  auto key3 = JSValue(ObjectFactory::NewString(u"key3"));
+  auto key3 = JSValue(factory->NewString(u"key3"));
   auto val3 = types::PropertyDescriptor(JSValue(3));
 
-  auto key4 = JSValue(ObjectFactory::NewString(u"key4"));
+  auto key4 = JSValue(factory->NewString(u"key4"));
   auto val4 = types::PropertyDescriptor(JSValue(4));
 
-  map = types::PropertyMap::SetProperty(map, key1, val1);
-  map = types::PropertyMap::SetProperty(map, key2, val2);
-  map = types::PropertyMap::SetProperty(map, key3, val3);
-  map = types::PropertyMap::SetProperty(map, key4, val4);
+  map = types::PropertyMap::SetProperty(vm, map, key1, val1);
+  map = types::PropertyMap::SetProperty(vm, map, key2, val2);
+  map = types::PropertyMap::SetProperty(vm, map, key3, val3);
+  map = types::PropertyMap::SetProperty(vm, map, key4, val4);
 
   auto val = map->GetProperty(key4);
   ASSERT_TRUE(val.IsHeapObject() && val.GetHeapObject()->IsDataPropertyDescriptor());

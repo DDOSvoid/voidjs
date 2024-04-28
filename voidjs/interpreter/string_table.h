@@ -4,15 +4,20 @@
 #include <map>
 
 #include "voidjs/types/object_factory.h"
-#include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
+
+namespace types {
+
+class String;
+
+}  // namespace types
 
 class StringTable {
  public:
   types::String* GetOrInsert(std::u16string_view source) {
     if (map_.find(source) == map_.end()) {
-      auto str = ObjectFactory::NewString(source);
+      auto str = factory_->NewString(source);
       map_.emplace(source, str);
       return str;
     } else {
@@ -22,6 +27,7 @@ class StringTable {
   
  private:
   std::map<std::u16string_view, types::String*> map_;
+  ObjectFactory* factory_;
 };
 
 }  // namespace voidjs

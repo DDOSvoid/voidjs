@@ -3,6 +3,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/interpreter/vm.h"
 
 namespace voidjs {
 namespace builtins {
@@ -11,23 +12,25 @@ namespace builtins {
 // Defined in ECMAScript 5.1 Chapter 15.2.1.1
 // todo
 JSValue JSObject::ObjectConstructor(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  auto factory = vm->GetObjectFactory();
   auto value = argv->GetArg(0);
   
   // 1. If value is null, undefined or not supplied,
   //    create and return a new Object object exactly as if
   //    the standard built-in Object constructor had been called with the same arguments (15.2.2.1).
   if (value.IsNull() || value.IsUndefined() || value.IsEmpty()) {
-    return JSValue(ObjectFactory::NewJSObject(value));
+    return JSValue(factory->NewJSObject(value));
   }
 
   // 2. Return ToObject(value).
-  return JSValue(JSValue::ToObject(value));
+  return JSValue(JSValue::ToObject(vm, value));
 }
 
 // Object.getPrototypeOf(O)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.2
 JSValue JSObject::GetPrototypeOf(RuntimeCallInfo* argv) {
-  JSValue O = argv->GetArg(0);
+  auto O = argv->GetArg(0);
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
@@ -41,8 +44,9 @@ JSValue JSObject::GetPrototypeOf(RuntimeCallInfo* argv) {
 // Object.getOwnPropertyDescriptor(O, P)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.3
 JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
-  JSValue O = argv->GetArg(0);
-  JSValue P = argv->GetArg(1);
+  auto vm = argv->GetVM();
+  auto O = argv->GetArg(0);
+  auto P = argv->GetArg(1);
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
@@ -50,10 +54,10 @@ JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
   }
   
   // 2. Let name be ToString(P).
-  auto name = JSValue::ToString(P);
+  auto name = JSValue::ToString(vm, P);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with argument name.
-  auto desc = O.GetHeapObject()->AsObject()->GetOwnProperty(name);
+  auto desc = O.GetHeapObject()->AsObject()->GetOwnProperty(vm, name);
   
   // 4. Return the result of calling FromPropertyDescriptor(desc) (8.10.4).
   return desc.FromPropertyDescriptor();
@@ -76,6 +80,7 @@ JSValue JSObject::GetOwnPropertyNames(RuntimeCallInfo* argv) {
 // Object.create(O, [, Properties])
 // Defined in ECMAScript 5.1 Chapter 15.2.3.5
 JSValue JSObject::Create(RuntimeCallInfo* argv) {
+  auto factory = argv->GetVM()->GetObjectFactory();
   auto O = argv->GetArg(0);
   
   // 1. If Type(O) is not Object or Null throw a TypeError exception.
@@ -85,7 +90,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   
   // 2. Let obj be the result of creating a new object as if
   //    by the expression new Object() where Object is the standard built-in constructor with that name
-  auto obj = ObjectFactory::NewJSObject(JSValue{});
+  auto obj = factory->NewJSObject(JSValue{});
   
   // 3. Set the [[Prototype]] internal property of obj to O.
   obj->SetPrototype(O);
@@ -102,6 +107,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
 // Object.defineProperty(O, P, Attributes)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.6
 JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto O = argv->GetArg(0);
   auto P = argv->GetArg(1);
   auto Attributes = argv->GetArg(2);
@@ -112,14 +118,14 @@ JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
   }
   
   // 2. Let name be ToString(P).
-  auto name = JSValue::ToString(P);
+  auto name = JSValue::ToString(vm, P);
   
   // 3. Let desc be the result of calling ToPropertyDescriptor with Attributes as the argument.
   // todo
   const auto& desc = types::PropertyDescriptor::ToPropertyDescriptor(Attributes);
   
   // 4. Call the [[DefineOwnProperty]] internal method of O with arguments name, desc, and true.
-  O.GetHeapObject()->AsObject()->DefineOwnProperty(name, desc, true);
+  O.GetHeapObject()->AsObject()->DefineOwnProperty(vm, name, desc, true);
   
   // 5. Return O.
   return O; 
@@ -129,6 +135,7 @@ JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
 // Defined in ECMAScript 5.1 Chapter 15.2.3.7
 // todo
 JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto O = argv->GetArg(0);
   auto Properties = argv->GetArg(1);
   
@@ -138,7 +145,7 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
   }
   
   // 2. Let props be ToObject(Properties).
-  auto props = JSValue::ToObject(Properties);
+  auto props = JSValue::ToObject(vm, Properties);
   
   // 3. Let names be an internal list containing the names of each enumerable own property of props.
   
@@ -329,10 +336,11 @@ JSValue JSObject::ToLocalString(RuntimeCallInfo* argv) {
 // Object.prototype.valueOf()
 // Defined in ECMAScript 5.1 Chapter 15.2.4.4
 JSValue JSObject::ValueOf(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto this_obj = argv->GetThis();
   
   // 1. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToObject(this_obj);
+  auto O = JSValue::ToObject(vm, this_obj);
 
   // 2. If O is the result of calling the Object constructor with a host object (15.2.2.1), then
   // a. Return either O or another value such as the host object originally passed to the constructor. The specific result that is returned is implementation-defined.
@@ -345,17 +353,18 @@ JSValue JSObject::ValueOf(RuntimeCallInfo* argv) {
 // Object.hasOwnProprety(V)
 // Defined in ECMAScript 5.1 Chapter 15.2.5.6
 JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto this_obj = argv->GetThis();
   auto V = argv->GetArg(0);
   
   // 1. Let P be ToString(V).
-  auto P = JSValue::ToString(V);
+  auto P = JSValue::ToString(vm, V);
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToString(this_obj);
+  auto O = JSValue::ToString(vm, this_obj);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
-  auto desc = O.GetHeapObject()->AsObject()->GetOwnProperty(P);
+  auto desc = O.GetHeapObject()->AsObject()->GetOwnProperty(vm, P);
   
   // 4. If desc is undefined, return false.
   if (desc.IsEmpty()) {
@@ -369,6 +378,7 @@ JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
 // Object.prototype.isPrototypeOf(V)
 // Defined in ECMAScript 5.1 Chapter 15.2.4.6
 JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto this_obj = argv->GetThis();
   auto V = argv->GetArg(0);
 
@@ -378,7 +388,7 @@ JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
   }
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToObject(this_obj);
+  auto O = JSValue::ToObject(vm, this_obj);
   
   // 3. Repeat
   while (true) {
@@ -399,17 +409,18 @@ JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
 // Object.prototype.propertyIsEnumerable(V)
 // Defined in ECMAScript 5.1 Chapter 15.2.4.7
 JSValue JSObject::PropertyIsEnumerable(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto this_obj = argv->GetThis();
   auto V = argv->GetArg(0);
   
   // 1. Let P be ToString(V).
-  auto P = JSValue::ToString(V);
+  auto P = JSValue::ToString(vm, V);
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToObject(this_obj);
+  auto O = JSValue::ToObject(vm, this_obj);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
-  auto desc = O->GetOwnProperty(P);
+  auto desc = O->GetOwnProperty(vm, P);
   
   // 4. If desc is undefined, return false.
   if (desc.IsEmpty()) {

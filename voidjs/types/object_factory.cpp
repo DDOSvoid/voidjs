@@ -70,6 +70,10 @@ String* ObjectFactory::NewString(std::u16string_view source) {
   return str;
 }
 
+String* ObjectFactory::NewStringFromTable(std::u16string_view source) {
+  return string_table_->GetOrInsert(source);
+}
+
 Object* ObjectFactory::NewObject(JSValue proto) {
   auto obj = NewHeapObject(Object::SIZE)->AsObject();
 
@@ -158,7 +162,7 @@ JSObject* ObjectFactory::NewJSObject(JSValue value) {
     // c. If Type(value) is Boolean, return ToObject(value).
     // d. If Type(value) is Number, return ToObject(value).
     if (value.IsString() || value.IsBoolean() || value.IsNumber()) {
-      return JSValue::ToObject(value)->AsJSObject();
+      return JSValue::ToObject(vm_, value)->AsJSObject();
     }
   }
 

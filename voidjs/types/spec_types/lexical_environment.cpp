@@ -9,7 +9,7 @@
 namespace voidjs {
 namespace types {
 
-Reference LexicalEnvironment::GetIdentifierReference(LexicalEnvironment* lex, String* name, bool strict) {
+Reference LexicalEnvironment::GetIdentifierReference(VM* vm, LexicalEnvironment* lex, String* name, bool strict) {
   // 1. If lex is the value null, then
   if (!lex) {
     // a. Return a value of type Reference whose base value is undefined,
@@ -21,7 +21,7 @@ Reference LexicalEnvironment::GetIdentifierReference(LexicalEnvironment* lex, St
   auto env_rec = lex->GetEnvRec();
 
   // 3. Let exists be the result of calling the HasBinding(N) concrete method of envRec passing name as the argument N.
-  auto exists = env_rec->HasBinding(name);
+  auto exists = env_rec->HasBinding(vm, name);
 
   // 4. If exists is true, then
   if (exists) {
@@ -35,11 +35,11 @@ Reference LexicalEnvironment::GetIdentifierReference(LexicalEnvironment* lex, St
     auto outer = lex->GetOuter();
     
     // b. Return the result of calling GetIdentifierReference passing outer, name, and strict as arguments.
-    return GetIdentifierReference(outer, name, strict);
+    return GetIdentifierReference(vm, outer, name, strict);
   }
 }
 
-LexicalEnvironment* LexicalEnvironment::NewDeclarativeEnvironmentRecord(LexicalEnvironment* E) {
+LexicalEnvironment* LexicalEnvironment::NewDeclarativeEnvironmentRecord(VM* vm, LexicalEnvironment* E) {
   // 1. Let env be a new Lexical Environment.
   // 2. Let envRec be a new declarative environment record containing no bindings.
   // 3. Set env’s environment record to be envRec.
@@ -49,7 +49,7 @@ LexicalEnvironment* LexicalEnvironment::NewDeclarativeEnvironmentRecord(LexicalE
   return new LexicalEnvironment(E, env_rec);
 }
 
-LexicalEnvironment* LexicalEnvironment::NewObjectEnvironmentRecord(JSValue O, LexicalEnvironment* E) {
+LexicalEnvironment* LexicalEnvironment::NewObjectEnvironmentRecord(VM* vm, JSValue O, LexicalEnvironment* E) {
   // 1. Let env be a new Lexical Environment.
   // 2. Let envRec be a new object environment record containing O as the binding object.
   // 3. Set env’s environment record to be envRec.

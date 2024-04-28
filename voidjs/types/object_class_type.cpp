@@ -1,49 +1,53 @@
 #include "voidjs/types/object_class_type.h"
 
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/interpreter/vm.h"
+#include "voidjs/interpreter/string_table.h"
 
 namespace voidjs {
 
-inline types::String* ObjectClassTypeToString(ObjectClassType type) {
+inline types::String* ObjectClassTypeToString(VM* vm, ObjectClassType type) {
+  auto factory = vm->GetObjectFactory();
+  
   switch (type) {
     case ObjectClassType::GLOBAL_OBJECT: {
-      return ObjectFactory::NewString(u"GlobalObject");
+      return factory->NewStringFromTable(u"GlobalObject");
     }
     case ObjectClassType::ARGUMENTS: {
-      return ObjectFactory::NewString(u"Arguments");
+      return factory->NewStringFromTable(u"Arguments");
     }
     case ObjectClassType::ARRAY: {
-      return ObjectFactory::NewString(u"Array");
+      return factory->NewStringFromTable(u"Array");
     }
     case ObjectClassType::BOOLEAN: {
-      return ObjectFactory::NewString(u"Boolean");
+      return factory->NewStringFromTable(u"Boolean");
     }
     case ObjectClassType::DATE: {
-      return ObjectFactory::NewString(u"Date");
+      return factory->NewStringFromTable(u"Date");
     }
     case ObjectClassType::ERROR: {
-      return ObjectFactory::NewString(u"Error");
+      return factory->NewStringFromTable(u"Error");
     }
     case ObjectClassType::FUNCTION: {
-      return ObjectFactory::NewString(u"Function");
+      return factory->NewStringFromTable(u"Function");
     }
     case ObjectClassType::JSON: {
-      return ObjectFactory::NewString(u"JSON");
+      return factory->NewStringFromTable(u"JSON");
     }
     case ObjectClassType::MATH: {
-      return ObjectFactory::NewString(u"Math");
+      return factory->NewStringFromTable(u"Math");
     }
     case ObjectClassType::NUMBER: {
-      return ObjectFactory::NewString(u"Number");
+      return factory->NewStringFromTable(u"Number");
     }
     case ObjectClassType::OBJECT: {
-      return ObjectFactory::NewString(u"Object");
+      return factory->NewStringFromTable(u"Object");
     }
     case ObjectClassType::REG_EXP: {
-      return ObjectFactory::NewString(u"RegExp");
+      return factory->NewStringFromTable(u"RegExp");
     }
     case ObjectClassType::STRING: {
-      return ObjectFactory::NewString(u"String");
+      return factory->NewStringFromTable(u"String");
     }
   }
 }

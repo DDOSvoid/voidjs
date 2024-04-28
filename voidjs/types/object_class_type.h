@@ -5,6 +5,8 @@
 
 namespace voidjs {
 
+class VM;
+
 namespace types {
 
 class String;
@@ -30,7 +32,7 @@ enum class ObjectClassType : std::uint8_t {
   STRING,
 };
 
-inline types::String* ObjectClassTypeToString(ObjectClassType type); 
+inline types::String* ObjectClassTypeToString(VM* vm, ObjectClassType type); 
 
 }  // namespace voidjs 
 

@@ -16,6 +16,7 @@ add_library(voidjs_obj OBJECT
   voidjs/ir/ast.cpp
   voidjs/parser/parser.cpp
   voidjs/types/js_value.cpp
+  voidjs/types/object_class_type.cpp
   voidjs/types/object_factory.cpp
   voidjs/types/lang_types/object.cpp
   voidjs/types/spec_types/environment_record.cpp

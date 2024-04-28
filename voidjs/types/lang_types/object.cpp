@@ -10,7 +10,7 @@ namespace types {
 
 // GetOwnProperty
 // Defind in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetOwnProperty(JSValue P) const {
+PropertyDescriptor Object::GetOwnProperty(VM* vm, JSValue P) const {
   auto props = GetProperties().GetHeapObject()->AsPropertyMap();
   
   // 1. If O doesn’t have an own property with name P, return undefined.
@@ -54,9 +54,9 @@ PropertyDescriptor Object::GetOwnProperty(JSValue P) const {
 
 // GetProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetProperty(JSValue P) const {
+PropertyDescriptor Object::GetProperty(VM* vm, JSValue P) const {
   // 1. Let prop be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
-  auto prop = GetOwnProperty(P);
+  auto prop = GetOwnProperty(vm, P);
 
   // 2. If prop is not undefined, return prop.
   if (!prop.IsEmpty()) {
@@ -72,14 +72,14 @@ PropertyDescriptor Object::GetProperty(JSValue P) const {
   }
 
   // 5. Return the result of calling the [[GetProperty]] internal method of proto with argument P.
-  return proto.GetHeapObject()->AsObject()->GetProperty(P);
+  return proto.GetHeapObject()->AsObject()->GetProperty(vm, P);
 }
 
 // Get
 // Defined in ECMASCript 5.1 Chapter 8.12.3
-JSValue Object::Get(JSValue P) const {
+JSValue Object::Get(VM* vm, JSValue P) const {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
-  auto desc = GetProperty(P);
+  auto desc = GetProperty(vm, P);
 
   // 2. If desc is undefined, return undefined.
   if (desc.IsEmpty()) {
@@ -105,9 +105,9 @@ JSValue Object::Get(JSValue P) const {
 
 // CanPut
 // Defined in ECMAScript 5.1 Chapter 8.12.4
-bool Object::CanPut(JSValue P) const {
+bool Object::CanPut(VM* vm, JSValue P) const {
   // 1. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
-  auto desc = GetOwnProperty(P);
+  auto desc = GetOwnProperty(vm, P);
 
   // 2. If desc is not undefined, then
   if (!desc.IsEmpty()) {
@@ -132,7 +132,7 @@ bool Object::CanPut(JSValue P) const {
   }
 
   // 5. Let inherited be the result of calling the [[GetProperty]] internal method of proto with property name P.
-  auto inherited = proto.GetHeapObject()->AsObject()->GetProperty(P);
+  auto inherited = proto.GetHeapObject()->AsObject()->GetProperty(vm, P);
 
   // 6. If inherited is undefined, return the value of the [[Extensible]] internal property of O.
   if (inherited.IsEmpty()) {
@@ -159,9 +159,9 @@ bool Object::CanPut(JSValue P) const {
 
 // Put
 // Defined in ECMAScript 5.1 Chapter 8.12.5
-void Object::Put(JSValue P, JSValue V, bool Throw) {
+void Object::Put(VM* vm, JSValue P, JSValue V, bool Throw) {
   // 1. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
-  if (!CanPut(P)) {
+  if (!CanPut(vm, P)) {
     // a. If Throw is true, then throw a TypeError exception.
     // b. Else return.
     if (Throw) {
@@ -172,7 +172,7 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
   }
   
   // 2. Let ownDesc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
-  auto own_desc = GetOwnProperty(P);
+  auto own_desc = GetOwnProperty(vm, P);
 
   // 3. If IsDataDescriptor(ownDesc) is true, then
   if (own_desc.IsDataDescriptor()) {
@@ -180,7 +180,7 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
     auto value_desc = PropertyDescriptor(V);
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, valueDesc, and Throw as arguments.
-    DefineOwnProperty(P, value_desc, Throw);
+    DefineOwnProperty(vm, P, value_desc, Throw);
 
     // c. Return.
     return ;
@@ -188,7 +188,7 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
 
   // 4. Let desc be the result of calling the [[GetProperty]] internal method of O with argument P.
   //    This may be either an own or inherited accessor property descriptor or an inherited data property descriptor.
-  auto desc = GetProperty(P);
+  auto desc = GetProperty(vm, P);
 
   // 5. If IsAccessorDescriptor(desc) is true, then
   if (desc.IsAccessorDescriptor()) {
@@ -205,7 +205,7 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
     auto new_desc = PropertyDescriptor(V, true, true, true);
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, newDesc, and Throw as arguments.
-    DefineOwnProperty(P, new_desc, Throw);
+    DefineOwnProperty(vm, P, new_desc, Throw);
   }
 
   // 7. Return.
@@ -213,9 +213,9 @@ void Object::Put(JSValue P, JSValue V, bool Throw) {
 
 // HasProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.6
-bool Object::HasProperty(JSValue P) const {
+bool Object::HasProperty(VM* vm, JSValue P) const {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
-  auto desc = GetProperty(P);
+  auto desc = GetProperty(vm, P);
 
   // 2. If desc is undefined, then return false.
   // 3. Else return true.
@@ -224,9 +224,9 @@ bool Object::HasProperty(JSValue P) const {
 
 // Delete
 // Defined in ECMAScript 5.1 Chapter 8.12.7
-bool Object::Delete(JSValue P, bool Throw) {
+bool Object::Delete(VM* vm, JSValue P, bool Throw) {
   // 1. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
-  auto desc = GetOwnProperty(P);
+  auto desc = GetOwnProperty(vm, P);
 
   // 2. If desc is undefined, then return true.
   if (desc.IsEmpty()) {
@@ -253,10 +253,10 @@ bool Object::Delete(JSValue P, bool Throw) {
 // DefaultValue
 // Defined in ECMAScript 5.1 Chapter 8.12.8
 // todo
-JSValue Object::DefaultValue(PreferredType hint) const {
+JSValue Object::DefaultValue(VM* vm, PreferredType hint) const {
   if (hint == PreferredType::STRING) {
     // 1. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
-    auto to_string = Get(JSValue(ObjectFactory::NewString(u"toString")));
+    auto to_string = Get(vm, JSValue(vm->GetObjectFactory()->NewStringFromTable(u"toString")));
 
     // 2. If IsCallable(toString) is true then,
     if (to_string.IsCallable()) {
@@ -273,9 +273,9 @@ JSValue Object::DefaultValue(PreferredType hint) const {
 
 // DefineOwnProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.9
-bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool Throw) {
+bool Object::DefineOwnProperty(VM* vm, JSValue P, const PropertyDescriptor& Desc, bool Throw) {
   // 1. Let current be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
-  auto current = GetOwnProperty(P);
+  auto current = GetOwnProperty(vm, P);
 
   // 2. Let extensible be the value of the [[Extensible]] internal property of O.
   auto extensible = GetExtensible();
@@ -299,7 +299,7 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
       //    the attribute of the newly created property is set to its default value.
       auto own_desc = PropertyDescriptor(Desc.GetValue(), Desc.GetWritable(), Desc.GetEnumerable(), Desc.GetConfigurable());
       auto prop_map = GetProperties().GetHeapObject()->AsPropertyMap();
-      SetProperties(JSValue(PropertyMap::SetProperty(prop_map, P, own_desc)));
+      SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
     }
     // b. Else, Desc must be an accessor Property Descriptor so,
     else {
@@ -309,7 +309,7 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
       //    the attribute of the newly created property is set to its default value.
       auto own_desc = PropertyDescriptor(Desc.GetGetter(), Desc.GetSetter(), Desc.GetEnumerable(), Desc.GetConfigurable());
       auto prop_map = GetProperties().GetHeapObject()->AsPropertyMap();
-      SetProperties(JSValue(PropertyMap::SetProperty(prop_map, P, own_desc)));
+      SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
     }
 
     // c. Return true
@@ -394,7 +394,7 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
       auto own_desc = PropertyDescriptor(JSValue::Undefined(), JSValue::Undefined(),
                                          current.GetEnumerable(), current.GetConfigurable());
       auto prop_map = GetProperties().GetHeapObject()->AsPropertyMap();
-      SetProperties(JSValue(PropertyMap::SetProperty(prop_map, P, own_desc)));
+      SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
     }
     // c. Else
     else {
@@ -405,7 +405,7 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
       auto own_desc = PropertyDescriptor(JSValue::Undefined(), current.GetWritable(),
                                          current.GetEnumerable(), current.GetConfigurable());
       auto prop_map = GetProperties().GetHeapObject()->AsPropertyMap();
-      SetProperties(JSValue(PropertyMap::SetProperty(prop_map, P, own_desc)));
+      SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
     }
   }
   // 10. Else, if IsDataDescriptor(current) and IsDataDescriptor(Desc) are both true, then
@@ -488,7 +488,7 @@ bool Object::DefineOwnProperty(JSValue P, const PropertyDescriptor& Desc, bool T
       current.SetConfigurable(Desc.GetConfigurable());
     }
     auto prop_map = GetProperties().GetHeapObject()->AsPropertyMap();
-    SetProperties(JSValue(PropertyMap::SetProperty(prop_map, P, current)));
+    SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, current)));
   }
 
   // 13. Return true.

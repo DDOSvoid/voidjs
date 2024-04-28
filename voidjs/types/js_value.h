@@ -53,6 +53,7 @@ class Object;
 }  // namespace types
 
 class HeapObject;
+class VM;
 
 enum class PreferredType : std::uint8_t {
   NUMBER,
@@ -136,17 +137,17 @@ class JSValue {
 
   // Type Conversion
   // Defined in ECMAScript 5.1 Chapter 9
-  static JSValue ToPrimitive(JSValue val, PreferredType type);
-  static bool ToBoolean(JSValue val);
-  static types::Number ToNumber(JSValue val); 
-  static JSValue ToInteger(JSValue val);
-  static std::int32_t ToInt32(JSValue val);
-  static std::uint32_t ToUint32(JSValue val);
-  static std::uint16_t ToUint16(JSValue val);
-  static JSValue ToString(JSValue val);
-  static types::Object* ToObject(JSValue val);
-  static double StringToNumber(types::String* str);
-  static types::String* NumberToString(double num);
+  static JSValue ToPrimitive(VM* vm, JSValue val, PreferredType type);
+  static bool ToBoolean(VM* vm, JSValue val);
+  static types::Number ToNumber(VM* vm, JSValue val); 
+  static JSValue ToInteger(VM* vm, JSValue val);
+  static std::int32_t ToInt32(VM* vm, JSValue val);
+  static std::uint32_t ToUint32(VM* vm, JSValue val);
+  static std::uint16_t ToUint16(VM* vm, JSValue val);
+  static JSValue ToString(VM* vm, JSValue val);
+  static types::Object* ToObject(VM* vm, JSValue val);
+  static double StringToNumber(VM* vm, types::String* str);
+  static types::String* NumberToString(VM* vm, double num);
 
   // Type Testing
   // Defined in ECMAScript 5.1 Chapter 9

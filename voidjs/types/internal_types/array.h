@@ -21,7 +21,7 @@ class Array : public HeapObject {
   JSValue Get(std::size_t idx) const { return *(GetData() + idx); } 
   void Set(std::size_t idx, JSValue val) { *(GetData() + idx) = val; }
 
-  static Array* Append(Array* first, Array* second);
+  static Array* Append(VM* vm, Array* first, Array* second);
 };
 
 }  // namespace types
