@@ -4,7 +4,6 @@
 #include <string>
 #include <cstdint>
 
-#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 
@@ -23,6 +22,7 @@ class PropertyMap;
 
 namespace builtins {
 
+class GlobalObject;
 class JSObject;
 
 }  // namespace builtins
@@ -34,14 +34,14 @@ class ObjectFactory {
  public:
   static std::byte* Allocate(std::size_t size);
 
-  static types::Object* NewGlobalObject();
+  static builtins::GlobalObject* NewGlobalObject();
   
   static HeapObject* NewHeapObject(std::size_t size);
 
   static RuntimeCallInfo* NewRuntimeCallInfo(std::size_t args_num);
   
   static types::String* NewString(std::u16string_view source);
-  static types::Object* NewObject();
+  static types::Object* NewObject(JSValue proto);
   static types::Array* NewArray(std::size_t len);
   static types::DataPropertyDescriptor* NewDataPropertyDescriptor(const types::PropertyDescriptor& desc);
   static types::AccessorPropertyDescriptor* NewAccessorPropertyDescriptor(const types::PropertyDescriptor& desc);
@@ -49,7 +49,8 @@ class ObjectFactory {
   static types::PropertyMap* NewPropertyMap();
   static types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable);
 
-  static builtins::JSObject* NewJSObject(JSValue value); 
+  static types::Object* NewEmptyObject(std::size_t extra_size);
+  static builtins::JSObject* NewJSObject(JSValue value);
 };
 
 }  // namespace voidjs

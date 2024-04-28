@@ -10,6 +10,7 @@
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/types/internal_types/binding.h"
 #include "voidjs/interpreter/runtime_call_info.h"
+#include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 
 namespace voidjs {
@@ -21,11 +22,28 @@ std::byte* ObjectFactory::Allocate(std::size_t size) {
   return new std::byte[size];
 }
 
-Object* ObjectFactory::NewGlobalObject() {
-  auto obj = NewHeapObject(Object::SIZE)->AsObject();
+// Unless otherwise specified, the standard built-in properties of the global object have
+// attributes {[[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}.
+// 
+// The global object does not have a [[Construct]] internal property;
+// it is not possible to use the global object as a constructor with the new operator.
+// 
+// The global object does not have a [[Call]] internal property;
+// it is not possible to invoke the global object as a function.
+// 
+// The values of the [[Prototype]] and [[Class]]
+// internal properties of the global object are implementation-dependent.
+// 
+// Properties of Global Object are initialized in Interpreter::InitializeBuiltinObjects()
+GlobalObject* ObjectFactory::NewGlobalObject() {
+  auto obj = NewHeapObject(Object::SIZE)->AsGlobalObject();
+  obj->SetType(JSType::GLOBAL_OBJECT);
+  obj->SetClassType(ObjectClassType::GLOBAL_OBJECT);
   obj->SetProperties(JSValue(NewPropertyMap()));
   obj->SetExtensible(true);
-  obj->SetProtoType(JSValue::Null());
+  obj->SetCallable(false);
+  obj->SetIsConstructor(false);
+  obj->SetPrototype(JSValue::Null());
   return obj;
 }
 
@@ -52,8 +70,13 @@ String* ObjectFactory::NewString(std::u16string_view source) {
   return str;
 }
 
-// todo
-Object* ObjectFactory::NewObject() {
+Object* ObjectFactory::NewObject(JSValue proto) {
+  auto obj = NewHeapObject(Object::SIZE)->AsObject();
+
+  obj->SetProperties(JSValue(NewPropertyMap()));
+  obj->SetPrototype(proto);
+  
+  return obj;
 }
 
 Array* ObjectFactory::NewArray(std::size_t len) {
@@ -110,6 +133,12 @@ Binding* ObjectFactory::NewBinding(JSValue value, bool _mutable, bool deletable)
   return binding;
 }
 
+// used to create builtin object
+Object* ObjectFactory::NewEmptyObject(std::size_t extra_size) {
+  auto obj = NewHeapObject(Object::SIZE + extra_size)->AsObject();
+  return obj;
+}
+
 // new Object ( [ value ] )
 // Defined in ECMAScript 5.1 Chapter 15.2.2.1
 JSObject* ObjectFactory::NewJSObject(JSValue value) {
@@ -136,20 +165,17 @@ JSObject* ObjectFactory::NewJSObject(JSValue value) {
   // 2. Assert: The argument value was not supplied or its type was Null or Undefined.
   
   // 3. Let obj be a newly created native ECMAScript object.
-  auto obj = NewHeapObject(Object::SIZE)->AsJSObject();
-  
   // 4. Set the [[Prototype]] internal property of obj t to the standard built-in Object prototype object (15.2.4).
   // todo
-  obj->SetProtoType(JSValue::Null());
+  auto obj = NewObject(JSValue::Null())->AsJSObject();
   
   // 5 .Set the [[Class]] internal property of obj to "Object".
-  // todo
+  obj->SetClassType(ObjectClassType::OBJECT);
   
   // 6. Set the [[Extensible]] internal property of obj to true.
   obj->SetExtensible(true);
   
   // 7. Set the all the internal methods of obj as specified in 8.12
-  
   
   // 8. Return obj.
   return obj;

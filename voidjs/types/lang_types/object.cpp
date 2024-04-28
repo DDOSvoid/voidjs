@@ -64,7 +64,7 @@ PropertyDescriptor Object::GetProperty(JSValue P) const {
   }
 
   // 3. Let proto be the value of the [[Prototype]] internal property of O.
-  auto proto = GetProtoType();
+  auto proto = GetPrototype();
 
   // 4. If proto is null, return undefined.
   if (proto.IsNull()) {
@@ -124,7 +124,7 @@ bool Object::CanPut(JSValue P) const {
   }
 
   // 3. Let proto be the [[Prototype]] internal property of O.
-  auto proto = GetProtoType();
+  auto proto = GetPrototype();
 
   // 4. If proto is null, then return the value of the [[Extensible]] internal property of O.
   if (proto.IsNull()) {

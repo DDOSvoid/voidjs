@@ -35,7 +35,7 @@ JSValue JSObject::GetPrototypeOf(RuntimeCallInfo* argv) {
   }
   
   // 2. Return the value of the [[Prototype]] internal property of O.
-  return O.GetHeapObject()->AsObject()->GetProtoType();
+  return O.GetHeapObject()->AsObject()->GetPrototype();
 }
 
 // Object.getOwnPropertyDescriptor(O, P)
@@ -88,7 +88,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   auto obj = ObjectFactory::NewJSObject(JSValue{});
   
   // 3. Set the [[Prototype]] internal property of obj to O.
-  obj->SetProtoType(O);
+  obj->SetPrototype(O);
   
   // 4. If the argument Properties is present and not undefined,
   //    add own properties to obj as if by calling the standard built-in function
@@ -383,7 +383,7 @@ JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
   // 3. Repeat
   while (true) {
     // a. Let V be the value of the [[Prototype]] internal property of V.
-    auto proto = V.GetHeapObject()->AsObject()->GetProtoType();
+    auto proto = V.GetHeapObject()->AsObject()->GetPrototype();
     
     // b. if V is null, return false
     if (proto.IsNull()) {

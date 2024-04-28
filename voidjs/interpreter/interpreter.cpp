@@ -1,7 +1,6 @@
 #include "voidjs/interpreter/interpreter.h"
 
 #include <cmath>
-#include <sched.h>
 #include <variant>
 #include <iostream>
 #include <functional>
@@ -12,6 +11,7 @@
 #include "voidjs/ir/statement.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
@@ -21,7 +21,11 @@
 #include "voidjs/types/spec_types/reference.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
 #include "voidjs/types/spec_types/environment_record.h"
+#include "voidjs/builtins/global_object.h"
+#include "voidjs/builtins/js_object.h"
+#include "voidjs/builtins/js_function.h"
 #include "voidjs/interpreter/execution_context.h"
+#include "voidjs/interpreter/string_table.h"
 
 namespace voidjs {
 
@@ -29,11 +33,64 @@ using namespace ast;
 using namespace types;
 
 Completion Interpreter::Execute(AstNode* ast_node) {
-  auto global_object = ObjectFactory::NewGlobalObject();
-  auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(JSValue(global_object), nullptr);
-  vm_ = new VM(global_object, global_env);
+  InitializeBuiltinObjects();
+  auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(JSValue(vm_->GetGlobalObject()), nullptr);
+  auto string_table = new StringTable();
+  
+  vm_->SetGlobalEnv(global_env);
+  vm_->SetStringTable(string_table);
+  
   EnterGlobalCode(ast_node);
   return EvalProgram(ast_node);
+}
+
+void Interpreter::InitializeBuiltinObjects() {
+  // Initialize GlobalObject
+  auto global_obj = ObjectFactory::NewGlobalObject();
+  vm_->SetGlobalObject(global_obj);
+
+  // Initialize Object Prototype
+  // The value of the [[Prototype]] internal property of the Object prototype object is null,
+  // the value of the [[Class]] internal property is "Object",
+  // and the initial value of the [[Extensible]] internal property is true.
+  auto obj_proto = ObjectFactory::NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
+  obj_proto->SetType(JSType::JS_OBJECT);
+  obj_proto->SetClassType(ObjectClassType::OBJECT);
+  obj_proto->SetPrototype(JSValue::Null());
+  obj_proto->SetExtensible(true);
+
+  // Initialzie Function Prototype
+  // The value of the [[Prototype]] internal property of the Function prototype object is
+  // the standard built-in Object prototype object (15.2.4).
+  // The initial value of the [[Extensible]] internal property of the Function prototype object is true.
+  // The Function prototype object does not have a valueOf property of its own;
+  // however, it inherits the valueOf property from the Object prototype Object.
+  auto func_proto = ObjectFactory::NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
+  func_proto->SetType(JSType::JS_FUNCTION);
+  func_proto->SetClassType(ObjectClassType::FUNCTION);
+  func_proto->SetPrototype(JSValue(obj_proto));
+  func_proto->SetExtensible(true);
+
+  // Initialize Object Constructor
+  // The value of the [[Prototype]] internal property of the Object constructor is
+  // the standard built-in Function prototype object.
+  // Besides the internal properties and the length property (whose value is 1),
+  // the Object constructor has the following properties:
+  auto obj_ctor = ObjectFactory::NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
+  obj_ctor->SetType(JSType::JS_OBJECT);
+  obj_ctor->SetClassType(ObjectClassType::OBJECT);
+  obj_ctor->SetPrototype(JSValue(func_proto));
+  
+  // Initialize Function Constructor
+  // The Function constructor is itself a Function object and its [[Class]] is "Function".
+  // The value of the [[Prototype]] internal property of the Function constructor is
+  // the standard built-in Function prototype object (15.3.4).
+  // The value of the [[Extensible]] internal property of the Function constructor is true.
+  auto func_ctor = ObjectFactory::NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
+  func_ctor->SetType(JSType::JS_FUNCTION);
+  func_ctor->SetClassType(ObjectClassType::FUNCTION);
+  func_ctor->SetPrototype(JSValue(func_proto));
+  func_ctor->SetExtensible(true);
 }
 
 void Interpreter::EnterGlobalCode(AstNode* ast_node) {

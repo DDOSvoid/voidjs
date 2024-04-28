@@ -7,6 +7,7 @@
 #include "voidjs/utils/helper.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
+#include "voidjs/types/object_class_type.h"
 
 namespace voidjs {
 namespace types {
@@ -24,6 +25,7 @@ class Binding;
 
 namespace builtins {
 
+class GlobalObject;
 class JSObject;
 class JSFunction;
 
@@ -31,23 +33,25 @@ class JSFunction;
 
 class HeapObject {
  public:
-  // meta data               64 bits
+  // meta data                         64 bits
   
-  // JSType type             8 bits
+  // enum JSType type                  8 bits
+  
+  // enum ObjectClassType class_type   8 bits 
 
   // Object internal properties
-  // bool extensible         1 bit
-  // bool callable           1 bit
-  // bool is_constructor     1 bit
+  // bool extensible                   1 bit
+  // bool callable                     1 bit
+  // bool is_constructor               1 bit
 
   // Property attributes
-  // bool writable           1 bit
-  // bool enumerable         1 bit
-  // bool configurable       1 bit
+  // bool writable                     1 bit
+  // bool enumerable                   1 bit
+  // bool configurable                 1 bit
 
   // Binding attributes
-  // bool deletable          1 bit
-  // bool mutable            1 bit
+  // bool deletable                    1 bit
+  // bool mutable                      1 bit
   
   static constexpr std::size_t META_DATA_OFFSET = 0;
   static constexpr std::size_t META_DATA_SIZE = sizeof(std::uint64_t);
@@ -58,35 +62,39 @@ class HeapObject {
   JSType GetType() const { return TypeBitSet::Get(*GetMetaData()); }
   void SetType(JSType type) { TypeBitSet::Set(GetMetaData(), type); }
 
-  using ExtensibleBitSet = utils::BitSet<bool, 8, 9>;
+  using ClassTypeBitSet = utils::BitSet<ObjectClassType, 8, 16>;
+  ObjectClassType GetClassType() const { return ClassTypeBitSet::Get(*GetMetaData()); }
+  void SetClassType(ObjectClassType type) { ClassTypeBitSet::Set(GetMetaData(), type); }
+
+  using ExtensibleBitSet = utils::BitSet<bool, 16, 17>;
   bool GetExtensible() const { return ExtensibleBitSet::Get(*GetMetaData()); }
   void SetExtensible(bool flag) { ExtensibleBitSet::Set(GetMetaData(), flag); }
 
-  using CallableBitSet = utils::BitSet<bool, 9, 10>;
+  using CallableBitSet = utils::BitSet<bool, 17, 18>;
   bool GetCallable() const { return CallableBitSet::Get(*GetMetaData()); }
   void SetCallable(bool flag) { CallableBitSet::Set(GetMetaData(), flag); }
 
-  using IsConstructorBitSet = utils::BitSet<bool, 10, 11>;
+  using IsConstructorBitSet = utils::BitSet<bool, 18, 19>;
   bool IsConstructor() const { return IsConstructorBitSet::Get(*GetMetaData()); }
   void SetIsConstructor(bool flag) { IsConstructorBitSet::Set(GetMetaData(), flag); }
   
-  using WritableBitSet = utils::BitSet<bool, 11, 12>;
+  using WritableBitSet = utils::BitSet<bool, 19, 20>;
   bool GetWritable() const { return WritableBitSet::Get(*GetMetaData()); }
   void SetWritable(bool flag) { WritableBitSet::Set(GetMetaData(), flag); }
 
-  using EnumerableBitSet = utils::BitSet<bool, 12, 13>;
+  using EnumerableBitSet = utils::BitSet<bool, 20, 21>;
   bool GetEnumerable() const { return EnumerableBitSet::Get(*GetMetaData()); }
   void SetEnumerable(bool flag) { EnumerableBitSet::Set(GetMetaData(), flag); }
 
-  using ConfigurableBitSet = utils::BitSet<bool, 13, 14>;
+  using ConfigurableBitSet = utils::BitSet<bool, 21, 22>;
   bool GetConfigurable() const { return ConfigurableBitSet::Get(*GetMetaData()); }
   void SetConfigurable(bool flag) { ConfigurableBitSet::Set(GetMetaData(), flag); }
 
-  using DeletableBitSet = utils::BitSet<bool, 14, 15>;
+  using DeletableBitSet = utils::BitSet<bool, 22, 23>;
   bool GetDeletable() const { return DeletableBitSet::Get(*GetMetaData()); }
   void SetDeletable(bool flag) { DeletableBitSet::Set(GetMetaData(), flag); }
 
-  using MutableBitSet = utils::BitSet<bool, 15, 16>;
+  using MutableBitSet = utils::BitSet<bool, 23, 24>;
   bool GetMutable() const { return MutableBitSet::Get(*GetMetaData()); }
   void SetMutable(bool flag) { MutableBitSet::Set(GetMetaData(), flag); }
 
@@ -103,6 +111,7 @@ class HeapObject {
   bool IsGenericPropertyDescriptor() const { return GetType() == JSType::GENERIC_PROPERTY_DESCRIPTOR; }
   bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
   bool IsBindgin() const { return GetType() == JSType::BINDING; }
+  bool IsGlobalObject() const { return GetType() == JSType::GLOBAL_OBJECT; }
   bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
   bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
 
@@ -115,6 +124,7 @@ class HeapObject {
   types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() { return reinterpret_cast<types::GenericPropertyDescriptor*>(this); }
   types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
   types::Binding* AsBinding() { return reinterpret_cast<types::Binding*>(this); }
+  builtins::GlobalObject* AsGlobalObject() { return reinterpret_cast<builtins::GlobalObject*>(this); }
   builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
   builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
 
@@ -127,6 +137,7 @@ class HeapObject {
   const types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() const { return reinterpret_cast<const types::GenericPropertyDescriptor*>(this); }
   const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
   const types::Binding* AsBinding() const { return reinterpret_cast<const types::Binding*>(this); }
+  const builtins::GlobalObject* AsGlobalObject() const { return reinterpret_cast<const builtins::GlobalObject*>(this); }
   const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
   const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }
 };

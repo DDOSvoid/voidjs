@@ -1,15 +1,20 @@
 #ifndef VOIDJS_BUILTINS_JS_FUNCTION_H
 #define VOIDJS_BUILTINS_JS_FUNCTION_H
 
+#include "voidjs/types/js_value.h"
 #include "voidjs/types/lang_types/object.h"
-#include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
+
+class RuntimeCallInfo;
+
 namespace builtins {
 
 class JSFunction : public types::Object {
  public:
 
+  static constexpr std::size_t SIZE = 0;
+  static constexpr std::size_t OFFSET = types::Object::OFFSET + SIZE;
   
   // The Function Constructor
   static JSValue FunctionConsturctor(RuntimeCallInfo* argv);

@@ -25,8 +25,8 @@ class Object : public HeapObject {
   void SetProperties(JSValue props) { *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET) = props; }
 
   static constexpr std::size_t PROTOTYPE_OFFSET = PROPERTIES_OFFSET + sizeof(JSValue);
-  JSValue GetProtoType() const { return *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET); }
-  void SetProtoType(JSValue proto) { *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET) = proto; }
+  JSValue GetPrototype() const { return *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET); }
+  void SetPrototype(JSValue proto) { *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET) = proto; }
 
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
   static constexpr std::size_t OFFSET = PROTOTYPE_OFFSET + sizeof(JSValue);

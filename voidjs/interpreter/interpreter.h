@@ -21,7 +21,12 @@ namespace voidjs {
 
 class Interpreter {
  public:
+  Interpreter()
+    : vm_(new VM{})
+  {}
+  
   types::Completion Execute(ast::AstNode* ast_node);
+  void InitializeBuiltinObjects();
   void EnterGlobalCode(ast::AstNode* ast_node);
   void EnterEvalCode();
   void EnterFunctionCode();

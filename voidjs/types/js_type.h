@@ -19,6 +19,7 @@ enum class JSType : std::uint8_t {
   BINDING,
 
   // standard builtin objects
+  GLOBAL_OBJECT,
   JS_OBJECT,
   JS_FUNCTION,
 };
