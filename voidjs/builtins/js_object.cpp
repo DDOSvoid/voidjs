@@ -57,7 +57,7 @@ JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
   auto name = JSValue::ToString(vm, P);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with argument name.
-  auto desc = O.GetHeapObject()->AsObject()->GetOwnProperty(vm, name);
+  auto desc = Object::GetOwnProperty(vm, O.GetHeapObject()->AsObject(), name);
   
   // 4. Return the result of calling FromPropertyDescriptor(desc) (8.10.4).
   return desc.FromPropertyDescriptor();
@@ -125,7 +125,7 @@ JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
   const auto& desc = types::PropertyDescriptor::ToPropertyDescriptor(Attributes);
   
   // 4. Call the [[DefineOwnProperty]] internal method of O with arguments name, desc, and true.
-  O.GetHeapObject()->AsObject()->DefineOwnProperty(vm, name, desc, true);
+  Object::DefineOwnProperty(vm, O.GetHeapObject()->AsObject(), name, desc, true);
   
   // 5. Return O.
   return O; 
@@ -364,7 +364,7 @@ JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
   auto O = JSValue::ToString(vm, this_obj);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
-  auto desc = O.GetHeapObject()->AsObject()->GetOwnProperty(vm, P);
+  auto desc = Object::GetOwnProperty(vm, O.GetHeapObject()->AsObject(), P);
   
   // 4. If desc is undefined, return false.
   if (desc.IsEmpty()) {
@@ -420,7 +420,7 @@ JSValue JSObject::PropertyIsEnumerable(RuntimeCallInfo* argv) {
   auto O = JSValue::ToObject(vm, this_obj);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
-  auto desc = O->GetOwnProperty(vm, P);
+  auto desc = Object::GetOwnProperty(vm, O, P);
   
   // 4. If desc is undefined, return false.
   if (desc.IsEmpty()) {

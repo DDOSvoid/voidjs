@@ -109,7 +109,7 @@ bool ObjectEnvironmentRecord::HasBinding(VM* vm, String* N) const {
   // 1. Let envRec be the object environment record for which the method was invoked.
   // 2. Let bindings be the binding object for envRec.
   // 3. Return the result of calling the [[HasProperty]] internal method of bindings, passing N as the property name.
-  return object_->HasProperty(vm, JSValue(N));
+  return Object::HasProperty(vm, object_, JSValue(N));
 }
 
 void ObjectEnvironmentRecord::CreateMutableBinding(VM* vm, String* N, bool D) {
@@ -122,7 +122,7 @@ void ObjectEnvironmentRecord::CreateMutableBinding(VM* vm, String* N, bool D) {
   // 5. Call the [[DefineOwnProperty]] internal method of bindings,
   //    passing N, Property Descriptor {[[Value]]:undefined, [[Writable]]: true,
   //    [[Enumerable]]: true , [[Configurable]]: configValue}, and true as arguments.
-  object_->DefineOwnProperty(vm, JSValue(N),
+  Object::DefineOwnProperty(vm, object_, JSValue(N),
                              PropertyDescriptor(JSValue::Undefined(), true, true, config_value),
                              true);
 }
@@ -131,14 +131,14 @@ void ObjectEnvironmentRecord::SetMutableBinding(VM* vm, String* N, JSValue V, bo
   // 1. Let envRec be the object environment record for which the method was invoked.
   // 2. Let bindings be the binding object for envRec.
   // 3. Call the [[Put]] internal method of bindings with arguments N, V, and S.
-  object_->Put(vm, JSValue(N), V, S);
+  Object::Put(vm, object_, JSValue(N), V, S);
 }
 
 JSValue ObjectEnvironmentRecord::GetBindingValue(VM* vm, String* N, bool S) const {
   // 1. Let envRec be the object environment record for which the method was invoked.
   // 2. Let bindings be the binding object for envRec.
   // 3. Let value be the result of calling the [[HasProperty]] internal method of bindings, passing N as the property name.
-  auto value = object_->HasProperty(vm, JSValue(N));
+  auto value = Object::HasProperty(vm, object_, JSValue(N));
   
   // 4. If value is false, then
   if (!value) {
@@ -151,14 +151,14 @@ JSValue ObjectEnvironmentRecord::GetBindingValue(VM* vm, String* N, bool S) cons
   }
   
   // 5. Return the result of calling the [[Get]] internal method of bindings, passing N for the argument.
-  return object_->Get(vm, JSValue(N));
+  return Object::Get(vm, object_, JSValue(N));
 }
 
 bool ObjectEnvironmentRecord::DeleteBinding(VM* vm, String *N) {
   // 1. Let envRec be the object environment record for which the method was invoked.
   // 2. Let bindings be the binding object for envRec.
   // 3. Return the result of calling the [[Delete]] internal method of bindings, passing N and false as arguments.
-  return object_->Delete(vm, JSValue(N), false);
+  return Object::Delete(vm, object_, JSValue(N), false);
 }
 
 JSValue ObjectEnvironmentRecord::ImplicitThisValue(VM* vm) const {

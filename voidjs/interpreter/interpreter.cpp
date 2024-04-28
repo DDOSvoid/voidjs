@@ -1825,7 +1825,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     //    W for the value, and false for the Throw flag.
     else {
       auto global_obj = vm_->GetGlobalObject();
-      global_obj->Put(vm_, JSValue(ref->GetReferencedName()), W, false);
+      Object::Put(vm_, global_obj, JSValue(ref->GetReferencedName()), W, false);
     }
   }
   // 4. Else if IsPropertyReference(V), then
@@ -1838,7 +1838,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     //    W for the value, and IsStrictReference(V) for the Throw flag.
     if (!ref->HasPrimitiveBase()) {
       auto base_obj = std::get<JSValue>(base).GetHeapObject()->AsObject();
-      base_obj->Put(vm_, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
+      Object::Put(vm_, base_obj, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
     } else {
       auto base_prim = std::get<JSValue>(base);
       Put(base_prim, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
@@ -1864,7 +1864,7 @@ void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
   auto O = JSValue::ToObject(vm_, base);
 
   // 2. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
-  if (!O->CanPut(vm_, P)) {
+  if (!Object::CanPut(vm_, O, P)) {
     // a. If Throw is true, then throw a TypeError exception.
     if (Throw) {
       // todo
@@ -1876,7 +1876,7 @@ void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
   }
 
   // 3. Let ownDesc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
-  auto own_desc = O->GetOwnProperty(vm_, P);
+  auto own_desc = Object::GetOwnProperty(vm_, O, P);
 
   // 4. If IsDataDescriptor(ownDesc) is true, then
   if (own_desc.IsDataDescriptor()) {
@@ -1892,7 +1892,7 @@ void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
 
   // 5. Let desc be the result of calling the [[GetProperty]] internal method of O with argument P.
   //    This may be either an own or inherited accessor property descriptor or an inherited data property descriptor.
-  auto desc = O->GetProperty(vm_, P);
+  auto desc = Object::GetProperty(vm_, O, P);
 
   // 6. If IsAccessorDescriptor(desc) is true, then
   if (desc.IsAccessorDescriptor()) {
