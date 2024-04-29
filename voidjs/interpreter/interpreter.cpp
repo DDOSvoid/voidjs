@@ -18,6 +18,7 @@
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/spec_types/completion.h"
+#include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/spec_types/reference.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
 #include "voidjs/types/spec_types/environment_record.h"
@@ -68,6 +69,8 @@ void Interpreter::InitializeBuiltinObjects() {
   obj_proto->SetPrototype(JSValue::Null());
   obj_proto->SetExtensible(true);
 
+  vm_->SetObjectPrototype(obj_proto);
+
   // Initialzie Function Prototype
   // The value of the [[Prototype]] internal property of the Function prototype object is
   // the standard built-in Object prototype object (15.2.4).
@@ -89,6 +92,7 @@ void Interpreter::InitializeBuiltinObjects() {
   obj_ctor->SetType(JSType::JS_OBJECT);
   obj_ctor->SetClassType(ObjectClassType::OBJECT);
   obj_ctor->SetPrototype(JSValue(func_proto));
+  obj_ctor->SetExtensible(true);
   
   // Initialize Function Constructor
   // The Function constructor is itself a Function object and its [[Class]] is "Function".
@@ -783,7 +787,7 @@ std::variant<JSValue, Reference> Interpreter::EvalPostfixExpression(PostfixExpre
 // Defined in ECMAScript 5.1 Chapter 11.2
 std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpression* mem_expr) {
   // MemberExpression : MemberExpression [ Expression ]
-  // MemberExpression . IdentifierName
+  // MemberExpression : MemberExpression . IdentifierName
   
   // 1. Let baseReference be the result of evaluating MemberExpression.
   auto base_ref = EvalExpression(mem_expr->GetObject());
@@ -792,7 +796,16 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   auto base_val = GetValue(base_ref);
 
   // 3. Let propertyNameReference be the result of evaluating Expression.
-  auto prop_name_ref = EvalExpression(mem_expr->GetProperty());
+  // todo
+  auto prop_name_ref =
+    std::invoke([*this](Expression* expr, bool is_dot) mutable -> std::variant<JSValue, Reference> {
+    if (is_dot) {
+      auto factory = vm_->GetObjectFactory();
+      return JSValue(factory->NewStringFromTable(expr->AsIdentifier()->GetName()));
+    } else {
+      return EvalExpression(expr);
+    }
+  }, mem_expr->GetProperty(), mem_expr->IsDot());
 
   // 4. Let propertyNameValue be GetValue(propertyNameReference).
   auto prop_name_val = GetValue(prop_name_ref);
@@ -817,9 +830,20 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
 // EvalObjectLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1.5
 JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
+  auto factory = vm_->GetObjectFactory();
+  
+  const auto& props = object->GetProperties();
+  
   // ObjectLiteral : { }
   // 1. Return a new object created as if by the expression
   //    new Object() where Object is the standard built-in constructor with that name.
+  if (props.empty()) {
+    return JSValue(factory->NewJSObject(JSValue{}));
+  }
+
+  // ObjectLiteral : { PropertyNameAndValueList }
+  // 1. Return the result of evaluating PropertyNameAndValueList.
+  return EvalPropertyNameAndValueList(props);
 }
 
 // Eval NullLiteral
@@ -916,6 +940,98 @@ JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
 
   // 5. Return a String value containing the same sequence of characters as in the Identifier.
   return JSValue(vm_->GetObjectFactory()->NewStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()));
+}
+
+// EvalPropertyNameAndValueList
+// Defined in ECMAScript 5.1 Chapter 11.1.5
+JSValue Interpreter::EvalPropertyNameAndValueList(const ast::Properties& props) {
+  auto factory = vm_->GetObjectFactory();
+  
+  // PropertyNameAndValueList : PropertyNameAndValueList , PropertyAssignment
+
+  // 1. Let obj be the result of evaluating PropertyNameAndValueList.
+  auto obj = factory->NewJSObject(JSValue{});
+
+  for (auto prop : props) {
+    // 2. Let propId be the result of evaluating PropertyAssignment.
+    auto [prop_id_name, prop_id_desc] = EvalPropertyAssignment(prop);
+    
+    // 3. Let previous be the result of calling the [[GetOwnProperty]] internal method of obj with argument propId.name.
+    auto previous = Object::GetOwnProperty(vm_, obj, JSValue(prop_id_name));
+    
+    // 4. If previous is not undefined then throw a SyntaxError exception if any of the following conditions are true
+    if (!previous.IsEmpty()) {
+      // a. This production is contained in strict code and IsDataDescriptor(previous) is true and
+      //    IsDataDescriptor(propId.descriptor) is true.
+      // b. IsDataDescriptor(previous) is true and IsAccessorDescriptor(propId.descriptor) is true.
+      // c. IsAccessorDescriptor(previous) is true and IsDataDescriptor(propId.descriptor) is true.
+      // d. IsAccessorDescriptor(previous) is true and IsAccessorDescriptor(propId.descriptor) is true and
+      //    either both previous and propId.descriptor have [[Get]] fields or
+      //    both previous and propId.descriptor have [[Set]] fields
+      // todo
+    }
+
+    // 5. Call the [[DefineOwnProperty]] internal method of obj with arguments propId.name, propId.descriptor, and false.
+    Object::DefineOwnProperty(vm_, obj, JSValue(prop_id_name), prop_id_desc, false);
+  }
+  
+  // 6. Return obj.
+  return JSValue(obj);
+}
+
+// EvalPropAssignment
+// Defined in ECMAScript 5.1 Chapter 11.1.5
+std::pair<String*, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::Property* prop) {
+  auto factory = vm_->GetObjectFactory();
+  
+  if (prop->GetPropertyType() == PropertyType::INIT) {
+    // PropertyAssignment : PropertyName : AssignmentExpression
+    
+    // 1. Let propName be the result of evaluating PropertyName.
+    auto prop_name = std::invoke([vm = vm_, factory](Expression* name) {
+      if (name->IsIdentifier()) {
+        return factory->NewStringFromTable(name->AsIdentifier()->GetName());
+      } else if (name->IsNumericLiteral()) {
+        // todo
+        return JSValue::NumberToString(vm, name->AsNumericLiteral()->GetNumber<double>());
+      } else {
+        // name.IsStringLiteral must be true
+        return factory->NewStringFromTable(name->AsStringLiteral()->GetString());
+      }
+    }, prop->GetKey());
+    
+    // 2. Let exprValue be the result of evaluating AssignmentExpression.
+    auto expr_value = EvalExpression(prop->GetValue());
+    
+    // 3. Let propValue be GetValue(exprValue).
+    auto prop_value = GetValue(expr_value);
+    
+    // 4. Let desc be the Property Descriptor{[[Value]]: propValue, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}
+    auto desc = PropertyDescriptor(prop_value, true, true, true);
+    
+    // 5. Return Property Identifier (propName, desc).
+    return std::make_pair(prop_name, desc);
+  } else if (prop->GetPropertyType() == PropertyType::GET) {
+    // PropertyAssignment : PropertyName : AssignmentExpression
+
+    // 1. Let propName be the result of evaluating PropertyName.
+    auto prop_name = EvalExpression(prop->GetKey());
+    
+    // 2. Let closure be the result of creating a new Function object as specified in 13.2
+    //    with an empty parameter list and body specified by FunctionBody.
+    //    Pass in the LexicalEnvironment of the running execution context as the Scope.
+    //    Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
+    // 3. Let desc be the Property Descriptor{[[Get]]: closure, [[Enumerable]]: true, [[Configurable]]: true}
+    // 4. Return Property Identifier (propName, desc).
+  } else {
+    // PropertyAssignment : set PropertyName ( PropertySetParameterList ) { FunctionBody }
+
+    // 1. Let propName be the result of evaluating PropertyName.
+    // 2. Let closure be the result of creating a new Function object as specified in 13.2 with parameters specified by PropertySetParameterList and body specified by FunctionBody. Pass in the LexicalEnvironment of the running execution context as the Scope. Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
+    // 3. Let desc be the Property Descriptor{[[Set]]: closure, [[Enumerable]]: true, [[Configurable]]: true}
+    // 4. Return Property Identifier (propName, desc).
+  }
+  
 }
 
 // ApplyCompoundAssignment
@@ -1783,13 +1899,17 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
 
   // 4. If IsPropertyReference(V), then
   if (ref.IsPropertyReference()) {
-    // todo
     // a. If HasPrimitiveBase(V) is false,
     //    then let get be the [[Get]] internal method of base,
     //    otherwise let get be the special [[Get]] internal method defined below.
-
     // b. Return the result of calling the get internal method
     //    using base as its this value, and passing GetReferencedName(V) for the argument.
+    auto base_val = std::get<JSValue>(base);
+    if (!ref.HasPrimitiveBase()) {
+      return Object::Get(vm_, base_val.GetHeapObject()->AsObject(), JSValue(ref.GetReferencedName()));
+    } else {
+      return GetUsedByGetValue(base_val, ref.GetReferencedName());
+    }
   }
   // 5. Else, base must be an environment record.
   else { 
@@ -1798,6 +1918,38 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
     auto env = std::get<EnvironmentRecord*>(base);
     return env->GetBindingValue(vm_, ref.GetReferencedName(), ref.IsStrictReference());
   }
+}
+
+// GetUsedByGetValue
+// Defined in ECMAScript 5.1 Chapter 8.71.
+JSValue Interpreter::GetUsedByGetValue(JSValue base, String* P) {
+  // 1. Let O be ToObject(base).
+  auto O = JSValue::ToObject(vm_, JSValue(base));
+  
+  // 2. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
+  auto desc = Object::GetProperty(vm_, O, JSValue(P));
+  
+  // 3. If desc is undefined, return undefined.
+  // todo
+  if (desc.IsEmpty()) {
+    return JSValue::Undefined();
+  }
+  
+  // 4. If IsDataDescriptor(desc) is true, return desc.[[Value]].
+  if (desc.IsDataDescriptor()) {
+    return desc.GetValue();
+  }
+  
+  // 5. Otherwise, IsAccessorDescriptor(desc) must be true so, let getter be desc.[[Get]].
+  auto getter = desc.GetGetter();
+  
+  // 6. If getter is undefined, return undefined.
+  if (getter.IsUndefined()) {
+    return getter;
+  }
+  
+  // 7. Return the result calling the [[Call]] internal method of getter providing base as the this value and providing no arguments.
+  // todo
 }
 
 // PutValue
@@ -1841,7 +1993,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
       Object::Put(vm_, base_obj, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
     } else {
       auto base_prim = std::get<JSValue>(base);
-      Put(base_prim, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
+      PutUsedByPutValue(base_prim, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
     }
 
   }
@@ -1856,10 +2008,10 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
   // 6. Return
 }
 
-// Put
+// PutUsedByPutValue
 // Defined in ECMAScript 5.1 Chapter 8.7.2
 // used by PutValue when V is a property reference with primitive base value
-void Interpreter::Put(JSValue base, JSValue P, JSValue W, bool Throw) {
+void Interpreter::PutUsedByPutValue(JSValue base, JSValue P, JSValue W, bool Throw) {
   // 1. Let O be ToObject(base).
   auto O = JSValue::ToObject(vm_, base);
 

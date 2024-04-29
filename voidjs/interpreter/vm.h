@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/interpreter/execution_context.h"
 
@@ -25,9 +26,13 @@ class VM {
 
   ObjectFactory* GetObjectFactory() const { return object_factory_; }
   void SetObjectFactory(ObjectFactory* object_factory) { object_factory_ = object_factory; }
+
+  builtins::JSObject* GetObjectPrototype() const { return object_proto_; }
+  void SetObjectPrototype(builtins::JSObject* object_proto) { object_proto_ = object_proto; }
   
  private:
   builtins::GlobalObject* global_obj_;
+  builtins::JSObject* object_proto_;
   types::LexicalEnvironment* global_env_;
   std::vector<ExecutionContext*> execution_ctxs_;
   ObjectFactory* object_factory_; 

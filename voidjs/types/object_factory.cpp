@@ -77,6 +77,7 @@ String* ObjectFactory::NewStringFromTable(std::u16string_view source) {
 Object* ObjectFactory::NewObject(JSValue proto) {
   auto obj = NewHeapObject(Object::SIZE)->AsObject();
 
+  obj->SetType(JSType::OBJECT);
   obj->SetProperties(JSValue(NewPropertyMap()));
   obj->SetPrototype(proto);
   
@@ -171,7 +172,8 @@ JSObject* ObjectFactory::NewJSObject(JSValue value) {
   // 3. Let obj be a newly created native ECMAScript object.
   // 4. Set the [[Prototype]] internal property of obj t to the standard built-in Object prototype object (15.2.4).
   // todo
-  auto obj = NewObject(JSValue::Null())->AsJSObject();
+  auto obj = NewObject(JSValue(vm_->GetObjectPrototype()))->AsJSObject();
+  obj->SetType(JSType::JS_OBJECT);
   
   // 5 .Set the [[Class]] internal property of obj to "Object".
   obj->SetClassType(ObjectClassType::OBJECT);

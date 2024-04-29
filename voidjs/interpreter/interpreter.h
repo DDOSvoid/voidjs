@@ -64,7 +64,9 @@ class Interpreter {
   
   types::Completion EvalStatementList(const ast::Statements& stmts);
   void EvalVariableDeclarationList(const ast::VariableDeclarations& decls);
-  JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl); 
+  JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl);
+  JSValue EvalPropertyNameAndValueList(const ast::Properties& props);
+  std::pair<types::String*, types::PropertyDescriptor> EvalPropertyAssignment(ast::Property* prop);
   
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
@@ -83,8 +85,9 @@ class Interpreter {
   JSValue AbstractRelationalComparison(JSValue x, JSValue y, bool left_first); 
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
+  JSValue GetUsedByGetValue(JSValue base, types::String* P);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
-  void Put(JSValue base, JSValue P, JSValue W, bool Throw);
+  void PutUsedByPutValue(JSValue base, JSValue P, JSValue W, bool Throw);
 
   VM* GetVM() const { return vm_; }
 

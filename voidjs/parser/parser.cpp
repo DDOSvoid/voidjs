@@ -1,4 +1,7 @@
 #include "voidjs/parser/parser.h"
+
+#include <iostream>
+
 #include "voidjs/lexer/character.h"
 #include "voidjs/lexer/token.h"
 #include "voidjs/ir/ast.h"
@@ -9,7 +12,7 @@
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/utils/error.h"
 #include "voidjs/utils/helper.h"
-#include <initializer_list>
+
 
 namespace voidjs {
 
@@ -49,6 +52,7 @@ Program* Parser::ParseProgram() {
       }
     } catch(const utils::Error& e) {
       error_ = e;
+      std::cout << e.GetMessage() << std::endl;
       return nullptr;
     }
   }
@@ -812,14 +816,14 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
           ThrowSyntaxError("expects a ']'");
         }
         lexer_.NextToken();
-        callee = new MemberExpression(callee, expr);
+        callee = new MemberExpression(callee, expr, false);
         break;
       }
       case TokenType::DOT: {
         lexer_.NextToken();
         if (lexer_.GetToken().IsIdentifierName()) {
           auto ident = ParseIdentifier();
-          callee = new MemberExpression(callee, ident);
+          callee = new MemberExpression(callee, ident, true);
         } else {
           ThrowSyntaxError("expects identifier_name");
         }
@@ -1223,6 +1227,7 @@ Expression* Parser::ParseObjectLiteral() {
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
     ThrowSyntaxError("expects a '}'");
   }
+  lexer_.NextToken();
 
   return new ObjectLiteral(std::move(props));
 }

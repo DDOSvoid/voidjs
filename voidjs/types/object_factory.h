@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 
@@ -57,6 +58,7 @@ class ObjectFactory {
 
   types::Object* NewEmptyObject(std::size_t extra_size);
   builtins::JSObject* NewJSObject(JSValue value);
+  builtins::JSFunction* NewJSFunction(JSValue value);
 
  private:
   VM* vm_;

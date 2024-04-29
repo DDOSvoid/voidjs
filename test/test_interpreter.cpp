@@ -1,6 +1,7 @@
+#include "gtest/gtest.h"
+
 #include <cstdint>
 
-#include "gtest/gtest.h"
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
@@ -8,6 +9,7 @@
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/builtins/js_object.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/utils/helper.h"
 
@@ -177,6 +179,27 @@ count;
     ASSERT_TRUE(comp.GetValue().IsInt());
     EXPECT_EQ(43, comp.GetValue().GetInt());
   }
+}
+
+TEST(Interpreter, EvalMemberExpression) {
+  Parser parser(uR"(
+var obj = {
+    1      : 42,
+    'name' : -2,
+    value  : 43,
+};
+obj[1] + obj['value'] + obj.name;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsInt());
+  EXPECT_EQ(83, comp.GetValue().GetInt());
 }
 
 TEST(Interpreter, EvalPostfixExpression) {
@@ -378,4 +401,50 @@ TEST(Intepreter, EvalStringLiteral) {
   ASSERT_TRUE(str.IsString());
 
   EXPECT_EQ(u"Hello, World!", str.GetHeapObject()->AsString()->GetString());
+}
+
+TEST(Interpreter, EvalObjectLiteral) {
+  {
+    Parser parser(u"{}");
+
+    Interpreter interpreter;
+    auto vm = interpreter.GetVM();
+
+    auto ast_node = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(ast_node->IsObjectLiteral());
+
+    auto obj = interpreter.EvalObjectLiteral(ast_node->AsObjectLiteral());
+    ASSERT_TRUE(obj.IsObject());
+    EXPECT_TRUE(JSValue(vm->GetObjectPrototype()) == obj.GetHeapObject()->AsJSObject()->GetPrototype());
+  }
+
+  {
+    Parser parser(uR"(
+{
+    1      : 42,
+    name   : 'Test',
+    value  : 43,
+}
+)");
+
+    Interpreter interpreter;
+    auto vm = interpreter.GetVM();
+    auto factory = vm->GetObjectFactory();
+
+    auto ast_node = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(ast_node->IsObjectLiteral());
+
+    auto obj_val = interpreter.EvalObjectLiteral(ast_node->AsObjectLiteral());
+    ASSERT_TRUE(obj_val.IsObject());
+    ASSERT_TRUE(obj_val.GetHeapObject()->IsJSObject());
+
+    auto obj = obj_val.GetHeapObject()->AsJSObject();
+
+    {
+      auto key = factory->NewStringFromTable(u"1");
+      auto prop = types::Object::GetProperty(vm, obj, JSValue(key));
+      ASSERT_TRUE(prop.GetValue().IsInt());
+      EXPECT_EQ(42, prop.GetValue().GetInt());
+    }
+  }
 }

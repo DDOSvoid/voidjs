@@ -58,17 +58,19 @@ class CallExpression : public Expression {
 
 class MemberExpression : public Expression {
  public:
-  MemberExpression(Expression* object, Expression* property)
+  MemberExpression(Expression* object, Expression* property, bool is_dot)
     : Expression(AstNodeType::MEMBER_EXPRESSION),
-      object_(object), property_(property)
+      object_(object), property_(property), is_dot_(is_dot)
   {}
 
   Expression* GetObject() const { return object_; }
   Expression* GetProperty() const { return property_; }
+  bool IsDot() const { return is_dot_; }
 
  private:
   Expression* object_;
   Expression* property_;
+  bool is_dot_ {false};
 };
 
 class PostfixExpression : public Expression {
@@ -253,7 +255,7 @@ class Property : public Expression {
       type_(type), key_(key), value_(value)
   {}
 
-  PropertyType GetType() const { return type_; }
+  PropertyType GetPropertyType() const { return type_; }
   Expression* GetKey() const { return key_; }
   Expression* GetValue() const { return value_; }
   
