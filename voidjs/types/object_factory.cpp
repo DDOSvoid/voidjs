@@ -161,7 +161,9 @@ JSObject* ObjectFactory::NewJSObject(JSValue value) {
     // a .If Type(value) is Object, then
     if (value.IsObject()) {
       // i. If the value is a native ECMAScript object, do not create a new object but simply return value.
-      // todo
+      if (value.GetHeapObject()->IsJSObject()) {
+        return value.GetHeapObject()->AsJSObject();
+      }
       
       // ii. If the value is a host object, then actions are taken and
       //     a result is returned in an implementation-dependent manner that may depend on the host object.

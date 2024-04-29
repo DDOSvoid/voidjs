@@ -55,17 +55,12 @@ JSObject* JSObject::Construct(VM* vm, JSValue value) {
 
 // Object([value])
 // Defined in ECMAScript 5.1 Chapter 15.2.1.1
-// todo
-JSValue JSObject::ObjectConstructor(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto factory = vm->GetObjectFactory();
-  auto value = argv->GetArg(0);
-  
+JSValue JSObject::Call(VM* vm, JSValue value) {
   // 1. If value is null, undefined or not supplied,
   //    create and return a new Object object exactly as if
   //    the standard built-in Object constructor had been called with the same arguments (15.2.2.1).
   if (value.IsNull() || value.IsUndefined() || value.IsEmpty()) {
-    return JSValue(factory->NewJSObject(value));
+    return JSValue(Construct(vm, value));
   }
 
   // 2. Return ToObject(value).

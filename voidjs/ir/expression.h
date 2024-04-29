@@ -51,6 +51,9 @@ class CallExpression : public Expression {
       callee_(callee), arguments_(std::move(arguments))
   {}
 
+  Expression* GetCallee() const { return callee_; }
+  const Expressions& GetArguments() const { return arguments_; }
+
  private:
   Expression* callee_;
   Expressions arguments_;

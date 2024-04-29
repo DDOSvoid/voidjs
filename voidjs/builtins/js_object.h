@@ -17,7 +17,7 @@ class JSObject : public types::Object {
 
   // The Object Constructor
   static JSObject* Construct(VM* vm, JSValue value);
-  static JSValue ObjectConstructor(RuntimeCallInfo* argv);
+  static JSValue Call(VM* vm, JSValue value);
 
   // Function properties of the Object Constructor
   // Defined in ECMAScript 5.1 Chapter 15.2.3

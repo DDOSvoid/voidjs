@@ -500,10 +500,18 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
 }
 
 // Construct
-// Only used for forwarding to concrete [[Construct]
+// Only used for forwarding to concrete [[Construct]]
 JSValue Object::Construct(VM* vm, Object* O, const std::vector<JSValue>& args) {
   if (O->IsJSObject()) {
     return JSValue(builtins::JSObject::Construct(vm, args.empty() ? JSValue{} : args[0]));
+  }
+}
+
+// Call
+// Only used for forwarding to concrete [[Call]]
+JSValue Object::Call(VM* vm, Object* O, JSValue this_value, const std::vector<JSValue>& args) {
+  if (O->IsJSObject()) {
+    return builtins::JSObject::Call(vm, args.empty() ? JSValue{} : args[0]);
   }
 }
 

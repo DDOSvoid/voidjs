@@ -92,6 +92,8 @@ void Interpreter::InitializeBuiltinObjects() {
   obj_ctor->SetClassType(ObjectClassType::OBJECT);
   obj_ctor->SetPrototype(JSValue(func_proto));
   obj_ctor->SetExtensible(true);
+  
+  obj_ctor->SetCallable(true);
 
   vm_->SetObjectConstructor(obj_ctor);
   
@@ -621,6 +623,9 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
     case AstNodeType::NEW_EXPRESSION: {
       return EvalNewExpression(expr->AsNewExpression());
     }
+    case AstNodeType::CALL_EXPRESSION: {
+      return EvalCallExpression(expr->AsCallExpression());
+    }
     case AstNodeType::OBJECT_LITERAL: {
       return EvalObjectLiteral(expr->AsObjectLiteral());
     }
@@ -891,6 +896,56 @@ std::variant<JSValue, types::Reference> Interpreter::EvalNewExpression(ast::NewE
   // 6. Return the result of calling the [[Construct]] internal method on constructor,
   //    providing the list argList as the argument values.
   return Object::Construct(vm_, ctor.GetHeapObject()->AsObject(), arg_list);
+}
+
+// EvalCallExpression
+// Defined in ECMAScript 5.1 Chapter 11.2.3
+std::variant<JSValue, Reference> Interpreter::EvalCallExpression(CallExpression* call_expr) {
+  // CallExpression : MemberExpression Arguments
+
+  // 1. Let ref be the result of evaluating MemberExpression.
+  auto ref = EvalExpression(call_expr->GetCallee());
+  
+  // 2. Let func be GetValue(ref).
+  auto func = GetValue(ref);
+  
+  // 3. Let argList be the result of evaluating Arguments, producing an internal list of argument values (see 11.2.4).
+  auto arg_list = EvalArgumentList(call_expr->GetArguments());
+  
+  // 4. If Type(func) is not Object, throw a TypeError exception.
+  if (!func.IsObject()) {
+    // todo
+  }
+  
+  // 5. If IsCallable(func) is false, throw a TypeError exception.
+  if (!func.IsCallable()) {
+    // todo
+  }
+
+  JSValue this_value {};
+  
+  // 6. If Type(ref) is Reference, then
+  if (auto pref = std::get_if<Reference>(&ref)) {
+    // a. If IsPropertyReference(ref) is true, then
+    if (pref->IsPropertyReference()) {
+      // i. Let thisValue be GetBase(ref).
+      this_value = std::get<JSValue>(pref->GetBase());
+    }
+    // b. Else, the base of ref is an Environment Record
+    else {
+      // i. Let thisValue be the result of calling the ImplicitThisValue concrete method of GetBase(ref).
+      this_value = std::get<EnvironmentRecord*>(pref->GetBase())->ImplicitThisValue(vm_);
+    }
+  }
+  // 7. Else, Type(ref) is not Reference.
+  else {
+    // a. Let thisValue be undefined.
+    this_value = JSValue::Undefined();
+  }
+  
+  // 8. Return the result of calling the [[Call]] internal method on func,
+  //    providing thisValue as the this value and providing the list argList as the argument values.
+  return Object::Call(vm_, func.GetHeapObject()->AsObject(), this_value, arg_list);
 }
 
 // EvalArgumentList

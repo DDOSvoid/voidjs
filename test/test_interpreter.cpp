@@ -240,6 +240,29 @@ obj2["value"];
   }
 }
 
+
+TEST(Interpreter, EvalCallExpression) {
+  {
+    Parser parser(uR"(
+var obj1 = {
+    value : 42,
+};
+var obj2 = Object(obj1);
+obj2["value"];
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(42, comp.GetValue().GetInt());
+  }
+}
+
 TEST(Interpreter, EvalPostfixExpression) {
   Parser parser(uR"(
 var i = 14.2857;

@@ -39,7 +39,6 @@ class Interpreter {
   void EnterFunctionCode();
   void DeclarationBindingInstantiation(ast::AstNode* ast_node);
 
-
   types::Completion EvalProgram(ast::AstNode* ast_node);
 
   types::Completion EvalStatement(ast::Statement* stmt);
@@ -63,6 +62,7 @@ class Interpreter {
   std::variant<JSValue, types::Reference> EvalPostfixExpression(ast::PostfixExpression* post_expr);
   std::variant<JSValue, types::Reference> EvalMemberExpression(ast::MemberExpression* mem_expr);
   std::variant<JSValue, types::Reference> EvalNewExpression(ast::NewExpression* new_expr);
+  std::variant<JSValue, types::Reference> EvalCallExpression(ast::CallExpression* call_expr);
   JSValue EvalObjectLiteral(ast::ObjectLiteral* object); 
   JSValue EvalNullLiteral(ast::NullLiteral* nul);
   JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
