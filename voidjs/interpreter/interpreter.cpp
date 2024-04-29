@@ -824,7 +824,7 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   // 8. Return a value of type Reference
   //    whose base value is baseValue and whose referenced name is propertyNameString,
   //    and whose strict mode flag is strict.
-  return Reference(base_val, prop_name_str.GetHeapObject()->AsString(), strict);
+  return Reference(base_val, prop_name_str, strict);
 }
 
 // EvalObjectLiteral
@@ -957,7 +957,7 @@ JSValue Interpreter::EvalPropertyNameAndValueList(const ast::Properties& props) 
     auto [prop_id_name, prop_id_desc] = EvalPropertyAssignment(prop);
     
     // 3. Let previous be the result of calling the [[GetOwnProperty]] internal method of obj with argument propId.name.
-    auto previous = Object::GetOwnProperty(vm_, obj, JSValue(prop_id_name));
+    auto previous = Object::GetOwnProperty(vm_, obj, prop_id_name);
     
     // 4. If previous is not undefined then throw a SyntaxError exception if any of the following conditions are true
     if (!previous.IsEmpty()) {
@@ -972,7 +972,7 @@ JSValue Interpreter::EvalPropertyNameAndValueList(const ast::Properties& props) 
     }
 
     // 5. Call the [[DefineOwnProperty]] internal method of obj with arguments propId.name, propId.descriptor, and false.
-    Object::DefineOwnProperty(vm_, obj, JSValue(prop_id_name), prop_id_desc, false);
+    Object::DefineOwnProperty(vm_, obj, prop_id_name, prop_id_desc, false);
   }
   
   // 6. Return obj.
@@ -1906,7 +1906,7 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
     //    using base as its this value, and passing GetReferencedName(V) for the argument.
     auto base_val = std::get<JSValue>(base);
     if (!ref.HasPrimitiveBase()) {
-      return Object::Get(vm_, base_val.GetHeapObject()->AsObject(), JSValue(ref.GetReferencedName()));
+      return Object::Get(vm_, base_val.GetHeapObject()->AsObject(), ref.GetReferencedName());
     } else {
       return GetUsedByGetValue(base_val, ref.GetReferencedName());
     }
@@ -1927,7 +1927,7 @@ JSValue Interpreter::GetUsedByGetValue(JSValue base, String* P) {
   auto O = JSValue::ToObject(vm_, JSValue(base));
   
   // 2. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
-  auto desc = Object::GetProperty(vm_, O, JSValue(P));
+  auto desc = Object::GetProperty(vm_, O, P);
   
   // 3. If desc is undefined, return undefined.
   // todo
@@ -1977,7 +1977,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     //    W for the value, and false for the Throw flag.
     else {
       auto global_obj = vm_->GetGlobalObject();
-      Object::Put(vm_, global_obj, JSValue(ref->GetReferencedName()), W, false);
+      Object::Put(vm_, global_obj, ref->GetReferencedName(), W, false);
     }
   }
   // 4. Else if IsPropertyReference(V), then
@@ -1990,10 +1990,10 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     //    W for the value, and IsStrictReference(V) for the Throw flag.
     if (!ref->HasPrimitiveBase()) {
       auto base_obj = std::get<JSValue>(base).GetHeapObject()->AsObject();
-      Object::Put(vm_, base_obj, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
+      Object::Put(vm_, base_obj, ref->GetReferencedName(), W, ref->IsStrictReference());
     } else {
       auto base_prim = std::get<JSValue>(base);
-      PutUsedByPutValue(base_prim, JSValue(ref->GetReferencedName()), W, ref->IsStrictReference());
+      PutUsedByPutValue(base_prim, ref->GetReferencedName(), W, ref->IsStrictReference());
     }
 
   }
@@ -2011,7 +2011,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
 // PutUsedByPutValue
 // Defined in ECMAScript 5.1 Chapter 8.7.2
 // used by PutValue when V is a property reference with primitive base value
-void Interpreter::PutUsedByPutValue(JSValue base, JSValue P, JSValue W, bool Throw) {
+void Interpreter::PutUsedByPutValue(JSValue base, String* P, JSValue W, bool Throw) {
   // 1. Let O be ToObject(base).
   auto O = JSValue::ToObject(vm_, base);
 

@@ -17,11 +17,11 @@ class PropertyMap : public Array {
  public:
   static constexpr std::size_t DEFAULT_ENTRY_NUM = 3;
 
-  JSValue GetProperty(JSValue key) {
+  JSValue GetProperty(String* key) {
     auto len = GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
       auto cur_key = Get(idx);
-      if (JSValue::SameValue(cur_key, key)) {
+      if (JSValue::SameValue(cur_key, JSValue(key))) {
         return Get(idx + 1);
       }
     }
@@ -29,7 +29,7 @@ class PropertyMap : public Array {
     return JSValue{};
   }
 
-  static PropertyMap* SetProperty(VM* vm, PropertyMap* prop_map, JSValue key, const PropertyDescriptor& desc) {
+  static PropertyMap* SetProperty(VM* vm, PropertyMap* prop_map, String* key, const PropertyDescriptor& desc) {
     auto factory = vm->GetObjectFactory();
     
     JSValue prop;
@@ -44,9 +44,9 @@ class PropertyMap : public Array {
     auto len = prop_map->GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
       auto cur_key = prop_map->Get(idx);
-      if (cur_key.IsEmpty() || JSValue::SameValue(cur_key, key)) {
+      if (cur_key.IsEmpty() || JSValue::SameValue(cur_key, JSValue(key))) {
         if (cur_key.IsEmpty()) {
-          prop_map->Set(idx, key);
+          prop_map->Set(idx, JSValue(key));
         }
         prop_map->Set(idx + 1, prop);
         return prop_map;
@@ -54,17 +54,17 @@ class PropertyMap : public Array {
     }
     
     auto new_prop_map = factory->NewPropertyMap();
-    new_prop_map->Set(0, key);
+    new_prop_map->Set(0, JSValue(key));
     new_prop_map->Set(1, prop);
 
     return Append(vm, prop_map, new_prop_map)->AsPropertyMap();
   }
 
-  void DeleteProperty(JSValue key) {
+  void DeleteProperty(String* key) {
     auto len = GetLength();
     for (std::size_t idx = 0; idx < len; idx += 2) {
       auto cur_key = Get(idx);
-      if (JSValue::SameValue(cur_key, key)) {
+      if (JSValue::SameValue(cur_key, JSValue(key))) {
         Set(idx, JSValue{});
         return ;
       }

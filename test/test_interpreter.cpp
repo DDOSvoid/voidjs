@@ -442,7 +442,7 @@ TEST(Interpreter, EvalObjectLiteral) {
 
     {
       auto key = factory->NewStringFromTable(u"1");
-      auto prop = types::Object::GetProperty(vm, obj, JSValue(key));
+      auto prop = types::Object::GetProperty(vm, obj, key);
       ASSERT_TRUE(prop.GetValue().IsInt());
       EXPECT_EQ(42, prop.GetValue().GetInt());
     }

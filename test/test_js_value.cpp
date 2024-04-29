@@ -162,37 +162,30 @@ TEST(JSValue, ToString) {
   Interpreter interpreter;
   auto vm = interpreter.GetVM();
   
-  EXPECT_EQ(u"undefined",
-            JSValue::ToString(vm, JSValue::Undefined()).GetHeapObject()->AsString()->GetString());
-  EXPECT_EQ(u"null",
-            JSValue::ToString(vm, JSValue::Null()).GetHeapObject()->AsString()->GetString());
-  EXPECT_EQ(u"false",
-            JSValue::ToString(vm, JSValue::False()).GetHeapObject()->AsString()->GetString());
-  EXPECT_EQ(u"true",
-            JSValue::ToString(vm, JSValue::True()).GetHeapObject()->AsString()->GetString());
+  EXPECT_EQ(u"undefined", JSValue::ToString(vm, JSValue::Undefined())->GetString());
+  EXPECT_EQ(u"null", JSValue::ToString(vm, JSValue::Null())->GetString());
+  EXPECT_EQ(u"false", JSValue::ToString(vm, JSValue::False())->GetString());
+  EXPECT_EQ(u"true", JSValue::ToString(vm, JSValue::True())->GetString());
 
   { 
     auto val = JSValue(42);
     auto str = JSValue::ToString(vm, val);
 
-    ASSERT_TRUE(str.IsString());
-    EXPECT_EQ(u"42", str.GetHeapObject()->AsString()->GetString());
+    EXPECT_EQ(u"42", str->GetString());
   }
 
   { 
     auto val = JSValue(0.142857);
     auto str = JSValue::ToString(vm, val);
 
-    ASSERT_TRUE(str.IsString());
-    EXPECT_EQ(u"0.142857", str.GetHeapObject()->AsString()->GetString());
+    EXPECT_EQ(u"0.142857", str->GetString());
   }
 
   { 
     auto val = JSValue(-4200);
     auto str = JSValue::ToString(vm, val);
 
-    ASSERT_TRUE(str.IsString());
-    EXPECT_EQ(u"-4200", str.GetHeapObject()->AsString()->GetString());
+    EXPECT_EQ(u"-4200", str->GetString());
   }
 }
 

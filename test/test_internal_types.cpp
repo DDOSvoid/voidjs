@@ -44,16 +44,16 @@ TEST(InternalTypes, ProperyMap) {
   
   auto map = factory->NewPropertyMap();
 
-  auto key1 = JSValue(factory->NewString(u"key1"));
+  auto key1 = factory->NewStringFromTable(u"key1");
   auto val1 = types::PropertyDescriptor(JSValue(42));
 
-  auto key2 = JSValue(factory->NewString(u"key2"));
+  auto key2 = factory->NewStringFromTable(u"key2");
   auto val2 = types::PropertyDescriptor(JSValue(2));
 
-  auto key3 = JSValue(factory->NewString(u"key3"));
+  auto key3 = factory->NewStringFromTable(u"key3");
   auto val3 = types::PropertyDescriptor(JSValue(3));
 
-  auto key4 = JSValue(factory->NewString(u"key4"));
+  auto key4 = factory->NewStringFromTable(u"key4");
   auto val4 = types::PropertyDescriptor(JSValue(4));
 
   map = types::PropertyMap::SetProperty(vm, map, key1, val1);

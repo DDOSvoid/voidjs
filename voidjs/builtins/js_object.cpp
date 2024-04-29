@@ -361,10 +361,10 @@ JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
   auto P = JSValue::ToString(vm, V);
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToString(vm, this_obj);
+  auto O = JSValue::ToObject(vm, this_obj);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
-  auto desc = Object::GetOwnProperty(vm, O.GetHeapObject()->AsObject(), P);
+  auto desc = Object::GetOwnProperty(vm, O, P);
   
   // 4. If desc is undefined, return false.
   if (desc.IsEmpty()) {

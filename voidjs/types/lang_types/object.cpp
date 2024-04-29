@@ -10,7 +10,7 @@ namespace types {
 
 // GetOwnProperty
 // Defind in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, JSValue P) {
+PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, String* P) {
   auto props = O->GetProperties().GetHeapObject()->AsPropertyMap();
   
   // 1. If O doesn’t have an own property with name P, return undefined.
@@ -54,7 +54,7 @@ PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, JSValue P) {
 
 // GetProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetProperty(VM* vm, Object* O, JSValue P) {
+PropertyDescriptor Object::GetProperty(VM* vm, Object* O, String* P) {
   // 1. Let prop be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto prop = GetOwnProperty(vm, O, P);
 
@@ -77,7 +77,7 @@ PropertyDescriptor Object::GetProperty(VM* vm, Object* O, JSValue P) {
 
 // Get
 // Defined in ECMASCript 5.1 Chapter 8.12.3
-JSValue Object::Get(VM* vm, Object* O, JSValue P) {
+JSValue Object::Get(VM* vm, Object* O, String* P) {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
   auto desc = GetProperty(vm, O, P);
 
@@ -105,7 +105,7 @@ JSValue Object::Get(VM* vm, Object* O, JSValue P) {
 
 // CanPut
 // Defined in ECMAScript 5.1 Chapter 8.12.4
-bool Object::CanPut(VM* vm, Object* O, JSValue P) {
+bool Object::CanPut(VM* vm, Object* O, String* P) {
   // 1. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
   auto desc = GetOwnProperty(vm, O, P);
 
@@ -159,7 +159,7 @@ bool Object::CanPut(VM* vm, Object* O, JSValue P) {
 
 // Put
 // Defined in ECMAScript 5.1 Chapter 8.12.5
-void Object::Put(VM* vm, Object* O, JSValue P, JSValue V, bool Throw) {
+void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
   // 1. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
   if (!CanPut(vm, O, P)) {
     // a. If Throw is true, then throw a TypeError exception.
@@ -213,7 +213,7 @@ void Object::Put(VM* vm, Object* O, JSValue P, JSValue V, bool Throw) {
 
 // HasProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.6
-bool Object::HasProperty(VM* vm, Object* O, JSValue P) {
+bool Object::HasProperty(VM* vm, Object* O, String* P) {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
   auto desc = GetProperty(vm, O, P);
 
@@ -224,7 +224,7 @@ bool Object::HasProperty(VM* vm, Object* O, JSValue P) {
 
 // Delete
 // Defined in ECMAScript 5.1 Chapter 8.12.7
-bool Object::Delete(VM* vm, Object* O, JSValue P, bool Throw) {
+bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
   // 1. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto desc = GetOwnProperty(vm, O, P);
 
@@ -256,7 +256,7 @@ bool Object::Delete(VM* vm, Object* O, JSValue P, bool Throw) {
 JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
   if (hint == PreferredType::STRING) {
     // 1. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
-    auto to_string = Get(vm, O, JSValue(vm->GetObjectFactory()->NewStringFromTable(u"toString")));
+    auto to_string = Get(vm, O, vm->GetObjectFactory()->NewStringFromTable(u"toString"));
 
     // 2. If IsCallable(toString) is true then,
     if (to_string.IsCallable()) {
@@ -273,7 +273,7 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
 
 // DefineOwnProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.9
-bool Object::DefineOwnProperty(VM* vm, Object* O, JSValue P, const PropertyDescriptor& Desc, bool Throw) {
+bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw) {
   // 1. Let current be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto current = GetOwnProperty(vm, O, P);
 

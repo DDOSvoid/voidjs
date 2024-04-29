@@ -220,30 +220,30 @@ std::uint16_t JSValue::ToUint16(VM* vm, JSValue val) {
 
 // ToString
 // Defined in ECMAScript 5.1 Chapter 9.8
-JSValue JSValue::ToString(VM* vm, JSValue val) {
+types::String* JSValue::ToString(VM* vm, JSValue val) {
   auto factory = vm->GetObjectFactory();
   
   if (val.IsUndefined()) {
-    return JSValue(factory->NewStringFromTable(u"undefined"));
+    return factory->NewStringFromTable(u"undefined");
   } else if (val.IsNull()) {
-    return JSValue(factory->NewStringFromTable(u"null"));
+    return factory->NewStringFromTable(u"null");
   } else if (val.IsBoolean()) {
     if (val.IsTrue()) {
-      return JSValue(factory->NewStringFromTable(u"true"));
+      return factory->NewStringFromTable(u"true");
     } else {
-      return JSValue(factory->NewStringFromTable(u"false"));
+      return factory->NewStringFromTable(u"false");
     }
   } else if (val.IsNumber()) {
-    return JSValue(NumberToString(vm, val.IsInt() ? val.GetInt() : val.GetDouble()));
+    return NumberToString(vm, val.IsInt() ? val.GetInt() : val.GetDouble());
   } else if (val.IsString()) {
-    return val;
+    return val.GetHeapObject()->AsString();
   } else if (val.IsObject()) {
     auto prim_val = ToPrimitive(vm, val, PreferredType::STRING);
     return ToString(vm, prim_val);
   }
 
   // this branch is unreachable
-  return JSValue{};
+  return nullptr;
 }
 
 // ToObject

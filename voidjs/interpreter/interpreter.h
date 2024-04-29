@@ -87,7 +87,7 @@ class Interpreter {
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   JSValue GetUsedByGetValue(JSValue base, types::String* P);
   void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
-  void PutUsedByPutValue(JSValue base, JSValue P, JSValue W, bool Throw);
+  void PutUsedByPutValue(JSValue base, types::String* P, JSValue W, bool Throw);
 
   VM* GetVM() const { return vm_; }
 

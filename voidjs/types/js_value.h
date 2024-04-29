@@ -144,7 +144,7 @@ class JSValue {
   static std::int32_t ToInt32(VM* vm, JSValue val);
   static std::uint32_t ToUint32(VM* vm, JSValue val);
   static std::uint16_t ToUint16(VM* vm, JSValue val);
-  static JSValue ToString(VM* vm, JSValue val);
+  static types::String* ToString(VM* vm, JSValue val);
   static types::Object* ToObject(VM* vm, JSValue val);
   static double StringToNumber(VM* vm, types::String* str);
   static types::String* NumberToString(VM* vm, double num);
