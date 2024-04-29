@@ -58,6 +58,20 @@ TEST(Interpreter, EvalVariableStatement) {
     ASSERT_TRUE(comp.GetValue().IsInt());
     EXPECT_EQ(0, comp.GetValue().GetInt());
   }
+
+  {
+    Parser parser(u"var l = 1, r = 100, mid = l + r >> 1; mid;");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(50, comp.GetValue().GetInt());
+  }
 }
 
 TEST(Interpreter, EvalEmptyStatement) {
@@ -178,6 +192,66 @@ count;
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
     ASSERT_TRUE(comp.GetValue().IsInt());
     EXPECT_EQ(43, comp.GetValue().GetInt());
+  }
+}
+
+TEST(Interpreter, EvalContinueStatement) {
+  Parser parser(uR"(
+var i = 0;
+var j = 0;
+var n = 10;
+var m = 5;
+while (i < n) {
+    ++i;
+    if (i < m) {
+        continue;
+    }
+    ++j;
+}
+j;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsInt());
+  EXPECT_EQ(6, comp.GetValue().GetInt());
+}
+
+TEST(Interpreter, EvalBreakStatement) {
+  {
+    Parser parser(uR"(
+var num = 42;
+var n = 100, l = 1, r = n, count = 0;
+while (l <= r) {
+    var mid = l + r >> 1;
+    ++count;
+    if (mid == num) {
+        ans = mid;
+        break;
+    }
+    if (mid < num) {
+        r = mid - 1;
+    } else {
+        l = mid + 1;
+    }
+}
+count;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(7, comp.GetValue().GetInt());
   }
 }
 
@@ -400,6 +474,19 @@ TEST(Interpreter, EvalBinaryExpression) {
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
     ASSERT_TRUE(val.IsDouble());
     EXPECT_DOUBLE_EQ(1.8, val.GetDouble());
+  }
+  
+  {
+    Parser parser(u"1 + 100 >> 1");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_DOUBLE_EQ(50, val.GetInt());
   }
 
   {

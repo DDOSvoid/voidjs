@@ -46,11 +46,14 @@ class Interpreter {
   types::Completion EvalVariableStatement(ast::VariableStatement* var_stmt);
   types::Completion EvalEmptyStatement(ast::EmptyStatement* empty_stmt); 
   types::Completion EvalExpressionStatement(ast::ExpressionStatement* expr_stmt);
+  types::Completion EvalIfStatement(ast::IfStatement* if_stmt);
   types::Completion EvalDoWhileStatement(ast::DoWhileStatement* do_while_stmt);
   types::Completion EvalWhileStatement(ast::WhileStatement* while_stmt);
   types::Completion EvalForStatement(ast::ForStatement* for_stmt);
-  types::Completion EvalForInStatement(ast::ForInStatement* for_in_stmt); 
-  types::Completion EvalIfStatement(ast::IfStatement* if_stmt);
+  types::Completion EvalForInStatement(ast::ForInStatement* for_in_stmt);
+  types::Completion EvalContinueStatement(ast::ContinueStatement* cont_stmt);
+  types::Completion EvalBreakStatement(ast::BreakStatement* break_stmt);
+  types::Completion EvalWithStatement(ast::WithStatement* with_stmt);
   types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
 
   std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);

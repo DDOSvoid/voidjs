@@ -19,30 +19,39 @@ class ExecutionContext {
     label_set_.insert(u"");
   }
   
-  void AddLabel(const std::u16string& label) {
+  bool HasLabel(std::u16string_view label) {
+    return label_set_.find(label) != label_set_.end();
+  }
+  void AddLabel(std::u16string_view label) {
     cur_label_ = label;
     label_set_.insert(label);
   }
-
-  bool HasLabel(const std::u16string& label) {
-    return label_set_.find(label) != label_set_.end();
-  }
-
-  void DeleteLabel(const std::u16string& label) {
+  void DeleteLabel(std::u16string_view label) {
     label_set_.erase(label);
   }
+  
+  bool InIteration() const { return iteration_depth_ > 0; }
+  void EnterIteration() { ++iteration_depth_; }
+  void ExitIteration() { --iteration_depth_; }
 
+  bool InSwitch() const { return switch_depth_; }
+  void EnterSwitch() { ++switch_depth_; }
+  void ExitSwitch() { --switch_depth_;}
+  
   types::LexicalEnvironment* GetLexicalEnvironment() const {
     return lexical_environment_;
   }
-
   types::LexicalEnvironment* GetVariableEnvironment() const {
     return variable_environment_;
   }
   
  private:
-  std::unordered_set<std::u16string> label_set_;  // contain "" initially
+  std::unordered_set<std::u16string_view> label_set_;  // contain "" initially
   std::u16string_view cur_label_;
+
+  std::size_t iteration_depth_;
+
+  std::size_t switch_depth_;
   
   types::LexicalEnvironment* lexical_environment_;
   types::LexicalEnvironment* variable_environment_;

@@ -32,14 +32,14 @@ class VM {
 
   builtins::JSObject* GetObjectConstructor() const { return object_ctor_; }
   void SetObjectConstructor(builtins::JSObject* object_ctor) { object_ctor_ = object_ctor; }
-  
+
  private:
   builtins::GlobalObject* global_obj_;
   builtins::JSObject* object_proto_;
   builtins::JSObject* object_ctor_;
   types::LexicalEnvironment* global_env_;
   std::vector<ExecutionContext*> execution_ctxs_;
-  ObjectFactory* object_factory_; 
+  ObjectFactory* object_factory_;
 };
 
 }  // namespace voidjs

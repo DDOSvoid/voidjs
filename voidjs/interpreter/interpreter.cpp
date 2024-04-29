@@ -1,6 +1,7 @@
 #include "voidjs/interpreter/interpreter.h"
 
 #include <cmath>
+#include <sched.h>
 #include <variant>
 #include <iostream>
 #include <functional>
@@ -322,6 +323,9 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     case AstNodeType::FOR_IN_STATEMENT: {
       return EvalForInStatement(stmt->AsForInStatement());
     }
+    case AstNodeType::CONTINUE_STATEMENT: {
+      return EvalContinueStatement(stmt->AsContinueStatement());
+    }
     default: {
       return Completion();
     }
@@ -399,6 +403,8 @@ Completion Interpreter::EvalIfStatement(ast::IfStatement* if_stmt) {
 // Defined in ECMAScript 5.1 Chapter 12.6.1
 Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
   // do Statement while ( Expression );
+
+  vm_->GetExecutionContext()->EnterIteration();
   
   // 1. Let V = empty.
   JSValue V;
@@ -442,6 +448,8 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
     }
   }
 
+  vm_->GetExecutionContext()->ExitIteration();
+
   // 4. Return (normal, V, empty);
   return Completion(CompletionType::NORMAL, V);
 }
@@ -450,6 +458,8 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
 // Defined in ECMAScript 5.1 Chapter 12.7
 Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
   // IterationStatement : while ( Expression ) Statement
+
+  vm_->GetExecutionContext()->EnterIteration();
   
   // 1. Let V = empty.
   JSValue V;
@@ -461,6 +471,7 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
 
     // b. If ToBoolean(GetValue(exprRef)) is false, return (normal, V, empty).
     if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
+      vm_->GetExecutionContext()->ExitIteration();
       return Completion(CompletionType::NORMAL, V);
     }
 
@@ -480,11 +491,13 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
       if (stmt.GetType() == CompletionType::BREAK &&
           vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
         // 1. Return (normal, V, empty).
+        vm_->GetExecutionContext()->ExitIteration();
         return Completion(CompletionType::NORMAL, V);
       }
 
       // ii. If stmt is an abrupt completion, return stmt.
       if (stmt.IsAbruptCompletion()) {
+        vm_->GetExecutionContext()->ExitIteration();
         return stmt;
       }
     }
@@ -496,6 +509,8 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
 Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
   // IterationStatement : for ( ExpressionNoInopt ; Expressionopt ; Expressionopt) Statement
   // IterationStatement : for ( var VariableDeclarationListNoIn ; Expressionopt ; Expressionopt ) Statement
+
+  vm_->GetExecutionContext()->EnterIteration();
 
   // 1. Evaluate VariableDeclarationListNoIn.
   if (auto init = for_stmt->GetInitializer()) {
@@ -518,6 +533,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
 
       // ii. If ToBoolean(GetValue(testExprRef)) is false, return (normal, V, empty).
       if (!JSValue::ToBoolean(vm_, GetValue(test_expr_ref))) {
+        vm_->GetExecutionContext()->ExitIteration();
         return Completion(CompletionType::NORMAL, V);
       }
     }
@@ -534,6 +550,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     //    return (normal, V, empty).
     if (stmt.GetType() == CompletionType::BREAK &&
         vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      vm_->GetExecutionContext()->ExitIteration();
       return Completion(CompletionType::NORMAL, V);
     }
 
@@ -543,6 +560,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
         !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
       // 1. If stmt is an abrupt completion, return stmt.
       if (stmt.IsAbruptCompletion()) {
+        vm_->GetExecutionContext()->ExitIteration();
         return stmt;
       }
     }
@@ -564,6 +582,8 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   // IterationStatement : for ( LeftHandSideExpression in Expression ) Statement
   // IterationStatement : for ( var VariableDeclarationNoIn in Expression ) Statement
 
+  vm_->GetExecutionContext()->EnterIteration();
+
   // 1. Let varName be the result of evaluating VariableDeclarationNoIn.
   JSValue var_name;
   if (for_in_stmt->GetLeft()->IsVariableDeclaraion()) {
@@ -578,6 +598,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
 
   // 4. If experValue is null or undefined, return (normal, empty, empty).
   if (expr_val.IsNull() || expr_val.IsUndefined()) {
+    vm_->GetExecutionContext()->ExitIteration();
     return Completion(CompletionType::NORMAL);
   }
 
@@ -593,6 +614,95 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
     //    If there is no such property, return (normal, V, empty).
     // todo
   }
+}
+
+// EvalContinueStatement
+// Defined in ECMAScript 5.1 Chapter 12.7
+Completion Interpreter::EvalContinueStatement(ContinueStatement* cont_stmt) {
+  // A program is considered syntactically incorrect if either of the following is true:
+  //   1. The program contains a continue statement without the optional Identifier,
+  //      which is not nested, directly or indirectly (but not crossing function boundaries), within an IterationStatement.
+  //   2. The program contains a continue statement with the optional Identifier,
+  //      where Identifier does not appear in the label set of an enclosing (but not crossing function boundaries) IterationStatement.
+  if (auto ident = cont_stmt->GetIdentifier();
+      !vm_->GetExecutionContext()->InIteration() ||
+      ident && !vm_->GetExecutionContext()->HasLabel(ident->AsIdentifier()->GetName())) {
+    // todo
+  }
+
+  auto ident = cont_stmt->GetIdentifier();
+
+  // A ContinueStatement without an Identifier is evaluated as follows:
+  // 1. Return (continue, empty, empty).
+  if (!ident) {
+    return Completion{CompletionType::CONTINUE};
+  }
+  // A ContinueStatement with the optional Identifier is evaluated as follows:
+  // 1.Return (continue, empty, Identifier).
+  else {
+    return Completion{CompletionType::CONTINUE, JSValue{}, ident->AsIdentifier()->GetName()};
+  }
+}
+
+// EvalBreakStatement
+// Defined in ECMAScript 5.1 Chapter 12.8
+Completion Interpreter::EvalBreakStatement(BreakStatement* break_stmt) {
+  // A program is considered syntactically incorrect if either of the following is true:
+  //   1. The program contains a break statement without the optional Identifier,
+  //      which is not nested, directly or indirectly (but not crossing function boundaries),
+  //      within an IterationStatement or a SwitchStatement.
+  //   2. The program contains a break statement with the optional Identifier,
+  //      where Identifier does not appear in the label set of an enclosing
+  //      (but not crossing function boundaries) Statement.
+  if (auto ident = break_stmt->GetIdentifier();
+      !vm_->GetExecutionContext()->InIteration() ||
+      !vm_->GetExecutionContext()->InSwitch()    ||
+      ident && !vm_->GetExecutionContext()->HasLabel(ident->AsIdentifier()->GetName())) {
+    // todo
+  }
+
+  auto ident = break_stmt->GetIdentifier();
+
+  // A BreakStatement without an Identifier is evaluated as follows:
+  // 1. Return (break, empty, empty).
+  if (!ident) {
+    return Completion{CompletionType::BREAK};
+  } 
+  // A BreakStatement with an Identifier is evaluated as follows:
+  // 1. Return (break, empty, Identifier).
+  else {
+    return Completion{CompletionType::BREAK, JSValue{}, ident->AsIdentifier()->GetName()};
+  }
+}
+
+// EvalWithStatement
+// Defined in ECMAScript 5.1 Chapter 12.10
+// todo
+Completion Interpreter::EvalWithStatement(WithStatement* with_stmt) {
+  // WithStatement : with ( Expression ) Statement
+
+  // 1. Let val be the result of evaluating Expression.
+  auto val = EvalExpression(with_stmt->GetContext());
+  
+  // 2. Let obj be ToObject(GetValue(val)).
+  auto obj = JSValue::ToObject(vm_, GetValue(val));
+  
+  // 3. Let oldEnv be the running execution context’s LexicalEnvironment.
+  auto old_env = vm_->GetExecutionContext()->GetLexicalEnvironment();
+  
+  // 4. Let newEnv be the result of calling NewObjectEnvironment passing obj and oldEnv as the arguments
+  auto new_env = LexicalEnvironment::NewObjectEnvironmentRecord(vm_, JSValue(obj), old_env);
+  
+  // 5. Set the provideThis flag of newEnv to true.
+  
+  // 6. Set the running execution context’s LexicalEnvironment to newEnv.
+  
+  // 7. Let C be the result of evaluating Statement but if an exception is thrown during the evaluation,
+  //    let C be (throw, V, empty), where V is the exception. (Execution now proceeds as if no exception were thrown.)
+  
+  // 8. Set the running execution context’s Lexical Environment to oldEnv.
+  
+  // 9. Return C.
 }
 
 // Eval Expression
@@ -1464,13 +1574,14 @@ JSValue Interpreter::ApplyShiftOperator(TokenType op, Expression* left, Expressi
   } else if (op == TokenType::RIGHT_SHIFT) {
     // Return the result of performing a sign-extending right shift of lnum by shiftCount bits.
     // The most significant bit is propagated. The result is a signed 32-bit integer.
-    return JSValue(rnum >> shift_count);
+    return JSValue(lnum >> shift_count);
   } else {
     // op must be TokenType::U_RIGHT_SHIFT
 
     // Return the result of performing a zero-filling right shift of lnum by shiftCount bits.
     // Vacated bits are filled with zero. The result is an unsigned 32-bit integer.
-    return JSValue(JSValue::ToUint32(vm_, lval) >> rnum);
+    // todo
+    return JSValue(JSValue::ToUint32(vm_, lval) >> shift_count);
   }
 }
 
