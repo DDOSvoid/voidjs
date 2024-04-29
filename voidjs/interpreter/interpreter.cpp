@@ -22,6 +22,8 @@
 #include "voidjs/types/spec_types/reference.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
 #include "voidjs/types/spec_types/environment_record.h"
+#include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
@@ -37,19 +39,16 @@ void Interpreter::Initialize() {
   vm_ = new VM{};
 
   auto string_table = new StringTable{};
-  auto object_factory = new ObjectFactory(vm_, string_table);
+  auto object_factory = new ObjectFactory{vm_, string_table};
 
   vm_->SetObjectFactory(object_factory);
   
   InitializeBuiltinObjects();
+  SetPropretiesForBuiltinObjects();
+  
   auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(vm_, JSValue(vm_->GetGlobalObject()), nullptr);
   
   vm_->SetGlobalEnv(global_env);
-}
-
-Completion Interpreter::Execute(AstNode* ast_node) {
-  EnterGlobalCode(ast_node);
-  return EvalProgram(ast_node);
 }
 
 void Interpreter::InitializeBuiltinObjects() {
@@ -93,6 +92,8 @@ void Interpreter::InitializeBuiltinObjects() {
   obj_ctor->SetClassType(ObjectClassType::OBJECT);
   obj_ctor->SetPrototype(JSValue(func_proto));
   obj_ctor->SetExtensible(true);
+
+  vm_->SetObjectConstructor(obj_ctor);
   
   // Initialize Function Constructor
   // The Function constructor is itself a Function object and its [[Class]] is "Function".
@@ -104,6 +105,36 @@ void Interpreter::InitializeBuiltinObjects() {
   func_ctor->SetClassType(ObjectClassType::FUNCTION);
   func_ctor->SetPrototype(JSValue(func_proto));
   func_ctor->SetExtensible(true);
+}
+
+void Interpreter::SetPropretiesForBuiltinObjects() {
+  auto global_obj = vm_->GetGlobalObject();
+  auto factory = vm_->GetObjectFactory();
+
+  // Set properties for Global Object
+  SetDataProperty(global_obj, factory->NewStringFromTable(u"Object"),
+                  JSValue(vm_->GetObjectConstructor()), true, false, true);
+}
+
+// SetDataProperty
+void Interpreter::SetDataProperty(Object* obj, String* prop_name, JSValue prop_val,
+                                  bool writable, bool enumerable, bool configurable) {
+  auto props = obj->GetProperties().GetHeapObject()->AsPropertyMap();
+  
+  auto desc = PropertyDescriptor{prop_val, writable, enumerable, configurable};
+  
+  obj->SetProperties(JSValue(PropertyMap::SetProperty(vm_, props, prop_name, desc)));
+}
+
+// SetFunctionProperty
+void Interpreter::SetFunctionProperty(Object* obj, String* prop_name, InternalFunctionType func) {
+  auto props = obj->GetProperties().GetHeapObject()->AsPropertyMap();
+  
+  auto internal_func = vm_->GetObjectFactory()->NewInternalFunction(func);
+  
+  auto desc = PropertyDescriptor{JSValue(internal_func), true, false, true};
+  
+  obj->SetProperties(JSValue(PropertyMap::SetProperty(vm_, props, prop_name, desc)));
 }
 
 void Interpreter::EnterGlobalCode(AstNode* ast_node) {
@@ -189,6 +220,11 @@ void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
       env->SetMutableBinding(vm_, dn_str, JSValue::Undefined(), strict);
     }
   }
+}
+
+Completion Interpreter::Execute(AstNode* ast_node) {
+  EnterGlobalCode(ast_node);
+  return EvalProgram(ast_node);
 }
   
 // Eval Program
@@ -582,6 +618,9 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
     case AstNodeType::MEMBER_EXPRESSION: {
       return EvalMemberExpression(expr->AsMemberExpression());
     }
+    case AstNodeType::NEW_EXPRESSION: {
+      return EvalNewExpression(expr->AsNewExpression());
+    }
     case AstNodeType::OBJECT_LITERAL: {
       return EvalObjectLiteral(expr->AsObjectLiteral());
     }
@@ -825,6 +864,43 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   //    whose base value is baseValue and whose referenced name is propertyNameString,
   //    and whose strict mode flag is strict.
   return Reference(base_val, prop_name_str, strict);
+}
+
+// EvalNewExpression
+// Defined in ECMAScript 5.1 Chapter 11.2.2
+std::variant<JSValue, types::Reference> Interpreter::EvalNewExpression(ast::NewExpression* new_expr) {
+  // NewExpression : new NewExpression
+  // MemberExpression : new MemberExpression Arguments
+
+  // 1. Let ref be the result of evaluating NewExpression.
+  auto ref = EvalExpression(new_expr->GetConstructor());
+  
+  // 2. Let constructor be GetValue(ref).
+  auto ctor = GetValue(ref);
+
+  // 3. Let argList be the result of evaluating Arguments,
+  //    producing an internal list of argument values (11.2.4).
+  auto arg_list = EvalArgumentList(new_expr->GetArguments());
+  
+  // 4. If Type(constructor) is not Object, throw a TypeError exception.
+  if (!ctor.IsObject()) {
+    // todo
+  }
+  
+  // 5. If constructor does not implement the [[Construct]] internal method, throw a TypeError exception.
+  // 6. Return the result of calling the [[Construct]] internal method on constructor,
+  //    providing the list argList as the argument values.
+  return Object::Construct(vm_, ctor.GetHeapObject()->AsObject(), arg_list);
+}
+
+// EvalArgumentList
+// Defined in ECMAScript 5.1 Chapter 11.2.4
+std::vector<JSValue> Interpreter::EvalArgumentList(const ast::Expressions& exprs) {
+  std::vector<JSValue> vals;
+  for (auto expr : exprs) {
+    vals.push_back(GetValue(EvalExpression(expr)));
+  }
+  return vals;
 }
 
 // EvalObjectLiteral

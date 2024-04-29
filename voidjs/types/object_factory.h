@@ -7,6 +7,7 @@
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
+#include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
 
@@ -55,6 +56,7 @@ class ObjectFactory {
   types::GenericPropertyDescriptor* NewGenericPropertyDescriptor(const types::PropertyDescriptor& desc);
   types::PropertyMap* NewPropertyMap();
   types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable);
+  types::InternalFunction* NewInternalFunction(InternalFunctionType func);
 
   types::Object* NewEmptyObject(std::size_t extra_size);
   builtins::JSObject* NewJSObject(JSValue value);

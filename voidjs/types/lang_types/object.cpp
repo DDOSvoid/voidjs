@@ -1,9 +1,13 @@
 #include "voidjs/types/lang_types/object.h"
+
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/builtins/js_object.h"
+#include "voidjs/interpreter/runtime_call_info.h"
+
 
 namespace voidjs {
 namespace types {
@@ -493,6 +497,14 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
 
   // 13. Return true.
   return true;
+}
+
+// Construct
+// Only used for forwarding to concrete [[Construct]
+JSValue Object::Construct(VM* vm, Object* O, const std::vector<JSValue>& args) {
+  if (O->IsJSObject()) {
+    return JSValue(builtins::JSObject::Construct(vm, args.empty() ? JSValue{} : args[0]));
+  }
 }
 
 }  // namespace types

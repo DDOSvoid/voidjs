@@ -10,12 +10,12 @@ namespace types {
 
 class Binding : public HeapObject {
  public:
-  static constexpr std::size_t VALUE_OFFSET = HeapObject::OFFSET;
+  static constexpr std::size_t VALUE_OFFSET = HeapObject::END_OFFSET;
   JSValue GetValue() const { return *utils::BitGet<JSValue*>(this, VALUE_OFFSET); }
   void SetValue(JSValue value) const { *utils::BitGet<JSValue*>(this, VALUE_OFFSET) = value; }
 
   static constexpr std::size_t SIZE = sizeof(JSValue);
-  static constexpr std::size_t OFFSET = HeapObject::OFFSET + SIZE;
+  static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
 };
 
 }  // namespace types

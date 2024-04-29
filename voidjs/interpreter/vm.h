@@ -29,10 +29,14 @@ class VM {
 
   builtins::JSObject* GetObjectPrototype() const { return object_proto_; }
   void SetObjectPrototype(builtins::JSObject* object_proto) { object_proto_ = object_proto; }
+
+  builtins::JSObject* GetObjectConstructor() const { return object_ctor_; }
+  void SetObjectConstructor(builtins::JSObject* object_ctor) { object_ctor_ = object_ctor; }
   
  private:
   builtins::GlobalObject* global_obj_;
   builtins::JSObject* object_proto_;
+  builtins::JSObject* object_ctor_;
   types::LexicalEnvironment* global_env_;
   std::vector<ExecutionContext*> execution_ctxs_;
   ObjectFactory* object_factory_; 

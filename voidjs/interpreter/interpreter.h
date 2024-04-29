@@ -3,6 +3,7 @@
 
 #include <variant>
 
+#include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/lexer/token.h"
 #include "voidjs/lexer/token_type.h"
 #include "voidjs/ir/ast.h"
@@ -26,12 +27,18 @@ class Interpreter {
   }
   
   void Initialize(); 
-  types::Completion Execute(ast::AstNode* ast_node);
   void InitializeBuiltinObjects();
+  void SetPropretiesForBuiltinObjects();
+  void SetDataProperty(types::Object* obj, types::String* prop_name, JSValue prop_val,
+                       bool writable, bool enumerable, bool configurable);
+  void SetFunctionProperty(types::Object* obj, types::String* prop_name, InternalFunctionType func);
+  
+  types::Completion Execute(ast::AstNode* ast_node);
   void EnterGlobalCode(ast::AstNode* ast_node);
   void EnterEvalCode();
   void EnterFunctionCode();
   void DeclarationBindingInstantiation(ast::AstNode* ast_node);
+
 
   types::Completion EvalProgram(ast::AstNode* ast_node);
 
@@ -54,7 +61,8 @@ class Interpreter {
   std::variant<JSValue, types::Reference> EvalBinaryExpression(ast::BinaryExpression* binary_expr);
   std::variant<JSValue, types::Reference> EvalUnaryExpression(ast::UnaryExpression* unary_expr);
   std::variant<JSValue, types::Reference> EvalPostfixExpression(ast::PostfixExpression* post_expr);
-  std::variant<JSValue, types::Reference> EvalMemberExpression(ast::MemberExpression* ast_node);
+  std::variant<JSValue, types::Reference> EvalMemberExpression(ast::MemberExpression* mem_expr);
+  std::variant<JSValue, types::Reference> EvalNewExpression(ast::NewExpression* new_expr);
   JSValue EvalObjectLiteral(ast::ObjectLiteral* object); 
   JSValue EvalNullLiteral(ast::NullLiteral* nul);
   JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
@@ -67,6 +75,7 @@ class Interpreter {
   JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl);
   JSValue EvalPropertyNameAndValueList(const ast::Properties& props);
   std::pair<types::String*, types::PropertyDescriptor> EvalPropertyAssignment(ast::Property* prop);
+  std::vector<JSValue> EvalArgumentList(const ast::Expressions& exprs);
   
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);

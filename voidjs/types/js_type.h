@@ -17,6 +17,7 @@ enum class JSType : std::uint8_t {
   GENERIC_PROPERTY_DESCRIPTOR,
   PROPERTY_MAP,
   BINDING,
+  INTERNAL_FUNCTION,
 
   // standard builtin objects
   GLOBAL_OBJECT,

@@ -36,7 +36,7 @@ class NewExpression : public Expression {
       constructor_(expr), arguments_(std::move(exprs))
   {}
 
-  const Expression* GetConstructor() const { return constructor_; }
+  Expression* GetConstructor() const { return constructor_; }
   const Expressions& GetArguments() const { return arguments_; }
 
  private:

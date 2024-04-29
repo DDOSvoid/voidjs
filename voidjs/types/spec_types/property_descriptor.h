@@ -136,17 +136,17 @@ class PropertyDescriptor {
 
 class DataPropertyDescriptor : public HeapObject {
  public:
-  static constexpr std::size_t VALUE_OFFSET = HeapObject::SIZE;
+  static constexpr std::size_t VALUE_OFFSET = HeapObject::END_OFFSET;
   JSValue GetValue() { return *utils::BitGet<JSValue*>(this, VALUE_OFFSET); }
   void SetValue(JSValue value) { *utils::BitGet<JSValue*>(this, VALUE_OFFSET) = value; }
 
   static constexpr std::size_t SIZE = sizeof(JSValue);
-  static constexpr std::size_t OFFSET = VALUE_OFFSET + sizeof(JSValue);
+  static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
 };
 
 class AccessorPropertyDescriptor : public HeapObject {
  public:
-  static constexpr std::size_t GETTER_OFFSET = HeapObject::OFFSET;
+  static constexpr std::size_t GETTER_OFFSET = HeapObject::END_OFFSET;
   JSValue GetGetter() { return *utils::BitGet<JSValue*>(this, GETTER_OFFSET); }
   void SetGetter(JSValue value) { *utils::BitGet<JSValue*>(this, GETTER_OFFSET) = value; }
   
@@ -155,7 +155,7 @@ class AccessorPropertyDescriptor : public HeapObject {
   void SetSetter(JSValue value) { *utils::BitGet<JSValue*>(this, SETTER_OFFSET) = value; }
 
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
-  static constexpr std::size_t OFFSET = SETTER_OFFSET + sizeof(JSValue);
+  static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
 };
 
 class GenericPropertyDescriptor : public HeapObject {

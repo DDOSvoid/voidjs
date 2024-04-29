@@ -20,6 +20,7 @@ class AccessorPropertyDescriptor;
 class GenericPropertyDescriptor;
 class PropertyMap;
 class Binding;
+class InternalFunction;
 
 }  // namespace types
 
@@ -99,7 +100,7 @@ class HeapObject {
   void SetMutable(bool flag) { MutableBitSet::Set(GetMetaData(), flag); }
 
   static constexpr std::size_t SIZE = META_DATA_SIZE;
-  static constexpr std::size_t OFFSET = META_DATA_OFFSET + META_DATA_SIZE;
+  static constexpr std::size_t END_OFFSET = META_DATA_OFFSET + META_DATA_SIZE;
  
   
   // Is Check
@@ -114,6 +115,7 @@ class HeapObject {
   bool IsGlobalObject() const { return GetType() == JSType::GLOBAL_OBJECT; }
   bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
   bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
+  bool IsInternalFunction() const { return GetType() == JSType::INTERNAL_FUNCTION; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -124,6 +126,7 @@ class HeapObject {
   types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() { return reinterpret_cast<types::GenericPropertyDescriptor*>(this); }
   types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
   types::Binding* AsBinding() { return reinterpret_cast<types::Binding*>(this); }
+  types::InternalFunction* AsInternalFunction() { return reinterpret_cast<types::InternalFunction*>(this); }
   builtins::GlobalObject* AsGlobalObject() { return reinterpret_cast<builtins::GlobalObject*>(this); }
   builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
   builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
@@ -137,6 +140,7 @@ class HeapObject {
   const types::GenericPropertyDescriptor* AsGenericPropertyDescriptor() const { return reinterpret_cast<const types::GenericPropertyDescriptor*>(this); }
   const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
   const types::Binding* AsBinding() const { return reinterpret_cast<const types::Binding*>(this); }
+  const types::InternalFunction* AsInternalFunction() const { return reinterpret_cast<const types::InternalFunction*>(this); }
   const builtins::GlobalObject* AsGlobalObject() const { return reinterpret_cast<const builtins::GlobalObject*>(this); }
   const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
   const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }

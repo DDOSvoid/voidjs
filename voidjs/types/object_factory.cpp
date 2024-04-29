@@ -9,6 +9,7 @@
 #include "voidjs/types/internal_types/array.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/types/internal_types/binding.h"
+#include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
@@ -136,6 +137,14 @@ Binding* ObjectFactory::NewBinding(JSValue value, bool _mutable, bool deletable)
   binding->SetDeletable(deletable);
   binding->SetValue(value);
   return binding;
+}
+
+
+InternalFunction* ObjectFactory::NewInternalFunction(InternalFunctionType func) {
+  auto internal_func = NewHeapObject(InternalFunction::SIZE)->AsInternalFunction();
+  internal_func->SetType(JSType::INTERNAL_FUNCTION);
+  internal_func->SetFunction(func);
+  return internal_func;
 }
 
 // used to create builtin object

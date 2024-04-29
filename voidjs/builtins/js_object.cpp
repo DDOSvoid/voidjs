@@ -8,6 +8,51 @@
 namespace voidjs {
 namespace builtins {
 
+// new Object ( [ value ] )
+// Defined in ECMAScript 5.1 Chapter 15.2.2.1
+JSObject* JSObject::Construct(VM* vm, JSValue value) {
+  // 1. If value is supplied, then
+  if (!value.IsEmpty()) {
+    // a .If Type(value) is Object, then
+    if (value.IsObject()) {
+      // i. If the value is a native ECMAScript object, do not create a new object but simply return value.
+      if (value.GetHeapObject()->IsJSObject()) {
+        return value.GetHeapObject()->AsJSObject();
+      }
+      
+      // ii. If the value is a host object, then actions are taken and
+      //     a result is returned in an implementation-dependent manner that may depend on the host object.
+      // todo
+    }
+    
+    // b. If Type(value) is String, return ToObject(value).
+    // c. If Type(value) is Boolean, return ToObject(value).
+    // d. If Type(value) is Number, return ToObject(value).
+    if (value.IsString() || value.IsBoolean() || value.IsNumber()) {
+      return JSValue::ToObject(vm, value)->AsJSObject();
+    }
+  }
+
+  // 2. Assert: The argument value was not supplied or its type was Null or Undefined.
+  
+  // 3. Let obj be a newly created native ECMAScript object.
+  // 4. Set the [[Prototype]] internal property of obj t to the standard built-in Object prototype object (15.2.4).
+  // todo
+  auto obj = vm->GetObjectFactory()->NewObject(JSValue(vm ->GetObjectPrototype()))->AsJSObject();
+  obj->SetType(JSType::JS_OBJECT);
+  
+  // 5 .Set the [[Class]] internal property of obj to "Object".
+  obj->SetClassType(ObjectClassType::OBJECT);
+  
+  // 6. Set the [[Extensible]] internal property of obj to true.
+  obj->SetExtensible(true);
+  
+  // 7. Set the all the internal methods of obj as specified in 8.12
+  
+  // 8. Return obj.
+  return obj;
+}
+
 // Object([value])
 // Defined in ECMAScript 5.1 Chapter 15.2.1.1
 // todo

@@ -5,11 +5,13 @@
 #include <cstdint>
 #include <optional>
 
+#include "voidjs/types/object_factory.h"
 #include "voidjs/utils/helper.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
+#include "voidjs/interpreter/vm.h"
 
 namespace voidjs {
 namespace types {
@@ -29,9 +31,9 @@ class Object : public HeapObject {
   void SetPrototype(JSValue proto) { *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET) = proto; }
 
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
-  static constexpr std::size_t OFFSET = PROTOTYPE_OFFSET + sizeof(JSValue);
+  static constexpr std::size_t END_OFFSET = PROTOTYPE_OFFSET + sizeof(JSValue);
 
-  // Internal function Properties common to all Objects
+  // Internal function properties common to all objects
   // Defined in ECMAScript 5.1 Chapter 8.12
   static PropertyDescriptor GetOwnProperty(VM* vm, Object* O, String* P);
   static PropertyDescriptor GetProperty(VM* vm, Object* O, String* P);
@@ -41,7 +43,12 @@ class Object : public HeapObject {
   static bool HasProperty(VM* vm, Object* O, String* P);
   static bool Delete(VM* vm, Object* O, String* P, bool Throw);
   static JSValue DefaultValue(VM* vm, Object* O, PreferredType hint);
-  static bool DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw); 
+  static bool DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw);
+
+  // Internal function properties only defined for some objects
+  // Methods defined below ponly used for forwarding
+  static JSValue Construct(VM* vm, Object* O, const std::vector<JSValue>& args);
+  static JSValue Call();
 };
 
 }  // namespace types

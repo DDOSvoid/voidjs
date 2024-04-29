@@ -14,7 +14,7 @@ class JSFunction : public types::Object {
  public:
 
   static constexpr std::size_t SIZE = 0;
-  static constexpr std::size_t OFFSET = types::Object::OFFSET + SIZE;
+  static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
   
   // The Function Constructor
   static JSValue FunctionConsturctor(RuntimeCallInfo* argv);

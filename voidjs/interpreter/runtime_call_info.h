@@ -13,7 +13,7 @@ class RuntimeCallInfo {
   void SetVM(VM* vm) { *utils::BitGet<VM**>(this, VM_OFFSET) = vm; }
   
   static constexpr std::size_t ARGS_NUM_OFFSET = 0;
-  std::uint64_t GetArgsNum() const { return utils::BitGet<std::uint64_t>(this, ARGS_NUM_OFFSET); }
+  std::uint64_t GetArgsNum() const { return *utils::BitGet<std::uint64_t*>(this, ARGS_NUM_OFFSET); }
   void SetArgsNum(std::uint64_t num) { *utils::BitGet<std::uint64_t*>(this, ARGS_NUM_OFFSET) = num; }
 
   static constexpr std::size_t ARGS_OFFSET = ARGS_NUM_OFFSET + sizeof(std::uint64_t);

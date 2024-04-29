@@ -18,7 +18,7 @@ namespace types {
 class String : public HeapObject {
  public:
   // std::size_t length_;
-  static constexpr std::size_t LENGTH_OFFSET = HeapObject::OFFSET;
+  static constexpr std::size_t LENGTH_OFFSET = HeapObject::END_OFFSET;
   std::size_t GetLength() const { return *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET); }
   void SetLength(std::size_t length) { *utils::BitGet<std::size_t*>(this, LENGTH_OFFSET) = length; }
 
