@@ -165,6 +165,7 @@ TEST(Lexer, StringLiteral) {
 "
 "😊"
 '\u1234'
+"输出：你的名字叫什么？"
 )";
 
   Lexer lexer(source);
@@ -176,6 +177,7 @@ TEST(Lexer, StringLiteral) {
     {TokenType::STRING, u"\n"},
     {TokenType::STRING, uR"(😊)"},
     {TokenType::STRING, std::u16string(1, 4660)},
+    {TokenType::STRING, u"输出：你的名字叫什么？"},
   };
   
   for (auto& expect_token : expects) {

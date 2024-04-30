@@ -96,6 +96,7 @@ TEST(parser, ParsePrimaryExpression) {
 "hello, world"
 '😊'
 '\u1234'
+"输出：你的名字叫什么？"
 )";
 
     Parser parser(source);
@@ -104,6 +105,7 @@ TEST(parser, ParsePrimaryExpression) {
       uR"(hello, world)",
       uR"(😊)",
       std::u16string(1, 4660),
+      u"输出：你的名字叫什么？",
     };
 
     for (auto& expect : expects) {

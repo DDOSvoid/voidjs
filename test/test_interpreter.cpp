@@ -386,6 +386,7 @@ switch (foo) {
     output += "！";
     break;
   default:
+    break;
 }
 output;
 )");
@@ -399,6 +400,57 @@ output;
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
     ASSERT_TRUE(comp.GetValue().IsString());
     EXPECT_EQ(u"输出：你的名字叫什么？", comp.GetValue().GetHeapObject()->AsString()->GetString());
+  }
+}
+
+TEST(Interpreter, EvalLabelledStatement) {
+  {
+    Parser parser(uR"(
+var val = 0;
+outerBlock: {
+  innerBlock: {
+    val |= 1;
+    break outerBlock; // 同时跳出 innerBlock 和 outerBlock
+    val |= 2;         // 跳过这一行
+  }
+  val |= 4;           // 跳过这一行
+}
+val;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(1, comp.GetValue().GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+var n = 10;
+var cnt = 0;
+for (var i = 0; i < n; ++i) {
+  test: {
+    break test;
+  }
+  ++cnt;
+}
+cnt;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(10, comp.GetValue().GetInt());
   }
 }
 
@@ -650,6 +702,28 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(val.IsDouble());
     EXPECT_DOUBLE_EQ(4.5, val.GetDouble());
   }
+
+  {
+    Parser parser(uR"(
+var a = 'Hello';
+var b = ', ';
+var c = 'World';
+var d = '!';
+var e = a + b;
+var f = c + d;
+e + f;
+)");
+  
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsString());
+    EXPECT_EQ(u"Hello, World!", comp.GetValue().GetHeapObject()->AsString()->GetString());
+  }
 }
 
 TEST(Interpreter, EvalNullLiteral) {
@@ -685,17 +759,33 @@ TEST(Intepreter, EvalNumericLiteral) {
 }
 
 TEST(Intepreter, EvalStringLiteral) {
-  Parser parser(uR"("Hello, World!")");
+  {
+    Parser parser(uR"("Hello, World!")");
   
-  Interpreter interpreter;
+    Interpreter interpreter;
 
-  auto ast_node = parser.ParsePrimaryExpression();
-  ASSERT_TRUE(ast_node->IsStringLiteral());
+    auto ast_node = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(ast_node->IsStringLiteral());
 
-  auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
-  ASSERT_TRUE(str.IsString());
+    auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
+    ASSERT_TRUE(str.IsString());
 
-  EXPECT_EQ(u"Hello, World!", str.GetHeapObject()->AsString()->GetString());
+    EXPECT_EQ(u"Hello, World!", str.GetHeapObject()->AsString()->GetString());
+  }
+
+  {
+    Parser parser(uR"("输出：你的名字叫什么？")");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(ast_node->IsStringLiteral());
+
+    auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
+    ASSERT_TRUE(str.IsString());
+
+    EXPECT_EQ(u"输出：你的名字叫什么？", str.GetHeapObject()->AsString()->GetString());
+  }
 }
 
 TEST(Interpreter, EvalObjectLiteral) {

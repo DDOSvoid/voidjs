@@ -15,7 +15,8 @@ class String;
 
 class StringTable {
  public:
-  types::String* GetOrInsert(std::u16string_view source) {
+  types::String* GetOrInsert(std::u16string_view str_view) {
+    std::u16string source(str_view);
     if (map_.find(source) == map_.end()) {
       auto str = factory_->NewString(source);
       map_.emplace(source, str);
@@ -26,7 +27,7 @@ class StringTable {
   }
   
  private:
-  std::map<std::u16string_view, types::String*> map_;
+  std::map<std::u16string, types::String*> map_;
   ObjectFactory* factory_;
 };
 

@@ -55,6 +55,7 @@ class Interpreter {
   types::Completion EvalBreakStatement(ast::BreakStatement* break_stmt);
   types::Completion EvalWithStatement(ast::WithStatement* with_stmt);
   types::Completion EvalSwitchStatement(ast::SwitchStatement* switch_stmt);
+  types::Completion EvalLabelledStatement(ast::LabelledStatement* label_stmt);
   types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
 
   std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);

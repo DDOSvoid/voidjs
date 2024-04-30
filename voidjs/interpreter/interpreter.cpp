@@ -335,6 +335,9 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     case AstNodeType::SWITCH_STATEMENT: {
       return EvalSwitchStatement(stmt->AsSwitchStatement());
     }
+    case AstNodeType::LABELLED_STATEMENT: {
+      return EvalLabelledStatement(stmt->AsLabelledStatement());
+    }
     default: {
       return Completion();
     }
@@ -743,6 +746,35 @@ Completion Interpreter::EvalSwitchStatement(SwitchStatement* switch_stmt) {
   
   // 4. Return R.
   return R;
+}
+
+// EvalLabelledStatement
+// Defined in ECMAScript 5.1 Chapter 12.12
+Completion Interpreter::EvalLabelledStatement(LabelledStatement* label_stmt) {
+  // LabelledStatement : Identifier : Statement
+  
+  // An ECMAScript program is considered syntactically incorrect
+  // if it contains a LabelledStatement that is enclosed by a LabelledStatement with the same Identifier as label.
+  // This does not apply to labels appearing within the body of a FunctionDeclaration that
+  // is nested, directly or indirectly, within a labelled statement.
+  // todo
+
+  auto label = label_stmt->GetLabel()->AsIdentifier()->GetName();
+  vm_->GetExecutionContext()->AddLabel(label);
+
+  // The production Identifier : Statement is evaluated by
+  // adding Identifier to the label set of Statement and then evaluating Statement.
+  // If the LabelledStatement itself has a non-empty label set,
+  // these labels are also added to the label set of Statement before evaluating it.
+  // If the result of evaluating Statement is (break, V, L) where L is equal to Identifier, the production results in (normal, V, empty).
+  auto ret = EvalStatement(label_stmt->GetBody());
+  if (ret.GetType() == CompletionType::BREAK && ret.GetTarget() == label) {
+    vm_->GetExecutionContext()->DeleteLabel(label);
+    return Completion{CompletionType::NORMAL, ret.GetValue()};
+  }
+  
+  vm_->GetExecutionContext()->DeleteLabel(label);
+  return ret;
 }
 
 // Eval Expression
