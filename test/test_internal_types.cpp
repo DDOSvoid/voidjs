@@ -71,9 +71,16 @@ TEST(InternalTypes, HashMap) {
     ASSERT_TRUE(val.IsInt());
     EXPECT_EQ(100, val.GetInt());
   }
+
+  hashmap->Erase(vm, key2);
+  
+  {
+    auto val = hashmap->Find(vm, key2);
+    EXPECT_TRUE(val.IsEmpty());
+  }
 }
 
-TEST(InternalTypes, ProperyMap) {
+TEST(InternalTypes, PropertyMap) {
   Interpreter interpreter;
   auto vm = interpreter.GetVM();
   auto factory = vm->GetObjectFactory();
@@ -97,12 +104,12 @@ TEST(InternalTypes, ProperyMap) {
   map = types::PropertyMap::SetProperty(vm, map, key3, val3);
   map = types::PropertyMap::SetProperty(vm, map, key4, val4);
 
-  auto val = map->GetProperty(key4);
+  auto val = map->GetProperty(vm, key4);
   ASSERT_TRUE(val.IsHeapObject() && val.GetHeapObject()->IsDataPropertyDescriptor());
   EXPECT_EQ(val4.GetValue().GetInt(), val.GetHeapObject()->AsDataPropertyDescriptor()->GetValue().GetInt());
 
-  map->DeleteProperty(key1);
+  map->DeleteProperty(vm, key1);
 
-  auto emp_val = map->GetProperty(key1);
+  auto emp_val = map->GetProperty(vm, key1);
   EXPECT_TRUE(emp_val.IsEmpty());
 }

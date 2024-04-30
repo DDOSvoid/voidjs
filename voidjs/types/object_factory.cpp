@@ -106,7 +106,7 @@ DataPropertyDescriptor* ObjectFactory::NewDataPropertyDescriptor(
 }
 
 AccessorPropertyDescriptor* ObjectFactory::NewAccessorPropertyDescriptor(
-  const types::PropertyDescriptor &desc) {
+  const PropertyDescriptor &desc) {
   auto prop = NewHeapObject(AccessorPropertyDescriptor::SIZE)->AsAccessorPropertyDescriptor();
   prop->SetType(JSType::ACCESSOR_PROPERTY_DESCRIPTOR);
   prop->SetGetter(desc.GetGetter());
@@ -126,9 +126,9 @@ GenericPropertyDescriptor* ObjectFactory::NewGenericPropertyDescriptor(
 }
 
 PropertyMap* ObjectFactory::NewPropertyMap() {
-  auto map = NewArray(2 * PropertyMap::DEFAULT_ENTRY_NUM)->AsPropertyMap();
-  map->SetType(JSType::PROPERTY_MAP);
-  return map;
+  auto prop_map = NewHashMap(PropertyMap::DEFAULT_PROPERTY_NUMS)->AsPropertyMap();
+  prop_map->SetType(JSType::PROPERTY_MAP);
+  return prop_map;
 }
 
 Binding* ObjectFactory::NewBinding(JSValue value, bool _mutable, bool deletable) {
@@ -150,6 +150,7 @@ InternalFunction* ObjectFactory::NewInternalFunction(InternalFunctionType func) 
 
 HashMap* ObjectFactory::NewHashMap(std::uint32_t capacity) {
   auto hashmap = NewArray(HashMap::HEADER_SIZE + HashMap::ENTRY_SIZE * capacity)->AsHashMap();
+  hashmap->SetType(JSType::HASH_MAP);
   hashmap->SetBucketCapacity(capacity);
   hashmap->SetBucketSize(0);
   return hashmap;

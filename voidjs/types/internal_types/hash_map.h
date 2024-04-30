@@ -16,6 +16,7 @@ class HashMap : public Array {
   std::int32_t GetBucketSize() const { return Get(BUCKET_SIZE_INDEX).GetInt(); }
   void SetBucketSize(std::int32_t size) { Set(BUCKET_SIZE_INDEX, JSValue(size)); }
   void IncreaseBucketSize() { SetBucketSize(GetBucketSize() + 1); }
+  void DecreaseBucketSize() { SetBucketSize(GetBucketSize() - 1); }
   
   static constexpr std::uint32_t BUCKET_CAPACITY_INDEX = 1;
   std::int32_t GetBucketCapacity() const { return Get(BUCKET_CAPACITY_INDEX).GetInt(); }
@@ -61,6 +62,14 @@ class HashMap : public Array {
     }
 
     return new_hashmap;
+  }
+
+  void Erase(VM* vm, String* key) {
+    auto entry = FindEntry(key);
+
+    if (!GetKey(entry).IsEmpty()) {
+      DeleteEntry(entry);
+    }
   }
 
   JSValue Find(VM* vm, String* key) const {
@@ -128,6 +137,12 @@ class HashMap : public Array {
     SetKey(entry, JSValue(key));
     SetValue(entry, value);
     IncreaseBucketSize();
+  }
+
+  void DeleteEntry(std::uint32_t entry) {
+    SetKey(entry, JSValue{});
+    SetValue(entry, JSValue{});
+    DecreaseBucketSize();
   }
 
   bool IsFull() {

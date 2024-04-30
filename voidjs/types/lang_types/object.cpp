@@ -18,7 +18,7 @@ PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, String* P) {
   auto props = O->GetProperties().GetHeapObject()->AsPropertyMap();
   
   // 1. If O doesn’t have an own property with name P, return undefined.
-  auto prop = props->GetProperty(P);
+  auto prop = props->GetProperty(vm, P);
   if (prop.IsEmpty()) {
     return PropertyDescriptor{};
   }
@@ -240,7 +240,7 @@ bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
   // 3. If desc.[[Configurable]] is true, then
   if (desc.GetConfigurable()) {
     // a. Remove the own property with name P from O.
-    O->GetProperties().GetHeapObject()->AsPropertyMap()->DeleteProperty(P);
+    O->GetProperties().GetHeapObject()->AsPropertyMap()->DeleteProperty(vm, P);
 
     // b. Return true.
     return true;
