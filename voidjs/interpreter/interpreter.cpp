@@ -211,16 +211,16 @@ void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
     auto dn_str = factory->NewString(dn->GetName());
 
     // b. Let varAlreadyDeclared be the result of calling env’s HasBinding concrete method passing dn as the argument.
-    auto var_already_declared = env->HasBinding(vm_, dn_str);
+    auto var_already_declared = EnvironmentRecord::HasBinding(vm_, env, dn_str);
 
     // c. If varAlreadyDeclared is false, then
     if (!var_already_declared) {
       // i. Call env’s CreateMutableBinding concrete method
       //    passing dn and configurableBindings as the arguments.
-      env->CreateMutableBinding(vm_, dn_str, configurable_bindings);
+      EnvironmentRecord::CreateMutableBinding(vm_, env, dn_str, configurable_bindings);
 
       // ii. Call env’s SetMutableBinding concrete method passing dn, undefined, and strict as the arguments.
-      env->SetMutableBinding(vm_, dn_str, JSValue::Undefined(), strict);
+      EnvironmentRecord::SetMutableBinding(vm_, env, dn_str, JSValue::Undefined(), strict);
     }
   }
 }
@@ -1044,7 +1044,7 @@ std::variant<JSValue, Reference> Interpreter::EvalCallExpression(CallExpression*
     // b. Else, the base of ref is an Environment Record
     else {
       // i. Let thisValue be the result of calling the ImplicitThisValue concrete method of GetBase(ref).
-      this_value = std::get<EnvironmentRecord*>(pref->GetBase())->ImplicitThisValue(vm_);
+      this_value = EnvironmentRecord::ImplicitThisValue(vm_, std::get<EnvironmentRecord*>(pref->GetBase()));
     }
   }
   // 7. Else, Type(ref) is not Reference.
@@ -2158,7 +2158,7 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
     // a. Return the result of calling the GetBindingValue concrete method of
     //    base passing GetReferencedName(V) and IsStrictReference(V) as arguments.
     auto env = std::get<EnvironmentRecord*>(base);
-    return env->GetBindingValue(vm_, ref.GetReferencedName(), ref.IsStrictReference());
+    return EnvironmentRecord::GetBindingValue(vm_, env, ref.GetReferencedName(), ref.IsStrictReference());
   }
 }
 
@@ -2244,7 +2244,7 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     // a. Call the SetMutableBinding (10.2.1) concrete method of base,
     //    passing GetReferencedName(V), W, and IsStrictReference(V) as arguments.
     auto base_env = std::get<EnvironmentRecord*>(base);
-    base_env->SetMutableBinding(vm_, ref->GetReferencedName(), W, ref->IsStrictReference());
+    EnvironmentRecord::SetMutableBinding(vm_, base_env,ref->GetReferencedName(), W, ref->IsStrictReference());
   }
 
   // 6. Return

@@ -21,7 +21,7 @@ Reference LexicalEnvironment::GetIdentifierReference(VM* vm, LexicalEnvironment*
   auto env_rec = lex->GetEnvRec();
 
   // 3. Let exists be the result of calling the HasBinding(N) concrete method of envRec passing name as the argument N.
-  auto exists = env_rec->HasBinding(vm, name);
+  auto exists = EnvironmentRecord::HasBinding(vm, env_rec, name);
 
   // 4. If exists is true, then
   if (exists) {
@@ -40,23 +40,27 @@ Reference LexicalEnvironment::GetIdentifierReference(VM* vm, LexicalEnvironment*
 }
 
 LexicalEnvironment* LexicalEnvironment::NewDeclarativeEnvironmentRecord(VM* vm, LexicalEnvironment* E) {
+  auto factory = vm->GetObjectFactory();
+    
   // 1. Let env be a new Lexical Environment.
   // 2. Let envRec be a new declarative environment record containing no bindings.
   // 3. Set env’s environment record to be envRec.
   // 4. Set the outer lexical environment reference of env to E.
   // 5. Return env.
-  auto env_rec = new DeclarativeEnvironmentRecord();
-  return new LexicalEnvironment(E, env_rec);
+  auto env_rec = factory->NewDeclarativeEnvironmentRecord();
+  return factory->NewLexicalEnvironment(E, env_rec);
 }
 
 LexicalEnvironment* LexicalEnvironment::NewObjectEnvironmentRecord(VM* vm, JSValue O, LexicalEnvironment* E) {
+  auto factory = vm->GetObjectFactory();
+  
   // 1. Let env be a new Lexical Environment.
   // 2. Let envRec be a new object environment record containing O as the binding object.
   // 3. Set env’s environment record to be envRec.
   // 4. Set the outer lexical environment reference of env to E.
   // 5. Return env.
-  auto env_rec = new ObjectEnvironmentRecord(O.GetHeapObject()->AsObject());
-  return new LexicalEnvironment(E, env_rec);
+  auto env_rec = factory->NewObjectEnvironmentRecord(O.GetHeapObject()->AsObject());
+  return factory->NewLexicalEnvironment(E, env_rec);
 }
 
 }  // namespace types

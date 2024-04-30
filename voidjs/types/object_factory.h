@@ -6,17 +6,12 @@
 
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
+#include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
-
-namespace builtins {
-
-class GlobalObject;
-class JSObject;
-
-}  // namespace builtins
 
 class HeapObject;
 class RuntimeCallInfo;
@@ -47,6 +42,10 @@ class ObjectFactory {
   types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable);
   types::InternalFunction* NewInternalFunction(InternalFunctionType func);
   types::HashMap* NewHashMap(std::uint32_t capacity);
+  types::EnvironmentRecord* NewEnvironmentRecord();
+  types::DeclarativeEnvironmentRecord* NewDeclarativeEnvironmentRecord();
+  types::ObjectEnvironmentRecord* NewObjectEnvironmentRecord(types::Object* obj);
+  types::LexicalEnvironment* NewLexicalEnvironment(types::LexicalEnvironment* outer, types::EnvironmentRecord* env_rec);
 
   types::Object* NewEmptyObject(std::size_t extra_size);
   builtins::JSObject* NewJSObject(JSValue value);

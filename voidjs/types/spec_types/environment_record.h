@@ -4,61 +4,63 @@
 #include <unordered_map>
 
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/internal_types/binding.h"
+#include "voidjs/utils/helper.h"
 
 namespace voidjs {
 namespace types {
 
-class EnvironmentRecord {
+class HashMap;
+class Object;
+
+class EnvironmentRecord : public HeapObject {
  public:
   // Abstract methods of EnvironmentRecord
   // Defined in ECMAScript 5.1 Chapter 10.2.1
-  virtual bool HasBinding(VM* vm, String* N) const = 0;
-  virtual void CreateMutableBinding(VM* vm, String* N, bool D) = 0;
-  virtual void SetMutableBinding(VM* vm, String* N, JSValue V, bool S) = 0;
-  virtual JSValue GetBindingValue(VM* vm, String* N, bool S) const = 0;
-  virtual bool DeleteBinding(VM* vm, String* N) = 0;
-  virtual JSValue ImplicitThisValue(VM* vm) const = 0;
+  // Only used to forward to concrete method
+  static bool HasBinding(VM* vm, EnvironmentRecord* env, String* N);
+  static void CreateMutableBinding(VM* vm, EnvironmentRecord* env, String* N, bool D);
+  static void SetMutableBinding(VM* vm, EnvironmentRecord* env, String* N, JSValue V, bool S);
+  static JSValue GetBindingValue(VM* vm, EnvironmentRecord* env, String* N, bool S);
+  static bool DeleteBinding(VM* vm, EnvironmentRecord* env, String* N);
+  static JSValue ImplicitThisValue(VM* vm, EnvironmentRecord* env);
+
+  static constexpr std::size_t SIZE = 0;
+  static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
 };
 
 class DeclarativeEnvironmentRecord : public EnvironmentRecord {
  public:
-  // Inherited from base class 
-  virtual bool HasBinding(VM* vm, String* N) const override;
-  virtual void CreateMutableBinding(VM* vm, String* N, bool D) override;
-  virtual void SetMutableBinding(VM* vm, String* N, JSValue V, bool S) override;
-  virtual JSValue GetBindingValue(VM* vm, String* N, bool S) const override;
-  virtual bool DeleteBinding(VM* vm, String* N) override;
-  virtual JSValue ImplicitThisValue(VM* vm) const override;
+  static bool HasBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
+  static void CreateMutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, bool D);
+  static void SetMutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, JSValue V, bool S);
+  static JSValue GetBindingValue(VM* vm, DeclarativeEnvironmentRecord* env, String* N, bool S);
+  static bool DeleteBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
+  static JSValue ImplicitThisValue(VM* vm, DeclarativeEnvironmentRecord* env);
 
   // Additional methods of DeclarativeEnvironmentRecord
-  void CreateInmmutableBinding(VM* vm, String* N);
-  void InitializeImmutableBinding(VM* vm, String* N, JSValue V);
+  void CreateInmmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
+  void InitializeImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, JSValue V);
 
- private:
-  std::unordered_map<String*, Binding*> binding_map_;
+  static constexpr std::size_t BINDING_MAP_OFFSET = EnvironmentRecord::END_OFFSET;
+  HashMap* GetBindingMap() const { return *utils::BitGet<HashMap**>(this, BINDING_MAP_OFFSET); }
+  void SetBindingMap(HashMap* map) { *utils::BitGet<HashMap**>(this, BINDING_MAP_OFFSET) = map; }
 };
 
 class ObjectEnvironmentRecord : public EnvironmentRecord {
  public:
-  ObjectEnvironmentRecord(Object* object)
-    : object_(object)
-  {}
-  
-  // Inherited from base class 
-  virtual bool HasBinding(VM* vm, String* N) const override;
-  virtual void CreateMutableBinding(VM* vm, String* N, bool D) override;
-  virtual void SetMutableBinding(VM* vm, String* N, JSValue V, bool S) override;
-  virtual JSValue GetBindingValue(VM* vm, String* N, bool S) const override;
-  virtual bool DeleteBinding(VM* vm, String* N) override;
-  virtual JSValue ImplicitThisValue(VM*) const override;
+  static bool HasBinding(VM* vm, ObjectEnvironmentRecord* env, String* N);
+  static void CreateMutableBinding(VM* vm, ObjectEnvironmentRecord* env, String* N, bool D);
+  static void SetMutableBinding(VM* vm, ObjectEnvironmentRecord* env, String* N, JSValue V, bool S);
+  static JSValue GetBindingValue(VM* vm, ObjectEnvironmentRecord* env, String* N, bool S);
+  static bool DeleteBinding(VM* vm, ObjectEnvironmentRecord* env, String* N);
+  static JSValue ImplicitThisValue(VM* vm, ObjectEnvironmentRecord* env);
 
-  bool GetProvideThis() const { return provide_this_; }
-  void SetProvideThis(bool flag) { provide_this_ = flag; }
+  static constexpr std::size_t OBJECT_OFFSET = EnvironmentRecord::END_OFFSET;
+  Object* GetObject() const { return *utils::BitGet<Object**>(this, OBJECT_OFFSET); }
+  void SetObject(Object* obj) { *utils::BitGet<Object**>(this, OBJECT_OFFSET) = obj; }
 
- private:
-  bool provide_this_ {false};
-  Object* object_; 
 };
 
 }  // namespace types

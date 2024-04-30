@@ -156,6 +156,34 @@ HashMap* ObjectFactory::NewHashMap(std::uint32_t capacity) {
   return hashmap;
 }
 
+EnvironmentRecord* ObjectFactory::NewEnvironmentRecord() {
+  auto env_rec = NewHeapObject(EnvironmentRecord::SIZE)->AsEnvironmentRecord();
+  env_rec->SetType(JSType::ENVIRONMENT_RECORD);
+  return env_rec;
+}
+
+DeclarativeEnvironmentRecord* ObjectFactory::NewDeclarativeEnvironmentRecord() {
+  auto env_rec = NewEnvironmentRecord()->AsDeclarativeEnvironmentRecord();
+  env_rec->SetType(JSType::DECLARAVIE_ENVIRONMENT_RECORD);
+  env_rec->SetBindingMap(NewHashMap(HashMap::MIN_CAPACITY));
+  return env_rec;
+}
+
+ObjectEnvironmentRecord* ObjectFactory::NewObjectEnvironmentRecord(Object* obj) {
+  auto env_rec = NewEnvironmentRecord()->AsObjectEnvironmentRecord();
+  env_rec->SetType((JSType::OBJECT_ENVIRONMENT_RECORD));
+  env_rec->SetObject(obj);
+  return env_rec;
+}
+
+LexicalEnvironment* ObjectFactory::NewLexicalEnvironment(LexicalEnvironment* outer, EnvironmentRecord* env_rec) {
+  auto env = NewHeapObject(LexicalEnvironment::SIZE)->AsLexicalEnvironment();
+  env->SetType(JSType::LEXICAL_ENVIRONMENT);
+  env->SetOuter(outer);
+  env->SetEnvRec(env_rec);
+  return env;
+}
+
 // used to create builtin object
 Object* ObjectFactory::NewEmptyObject(std::size_t extra_size) {
   auto obj = NewHeapObject(Object::SIZE + extra_size)->AsObject();

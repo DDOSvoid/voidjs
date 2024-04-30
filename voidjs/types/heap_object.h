@@ -22,6 +22,10 @@ class PropertyMap;
 class Binding;
 class InternalFunction;
 class HashMap;
+class EnvironmentRecord;
+class DeclarativeEnvironmentRecord;
+class ObjectEnvironmentRecord;
+class LexicalEnvironment;
 
 }  // namespace types
 
@@ -54,6 +58,9 @@ class HeapObject {
   // Binding attributes
   // bool deletable                    1 bit
   // bool mutable                      1 bit
+
+  // ObjectEnvironmentRecord properies
+  // bool provide_this                 1 bit
   
   static constexpr std::size_t META_DATA_OFFSET = 0;
   static constexpr std::size_t META_DATA_SIZE = sizeof(std::uint64_t);
@@ -100,6 +107,10 @@ class HeapObject {
   bool GetMutable() const { return MutableBitSet::Get(*GetMetaData()); }
   void SetMutable(bool flag) { MutableBitSet::Set(GetMetaData(), flag); }
 
+  using ProvideThisBitSet = utils::BitSet<bool, 24, 25>;
+  bool GetProvideThis() const { return ProvideThisBitSet::Get(*GetMetaData()); }
+  void SetProvideThis(bool flag) { ProvideThisBitSet::Set(GetMetaData(), flag); }
+
   static constexpr std::size_t SIZE = META_DATA_SIZE;
   static constexpr std::size_t END_OFFSET = META_DATA_OFFSET + META_DATA_SIZE;
  
@@ -113,11 +124,15 @@ class HeapObject {
   bool IsGenericPropertyDescriptor() const { return GetType() == JSType::GENERIC_PROPERTY_DESCRIPTOR; }
   bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
   bool IsBindgin() const { return GetType() == JSType::BINDING; }
+  bool IsInternalFunction() const { return GetType() == JSType::INTERNAL_FUNCTION; }
+  bool IsHashMap() const { return GetType() == JSType::HASH_MAP; }
+  bool IsEnvironmentRecord() const { return GetType() == JSType::ENVIRONMENT_RECORD; }
+  bool IsDeclarativeEnvironmentRecord() const { return GetType() == JSType::DECLARAVIE_ENVIRONMENT_RECORD; }
+  bool IsObjectEnvironmentRecord() const { return GetType() == JSType::OBJECT_ENVIRONMENT_RECORD; }
+  bool IsLexicalEnvironment() const { return GetType() == JSType::LEXICAL_ENVIRONMENT; }
   bool IsGlobalObject() const { return GetType() == JSType::GLOBAL_OBJECT; }
   bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
   bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
-  bool IsInternalFunction() const { return GetType() == JSType::INTERNAL_FUNCTION; }
-  bool IsHashMap() const { return GetType() == JSType::HASH_MAP; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -130,6 +145,10 @@ class HeapObject {
   types::Binding* AsBinding() { return reinterpret_cast<types::Binding*>(this); }
   types::InternalFunction* AsInternalFunction() { return reinterpret_cast<types::InternalFunction*>(this); }
   types::HashMap* AsHashMap() { return reinterpret_cast<types::HashMap*>(this); }
+  types::EnvironmentRecord* AsEnvironmentRecord() { return reinterpret_cast<types::EnvironmentRecord*>(this); }
+  types::DeclarativeEnvironmentRecord* AsDeclarativeEnvironmentRecord() { return reinterpret_cast<types::DeclarativeEnvironmentRecord*>(this); }
+  types::ObjectEnvironmentRecord* AsObjectEnvironmentRecord() { return reinterpret_cast<types::ObjectEnvironmentRecord*>(this); }
+  types::LexicalEnvironment* AsLexicalEnvironment() { return reinterpret_cast<types::LexicalEnvironment*>(this); }
   builtins::GlobalObject* AsGlobalObject() { return reinterpret_cast<builtins::GlobalObject*>(this); }
   builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
   builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
@@ -145,6 +164,10 @@ class HeapObject {
   const types::Binding* AsBinding() const { return reinterpret_cast<const types::Binding*>(this); }
   const types::InternalFunction* AsInternalFunction() const { return reinterpret_cast<const types::InternalFunction*>(this); }
   const types::HashMap* AsHashMap() const { return reinterpret_cast<const types::HashMap*>(this); }
+  const types::EnvironmentRecord* AsEnvironmentRecord() const { return reinterpret_cast<const types::EnvironmentRecord*>(this); }
+  const types::DeclarativeEnvironmentRecord* AsDeclarativeEnvironmentRecord() const { return reinterpret_cast<const types::DeclarativeEnvironmentRecord*>(this); }
+  const types::ObjectEnvironmentRecord* AsObjectEnvironmentRecord() const { return reinterpret_cast<const types::ObjectEnvironmentRecord*>(this); }
+  const types::LexicalEnvironment* AsLexicalEnvironment() const { return reinterpret_cast<const types::LexicalEnvironment*>(this); }
   const builtins::GlobalObject* AsGlobalObject() const { return reinterpret_cast<const builtins::GlobalObject*>(this); }
   const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
   const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }
