@@ -5,13 +5,13 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/internal_types/array.h"
 #include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/types/internal_types/hash_map.h"
 #include "voidjs/types/lang_types/string.h"
 
 using namespace voidjs;
 
 TEST(InternalTypes, Array) {
   Interpreter interpreter;
-
   auto vm = interpreter.GetVM();
   
   std::size_t len = 5;
@@ -36,9 +36,45 @@ TEST(InternalTypes, Array) {
   }
 }
 
+TEST(InternalTypes, HashMap) {
+  Interpreter interpreter;
+  auto vm = interpreter.GetVM();
+  auto factory = vm->GetObjectFactory();
+  
+  auto hashmap = factory->NewHashMap(2);
+  
+  auto key1 = factory->NewStringFromTable(u"key1");
+  auto val1 = JSValue(42);
+
+  auto key2 = factory->NewStringFromTable(u"key2");
+  auto val2 = JSValue(factory->NewStringFromTable(u"42"));
+
+  auto key3 = factory->NewStringFromTable(u"key3");
+  auto val3 = JSValue(-2);
+
+  auto key4 = factory->NewStringFromTable(u"key4");
+  auto val4 = JSValue(100);
+
+  hashmap = types::HashMap::Insert(vm, hashmap, key1, val1);
+  hashmap = types::HashMap::Insert(vm, hashmap, key2, val2);
+  hashmap = types::HashMap::Insert(vm, hashmap, key3, val3);
+  hashmap = types::HashMap::Insert(vm, hashmap, key4, val4);
+
+  {
+    auto val = hashmap->Find(vm, key1);
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(42, val.GetInt());
+  }
+
+  {
+    auto val = hashmap->Find(vm, key4);
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(100, val.GetInt());
+  }
+}
+
 TEST(InternalTypes, ProperyMap) {
   Interpreter interpreter;
-  
   auto vm = interpreter.GetVM();
   auto factory = vm->GetObjectFactory();
   

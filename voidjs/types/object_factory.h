@@ -11,17 +11,6 @@
 
 namespace voidjs {
 
-namespace types {
-
-class String;
-class Object;
-class Array;
-class DataPropertyDescriptor;
-class AccessorPropertyDescriptor;
-class PropertyMap;
-
-}  // namespace types
-
 namespace builtins {
 
 class GlobalObject;
@@ -57,6 +46,7 @@ class ObjectFactory {
   types::PropertyMap* NewPropertyMap();
   types::Binding* NewBinding(JSValue value, bool _mutable, bool deletable);
   types::InternalFunction* NewInternalFunction(InternalFunctionType func);
+  types::HashMap* NewHashMap(std::uint32_t capacity);
 
   types::Object* NewEmptyObject(std::size_t extra_size);
   builtins::JSObject* NewJSObject(JSValue value);

@@ -21,6 +21,11 @@ class Array : public HeapObject {
   JSValue Get(std::size_t idx) const { return *(GetData() + idx); } 
   void Set(std::size_t idx, JSValue val) { *(GetData() + idx) = val; }
 
+  // SIZE and END_OFFSET are valid only when Array is empty
+  static constexpr std::size_t SIZE = sizeof(std::size_t);
+  static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
+
+  
   static Array* Append(VM* vm, Array* first, Array* second);
 };
 

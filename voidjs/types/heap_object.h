@@ -21,6 +21,7 @@ class GenericPropertyDescriptor;
 class PropertyMap;
 class Binding;
 class InternalFunction;
+class HashMap;
 
 }  // namespace types
 
@@ -116,6 +117,7 @@ class HeapObject {
   bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
   bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
   bool IsInternalFunction() const { return GetType() == JSType::INTERNAL_FUNCTION; }
+  bool IsHashMap() const { return GetType() == JSType::HASH_MAP; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -127,6 +129,7 @@ class HeapObject {
   types::PropertyMap* AsPropertyMap() { return reinterpret_cast<types::PropertyMap*>(this); }
   types::Binding* AsBinding() { return reinterpret_cast<types::Binding*>(this); }
   types::InternalFunction* AsInternalFunction() { return reinterpret_cast<types::InternalFunction*>(this); }
+  types::HashMap* AsHashMap() { return reinterpret_cast<types::HashMap*>(this); }
   builtins::GlobalObject* AsGlobalObject() { return reinterpret_cast<builtins::GlobalObject*>(this); }
   builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
   builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
@@ -141,6 +144,7 @@ class HeapObject {
   const types::PropertyMap* AsPropertyMap() const { return reinterpret_cast<const types::PropertyMap*>(this); }
   const types::Binding* AsBinding() const { return reinterpret_cast<const types::Binding*>(this); }
   const types::InternalFunction* AsInternalFunction() const { return reinterpret_cast<const types::InternalFunction*>(this); }
+  const types::HashMap* AsHashMap() const { return reinterpret_cast<const types::HashMap*>(this); }
   const builtins::GlobalObject* AsGlobalObject() const { return reinterpret_cast<const builtins::GlobalObject*>(this); }
   const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
   const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }
