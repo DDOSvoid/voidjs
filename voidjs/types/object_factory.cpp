@@ -173,6 +173,7 @@ ObjectEnvironmentRecord* ObjectFactory::NewObjectEnvironmentRecord(Object* obj) 
   auto env_rec = NewEnvironmentRecord()->AsObjectEnvironmentRecord();
   env_rec->SetType((JSType::OBJECT_ENVIRONMENT_RECORD));
   env_rec->SetObject(obj);
+  env_rec->SetProvideThis(false);
   return env_rec;
 }
 

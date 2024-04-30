@@ -1111,7 +1111,9 @@ VariableDeclaration* Parser::ParseVariableDeclaration(bool allow_in) {
   auto ident = ParseIdentifier();
 
   if (lexer_.GetToken().GetType() != TokenType::ASSIGN) {
-    ThrowSyntaxError("expects a '='");
+    auto var_decl = new VariableDeclaration(ident, nullptr);
+    AddVariableDeclaration(var_decl);
+    return var_decl;
   }
   lexer_.NextToken();
 

@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
 
@@ -34,13 +35,17 @@ class ExecutionContext {
   void EnterIteration() { ++iteration_depth_; }
   void ExitIteration() { --iteration_depth_; }
 
-  bool InSwitch() const { return switch_depth_; }
+  bool InSwitch() const { return switch_depth_ > 0; }
   void EnterSwitch() { ++switch_depth_; }
   void ExitSwitch() { --switch_depth_;}
   
   types::LexicalEnvironment* GetLexicalEnvironment() const {
     return lexical_environment_;
   }
+  void SetLexicalEnvironment(types::LexicalEnvironment* lexical_env) {
+    lexical_environment_ = lexical_env;
+  }
+  
   types::LexicalEnvironment* GetVariableEnvironment() const {
     return variable_environment_;
   }

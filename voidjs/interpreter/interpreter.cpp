@@ -276,10 +276,10 @@ Completion Interpreter::EvalProgram(AstNode *ast_node) {
       } else {
         tail_result = EvalStatement(stmt);
       }
-      head_result = Completion(
+      head_result = Completion{
         tail_result.GetType(),
         tail_result.GetValue().IsEmpty() ? head_result.GetValue() : tail_result.GetValue(),
-        tail_result.GetTarget());
+        tail_result.GetTarget()};
     }
 
     // 5. Return (tailResult.type, V, tailResult.target)
@@ -325,6 +325,15 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     }
     case AstNodeType::CONTINUE_STATEMENT: {
       return EvalContinueStatement(stmt->AsContinueStatement());
+    }
+    case AstNodeType::BREAK_STATEMENT: {
+      return EvalBreakStatement(stmt->AsBreakStatement());
+    }
+    case AstNodeType::WITH_STATEMENT: {
+      return EvalWithStatement(stmt->AsWithStatement());
+    }
+    case AstNodeType::SWITCH_STATEMENT: {
+      return EvalSwitchStatement(stmt->AsSwitchStatement());
     }
     default: {
       return Completion();
@@ -694,15 +703,46 @@ Completion Interpreter::EvalWithStatement(WithStatement* with_stmt) {
   auto new_env = LexicalEnvironment::NewObjectEnvironmentRecord(vm_, JSValue(obj), old_env);
   
   // 5. Set the provideThis flag of newEnv to true.
+  new_env->SetProvideThis(true);
   
   // 6. Set the running execution context’s LexicalEnvironment to newEnv.
+  vm_->GetExecutionContext()->SetLexicalEnvironment(new_env);
   
   // 7. Let C be the result of evaluating Statement but if an exception is thrown during the evaluation,
   //    let C be (throw, V, empty), where V is the exception. (Execution now proceeds as if no exception were thrown.)
+  // todo
+  auto C = EvalStatement(with_stmt->GetBody());
   
   // 8. Set the running execution context’s Lexical Environment to oldEnv.
+  vm_->GetExecutionContext()->SetLexicalEnvironment(old_env);
   
   // 9. Return C.
+  return C;
+}
+
+// EvalSwitchStatement
+// Defined in ECMAScript 5.1 Chapter 12.11
+Completion Interpreter::EvalSwitchStatement(SwitchStatement* switch_stmt) {
+  // SwitchStatement : switch ( Expression ) CaseBlock
+
+  vm_->GetExecutionContext()->EnterSwitch();
+  
+  // 1. Let exprRef be the result of evaluating Expression.
+  auto expr_ref = EvalExpression(switch_stmt->GetDiscriminant());
+  
+  // 2. Let R be the result of evaluating CaseBlock, passing it GetValue(exprRef) as a parameter.
+  auto R = EvalCaseBlock(switch_stmt->GetCaseClauses(), GetValue(expr_ref));
+  
+  // 3. If R.type is break and R.target is in the current label set, return (normal, R.value, empty).
+  if (R.GetType() == CompletionType::BREAK &&
+      vm_->GetExecutionContext()->HasLabel(R.GetTarget())) {
+    return Completion{CompletionType::NORMAL, R.GetValue()};
+  }
+  
+  vm_->GetExecutionContext()->ExitSwitch();
+  
+  // 4. Return R.
+  return R;
 }
 
 // Eval Expression
@@ -848,7 +888,7 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
     PutValue(lref, r);
 
     // 6. Return r.
-    return rval;
+    return r;
   }
 }
 
@@ -1068,6 +1108,138 @@ std::vector<JSValue> Interpreter::EvalArgumentList(const ast::Expressions& exprs
   return vals;
 }
 
+// EvalCaseBlock
+// Defined in ECMAScript 5.1 Chapter 12.11
+Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
+  // CaseBlock : { CaseClausesopt }
+  // CaseBlock : { CaseClausesoptDefaultClause CaseClausesopt }
+  
+  // 1. Let V = empty.
+  JSValue V {};
+  
+  // 2. Let A be the list of CaseClause items in the first CaseClauses, in source text order.
+  // 3. Let B be the list of CaseClause items in the second CaseClauses, in source text order.
+  auto it = cases.begin();
+  
+  // 4. Let found be false.
+  bool found {false};
+  
+  // 5. Repeat letting C be in order each CaseClause in A
+  while (it != cases.end() && !(*it)->IsDefault()) {
+    // a. If found is false, then
+    if (!found) {
+      // i. Let clauseSelector be the result of evaluating C.
+      auto clause_selector = GetValue(EvalExpression((*it)->GetCondition()));
+      
+      // ii. If input is equal to clauseSelector as defined by the === operator, then set found to true.
+      found = StrictEqualityComparison(clause_selector, input);
+    }
+    
+    // b. If found is true, then
+    if (found) {
+      // i. If C has a StatementList, then
+      if (!(*it)->GetStatements().empty()) {
+        // 1. Evaluate C’s StatementList and let R be the result.
+        auto R = EvalStatementList((*it)->GetStatements());
+        
+        // 2. If R.value is not empty, then let V = R.value.
+        if (!R.GetValue().IsEmpty()) {
+          V = R.GetValue();
+        }
+        
+        // 3. R is an abrupt completion, then return (R.type,V,R.target).
+        if (R.IsAbruptCompletion()) {
+          return Completion{R.GetType(), V, R.GetTarget()};
+        }
+      }
+    }
+    ++it;
+  }
+
+  CaseClause* default_clause {nullptr};
+  if (it != cases.end() && (*it)->IsDefault()) {
+    default_clause = *it;
+    ++it;
+  }
+  
+  // 6. Let foundInB be false.
+  bool found_in_B {false};
+  
+  // 7. If found is false, then
+  if (!found) {
+    // a. Repeat, while foundInB is false and all elements of B have not been processed
+    while (it != cases.end() && !found_in_B) {
+      // i. Let C be the next CaseClause in B.
+      // ii. Let clauseSelector be the result of evaluating C.
+      auto clause_selector = GetValue(EvalExpression((*it)->GetCondition()));
+      
+      // iii. If input is equal to clauseSelector as defined by the === operator, then
+      if (StrictEqualityComparison(clause_selector, input)) {
+        // 1. Set foundInB to true.
+        found_in_B = true;
+        
+        // 2. If C has a StatementList, then
+        if (!(*it)->GetStatements().empty()) {
+          // 1. Evaluate C’s StatementList and let R be the result.
+          auto R = EvalStatementList((*it)->GetStatements());
+          
+          // 2. If R.value is not empty, then let V = R.value.
+          if (!R.GetValue().IsEmpty()) {
+            V = R.GetValue();
+          }
+        
+          // 3. R is an abrupt completion, then return (R.type,V,R.target).
+          if (R.IsAbruptCompletion()) {
+            return Completion{R.GetType(), V, R.GetTarget()};
+          }
+        }
+      }
+      
+      ++it;
+    }
+  }
+  
+  // 8. If foundInB is false and the DefaultClause has a StatementList, then
+  if (!found_in_B && !default_clause->GetStatements().empty()) {
+    // a. Evaluate the DefaultClause’s StatementList and let R be the result.
+    auto R = EvalStatementList(default_clause->GetStatements());
+    
+    // b. If R.value is not empty, then let V = R.value.
+    if (!R.GetValue().IsEmpty()) {
+      V = R.GetValue();
+    }
+    
+    // c. If R is an abrupt completion, then return (R.type, V, R.target).
+    if (R.IsAbruptCompletion()) {
+      return Completion{R.GetType(), V, R.GetTarget()};
+    }
+  }
+  
+  // 9. Repeat (Note that if step 7.a.i has been performed this loop does not start at the beginning of B)
+  while (it != cases.end()) {
+    // a. Let C be the next CaseClause in B. If there is no such CaseClause, return (normal, V, empty).
+    // b. If C has a StatementList, then
+    if (!(*it)->GetStatements().empty()) {
+      // i. Evaluate C’s StatementList and let R be the result.
+      auto R = EvalStatementList((*it)->GetStatements());
+      
+      // ii. If R.value is not empty, then let V = R.value.
+      if (!R.GetValue().IsEmpty()) {
+        V = R.GetValue();
+      }
+    
+      // iii. If R is an abrupt completion, then return (R.type, V, R.target).
+      if (R.IsAbruptCompletion()) {
+        return Completion{R.GetType(), V, R.GetTarget()};
+      }
+    }
+
+    ++it;
+  }
+
+  return Completion{CompletionType::NORMAL, V};
+}
+
 // EvalObjectLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1.5
 JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
@@ -1143,7 +1315,7 @@ Completion Interpreter::EvalStatementList(const Statements &stmts) {
         return s;
     }
 
-    sl = Completion(s.GetType(), s.GetValue().IsEmpty() ? sl.GetValue() : s.GetValue(), s.GetTarget());
+    sl = Completion{s.GetType(), s.GetValue().IsEmpty() ? sl.GetValue() : s.GetValue(), s.GetTarget()};
 
     if (sl.IsAbruptCompletion()) {
       return sl;

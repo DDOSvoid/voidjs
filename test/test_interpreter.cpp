@@ -255,6 +255,153 @@ count;
   }
 }
 
+TEST(Interpreter, EvalWithStatement) {
+  Parser parser(uR"(
+var value = 0;
+var O = {
+    value : 42,
+};
+with (O) {
+    value;
+}
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsInt());
+  EXPECT_EQ(42, comp.GetValue().GetInt());
+}
+
+
+TEST(Interpreter, EvalSwitchStatement) {
+  {
+    Parser parser(uR"(
+var price = 0.0;
+var expr = "橙子";
+switch (expr) {
+  case "橙子":
+    price = 0.59;
+    break;
+  case "苹果":
+    price = 0.32;
+    break;
+  case "芒果":
+  case "木瓜":
+    price = 2.79;
+    break;
+  default:
+    price = -1.0;
+}
+price;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsNumber());
+    EXPECT_DOUBLE_EQ(0.59, comp.GetValue().GetNumber());
+  }
+
+
+  {
+    Parser parser(uR"(
+var foo = 5;
+switch (foo) {
+  case 2:
+    foo = 2;
+    break;
+  default:
+    foo = 0;
+  case 1:
+    foo = 1;
+}
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(0, comp.GetValue().GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+var Animal = "长颈鹿";
+var ans;
+switch (Animal) {
+  case "奶牛":
+  case "长颈鹿":
+  case "狗":
+  case "猪":
+    ans = "这类动物没有灭绝。";
+    break;
+  case "恐龙":
+  default:
+    ans = "这类动物已经灭绝。";
+}
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsString());
+    EXPECT_EQ(u"这类动物没有灭绝。", comp.GetValue().GetHeapObject()->AsString()->GetString());
+  }
+
+  {
+    Parser parser(uR"(
+var foo = 1;
+var output = "输出：";
+switch (foo) {
+  case 0:
+    output += "所以";
+  case 1:
+    output += "你的";
+    output += "名字";
+  case 2:
+    output += "叫";
+  case 3:
+    output += "什么";
+  case 4:
+    output += "？";
+    break;
+  case 5:
+    output += "！";
+    break;
+  default:
+}
+output;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsString());
+    EXPECT_EQ(u"输出：你的名字叫什么？", comp.GetValue().GetHeapObject()->AsString()->GetString());
+  }
+}
+
 TEST(Interpreter, EvalMemberExpression) {
   Parser parser(uR"(
 var obj = {
