@@ -7,6 +7,7 @@
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/interpreter/runtime_call_info.h"
+#include "voidjs/utils/macros.h"
 
 
 namespace voidjs {
@@ -169,7 +170,8 @@ void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
     // a. If Throw is true, then throw a TypeError exception.
     // b. Else return.
     if (Throw) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VOID(
+        vm, u"Object.Put cannot put property when Object.CanPut return false");
     } else {
       return ;
     }
@@ -247,7 +249,8 @@ bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
   }
   // 4. Else if Throw, then throw a TypeError exception.
   else if (Throw) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      vm, u"Object.Delete cannot delete proprety when it's attribute [[Configurable]] is false", false);
   }
 
   // 5. Return false.
@@ -287,7 +290,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
   // 3. If current is undefined and extensible is false, then Reject.
   if (current.IsEmpty() && !extensible) {
     if (Throw) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VALUE(
+        vm, u"Object.DefineOwnProperty fails when it's attribute [[Extensible]] is false", false);
     } else {
       return false;
     }
@@ -367,7 +371,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
     //    [[Enumerable]] fields of current and Desc are the Boolean negation of each other.
     if (Desc.GetConfigurable() || (Desc.HasEnumerable() && current.GetEnumerable() != Desc.GetEnumerable())) {
       if (Throw) {
-        // todo
+        THROW_TYPE_ERROR_AND_RETURN_VALUE(
+          vm, u"Object.DefineOwnProprety fails when it's attribute [[Configurable]] is false", false);
       } else {
         return false;
       }
@@ -383,7 +388,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
     // a. Reject, if the [[Configurable]] field of current is false.
     if (!current.GetConfigurable()) {
       if (Throw) {
-        // todo
+        THROW_TYPE_ERROR_AND_RETURN_VALUE(
+          vm, u"Object.DefineOwnProprety fails when it's attribute [[Configurable]] is false", false);
       } else {
         return false;
       }
@@ -420,7 +426,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //    and the [[Writable]] field of Desc is true.
       if (!current.GetWritable() && Desc.GetWritable()) {
         if (Throw) {
-          // todo
+          THROW_TYPE_ERROR_AND_RETURN_VALUE(
+            vm, u"Object.DefineOwnProprety fails when it's attribute [[Configurable]] is false", false);
         } else {
           return false;
         }
@@ -432,7 +439,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
         //    and SameValue(Desc.[[Value]], current.[[Value]]) is false.
         if (!Desc.GetValue().IsEmpty() && !JSValue::SameValue(Desc.GetValue(), current.GetValue())) {
           if (Throw) {
-            // todo
+            THROW_TYPE_ERROR_AND_RETURN_VALUE(
+              vm, u"Object.DefineOwnProprety fails when it's attribute [[Configurable]] is false", false);
           } else {
             return false;
           }
@@ -452,7 +460,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //    and SameValue(Desc.[[Set]], current.[[Set]]) is false.
       if (!Desc.GetSetter().IsEmpty() && !JSValue::SameValue(Desc.GetSetter(), current.GetSetter())) {
         if (Throw) {
-          // todo
+          THROW_TYPE_ERROR_AND_RETURN_VALUE(
+            vm, u"Object.DefineOwnProprety fails when it's attribute [[Configurable]] is false", false);
         } else {
           return false;
         }
@@ -462,7 +471,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //     and SameValue(Desc.[[Get]], current.[[Get]]) is false.
       if (!Desc.GetGetter().IsEmpty() && !JSValue::SameValue(Desc.GetGetter(), current.GetGetter())) {
         if (Throw) {
-          // todo
+          THROW_TYPE_ERROR_AND_RETURN_VALUE(
+            vm, u"Object.DefineOwnProprety fails when it's attribute [[Configurable]] is false", false);
         } else {
           return false;
         }

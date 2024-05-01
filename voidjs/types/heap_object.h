@@ -8,6 +8,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/object_class_type.h"
+#include "voidjs/types/error_type.h"
 
 namespace voidjs {
 namespace types {
@@ -34,6 +35,7 @@ namespace builtins {
 class GlobalObject;
 class JSObject;
 class JSFunction;
+class JSError;
 
 }  // namespace builtins
 
@@ -43,7 +45,9 @@ class HeapObject {
   
   // enum JSType type                  8 bits
   
-  // enum ObjectClassType class_type   8 bits 
+  // enum ObjectClassType class_type   8 bits
+
+  // enum ErrorType error_type         8 bits
 
   // Object internal properties
   // bool extensible                   1 bit
@@ -74,6 +78,10 @@ class HeapObject {
   using ClassTypeBitSet = utils::BitSet<ObjectClassType, 8, 16>;
   ObjectClassType GetClassType() const { return ClassTypeBitSet::Get(*GetMetaData()); }
   void SetClassType(ObjectClassType type) { ClassTypeBitSet::Set(GetMetaData(), type); }
+
+  using ErrorTypeBitSet = utils::BitSet<ErrorType, 8, 16>;
+  ErrorType GetErrorType() const { return ErrorTypeBitSet::Get(*GetMetaData()); }
+  void SetErrorType(ErrorType type) { ErrorTypeBitSet::Set(GetMetaData(), type); }
 
   using ExtensibleBitSet = utils::BitSet<bool, 16, 17>;
   bool GetExtensible() const { return ExtensibleBitSet::Get(*GetMetaData()); }
@@ -133,6 +141,7 @@ class HeapObject {
   bool IsGlobalObject() const { return GetType() == JSType::GLOBAL_OBJECT; }
   bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
   bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
+  bool IsJSError() const { return GetType() == JSType::JS_ERROR; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -152,6 +161,7 @@ class HeapObject {
   builtins::GlobalObject* AsGlobalObject() { return reinterpret_cast<builtins::GlobalObject*>(this); }
   builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
   builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
+  builtins::JSError* AsJSError() { return reinterpret_cast<builtins::JSError*>(this); }
 
   // As Cast
   const types::String* AsString() const { return reinterpret_cast<const types::String*>(this); }
@@ -171,6 +181,7 @@ class HeapObject {
   const builtins::GlobalObject* AsGlobalObject() const { return reinterpret_cast<const builtins::GlobalObject*>(this); }
   const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
   const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }
+  const builtins::JSError* AsJSError() const { return reinterpret_cast<const builtins::JSError*>(this); }
 };
 
 }  // namespace voidjs

@@ -1,5 +1,7 @@
 #include "voidjs/types/object_factory.h"
 
+#include <functional>
+
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
@@ -14,6 +16,7 @@
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
+#include "voidjs/builtins/js_error.h"
 
 namespace voidjs {
 
@@ -234,6 +237,51 @@ JSObject* ObjectFactory::NewJSObject(JSValue value) {
   
   // 8. Return obj.
   return obj;
+}
+
+JSError* ObjectFactory::NewNativeError(ErrorType type, String* msg) {
+  JSValue proto {JSValue::Null()};
+  switch (type) {
+    case ErrorType::EVAL_ERROR: {
+      proto = JSValue(vm_->GetEvalErrorPrototype());
+      break;
+    }
+    case ErrorType::RANGE_ERROR: {
+      proto = JSValue(vm_->GetRangeErrorPrototype());
+      break;
+    }
+    case ErrorType::REFERENCE_ERROR: {
+      proto = JSValue(vm_->GetReferenceErrorPrototype());
+      break;
+    }
+    case ErrorType::SYNTAX_ERROR: {
+      proto = JSValue(vm_->GetSyntaxErrorPrototype());
+      break;
+    }
+    case ErrorType::TYPE_ERROR: {
+      proto = JSValue(vm_->GetTypeErrorPrototype());
+      break;
+    }
+    case ErrorType::URI_ERROR: {
+      proto = JSValue(vm_->GetURIErrorPrototype());
+      break;
+    }
+    default: {
+      proto = JSValue::Null();
+      break;
+    }
+  }
+
+  auto error = NewObject(proto)->AsJSError();
+  
+  error->SetClassType(ObjectClassType::ERROR);
+  error->SetExtensible(true);
+
+  return error;
+}
+
+JSError* ObjectFactory::NewNativeError(ErrorType type, std::u16string_view msg) {
+  return NewNativeError(type, NewStringFromTable(msg));
 }
 
 }  // namespace voidjs

@@ -17,26 +17,28 @@ namespace jsvalue {
 // Undefined:   [56 bits 0] | 0000 0010
 // Null:        [56 bits 0] | 0000 0011
 // Empty:       [56 bits 0] | 0000 0101
-inline constexpr JSValueType VALUE_FALSE       = 0x0000'0000'0000'0006;
-inline constexpr JSValueType VALUE_TRUE        = 0x0000'0000'0000'0007;
-inline constexpr JSValueType VALUE_UNDEFINED   = 0x0000'0000'0000'0002;
-inline constexpr JSValueType VALUE_NULL        = 0x0000'0000'0000'0003;
-inline constexpr JSValueType VALUE_EMPTY       = 0x0000'0000'0000'0005;
+// Exception:   [56 bits 0] | 0000 1000
+inline constexpr JSValueType VALUE_FALSE            = 0x0000'0000'0000'0006;
+inline constexpr JSValueType VALUE_TRUE             = 0x0000'0000'0000'0007;
+inline constexpr JSValueType VALUE_UNDEFINED        = 0x0000'0000'0000'0002;
+inline constexpr JSValueType VALUE_NULL             = 0x0000'0000'0000'0003;
+inline constexpr JSValueType VALUE_EMPTY            = 0x0000'0000'0000'0005;
+inline constexpr JSValueType VALUE_EXCEPTION        = 0x0000'0000'0000'0008;
 
 // [0x0000] [48 bit direct pointer]
 inline constexpr JSValueType TAG_HEAP_OBJECT_MASK   = 0xFFFF'000000000006;
 inline constexpr JSValueType TAG_HEAP_OBJECT        = 0x0000'000000000000;
 
-inline constexpr JSValueType TAG_BOOLEAN       = 0x0000'0000'0000'0006;
+inline constexpr JSValueType TAG_BOOLEAN            = 0x0000'0000'0000'0006;
 
 // qNaN
-inline constexpr JSValueType DOUBLE_OFFSET_BIT = 48;
-inline constexpr JSValueType DOUBLE_OFFSET     = 1ull << DOUBLE_OFFSET_BIT;
-inline constexpr JSValueType NAN_MASK          = 0xFFF8'0000'0000'0000 + DOUBLE_OFFSET_BIT;
+inline constexpr JSValueType DOUBLE_OFFSET_BIT      = 48;
+inline constexpr JSValueType DOUBLE_OFFSET          = 1ull << DOUBLE_OFFSET_BIT;
+inline constexpr JSValueType NAN_MASK               = 0xFFF8'0000'0000'0000 + DOUBLE_OFFSET_BIT;
 
 // [0xFFFF] [0x0000] [32 bit signed integer]
-inline constexpr JSValueType TAG_INT_MASK      = 0xFFFF'FFFF'00000000;
-inline constexpr JSValueType TAG_INT           = 0xFFFF'0000'00000000;
+inline constexpr JSValueType TAG_INT_MASK           = 0xFFFF'FFFF'00000000;
+inline constexpr JSValueType TAG_INT                = 0xFFFF'0000'00000000;
 
 }  // namespace jsvalue
 
@@ -103,10 +105,12 @@ class JSValue {
   bool operator==(const JSValue& other) const { return value_ == other.value_; }
   bool operator!=(const JSValue& other) const { return value_ != other.value_; }
 
-  static JSValue False() { return JSValue(jsvalue::VALUE_FALSE); }
-  static JSValue True() { return JSValue(jsvalue::VALUE_TRUE); }
-  static JSValue Undefined() { return JSValue(jsvalue::VALUE_UNDEFINED); }
-  static JSValue Null() { return JSValue(jsvalue::VALUE_NULL); }
+  static JSValue False() { return JSValue{jsvalue::VALUE_FALSE}; }
+  static JSValue True() { return JSValue{jsvalue::VALUE_TRUE}; }
+  static JSValue Undefined() { return JSValue{jsvalue::VALUE_UNDEFINED}; }
+  static JSValue Null() { return JSValue{jsvalue::VALUE_NULL}; }
+  static JSValue Empty() { return JSValue{jsvalue::VALUE_EMPTY}; }
+  static JSValue Exception() { return JSValue{jsvalue::VALUE_EXCEPTION}; }
 
   // language types check
   bool IsFalse() const { return value_ == jsvalue::VALUE_FALSE; }
@@ -124,6 +128,7 @@ class JSValue {
   bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
   bool IsDouble() const { return !IsHeapObject() && !IsInt(); }
   bool IsEmpty() const { return value_ == jsvalue::VALUE_EMPTY; }
+  bool IsException() const { return value_ == jsvalue::VALUE_EXCEPTION; }
   bool IsPropertyName() const { return IsString() || IsNumber(); }
 
   bool GetBoolean() const { return value_ == jsvalue::VALUE_TRUE; }

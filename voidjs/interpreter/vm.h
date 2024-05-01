@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include "voidjs/types/heap_object.h"
-#include "voidjs/types/js_value.h"
 #include "voidjs/interpreter/execution_context.h"
+#include "voidjs/types/heap_object.h"
+#include "voidjs/utils/macros.h"
 
 namespace voidjs {
 
@@ -18,28 +18,75 @@ class VM {
   void PushExecutionContext(ExecutionContext* ctx) { execution_ctxs_.push_back(ctx); }
   void PopExecutionContext() { execution_ctxs_.pop_back(); }
   
-  types::LexicalEnvironment* GetGlobalEnv() const { return global_env_; }
-  void SetGlobalEnv(types::LexicalEnvironment* env) { global_env_ = env; }
+  PROPERTY_ACCESSORS(types::LexicalEnvironment*, GlobalEnv, global_env_)
+  PROPERTY_ACCESSORS( builtins::GlobalObject*, GlobalObject, global_obj_)
+  PROPERTY_ACCESSORS(ObjectFactory*, ObjectFactory, object_factory_)
   
-  builtins::GlobalObject* GetGlobalObject() const { return global_obj_; }
-  void SetGlobalObject(builtins::GlobalObject* obj) { global_obj_ = obj; }
+  PROPERTY_ACCESSORS(builtins::JSObject*, ObjectPrototype, object_proto_)
+  PROPERTY_ACCESSORS(builtins::JSObject*, ObjectConstructor, object_ctor_)
+  
+  PROPERTY_ACCESSORS(builtins::JSFunction*, FunctionPrototype, function_proto_)
+  PROPERTY_ACCESSORS(builtins::JSFunction*, FunctionConstructor, function_ctor_)
+  
+  PROPERTY_ACCESSORS(builtins::JSError*, ErrorPrototype, error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, ErrorConstructor, error_ctor_)
+  
+  PROPERTY_ACCESSORS(builtins::JSError*, EvalErrorPrototype, eval_error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, EvalErrorConstructor, eval_error_ctor_)
+  PROPERTY_ACCESSORS(builtins::JSError*, RangeErrorPrototype, range_error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, RangeErrorConstructor, range_error_ctor_)
+  PROPERTY_ACCESSORS(builtins::JSError*, ReferenceErrorPrototype, reference_error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, ReferenceErrorConstructor, reference_error_ctor_)
+  PROPERTY_ACCESSORS(builtins::JSError*, SyntaxErrorPrototype, syntax_error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, SyntaxErrorConstructor, syntax_error_ctor_)
+  PROPERTY_ACCESSORS(builtins::JSError*, TypeErrorPrototype, type_error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, TypeErrorConstructor, type_error_ctor_)
+  PROPERTY_ACCESSORS(builtins::JSError*, URIErrorPrototype, uri_error_proto_)
+  PROPERTY_ACCESSORS(builtins::JSError*, URIErrorConstructor, uri_error_ctor_)
 
-  ObjectFactory* GetObjectFactory() const { return object_factory_; }
-  void SetObjectFactory(ObjectFactory* object_factory) { object_factory_ = object_factory; }
-
-  builtins::JSObject* GetObjectPrototype() const { return object_proto_; }
-  void SetObjectPrototype(builtins::JSObject* object_proto) { object_proto_ = object_proto; }
-
-  builtins::JSObject* GetObjectConstructor() const { return object_ctor_; }
-  void SetObjectConstructor(builtins::JSObject* object_ctor) { object_ctor_ = object_ctor; }
+  PROPERTY_ACCESSORS(builtins::JSError*, Exception, exception_)
+  bool HasException() const { return exception_; }
+  void ClearException() { exception_ = nullptr; }
 
  private:
-  builtins::GlobalObject* global_obj_;
+  // standard builtin objects
   builtins::JSObject* object_proto_;
   builtins::JSObject* object_ctor_;
+  
+  builtins::JSFunction* function_proto_;
+  builtins::JSFunction* function_ctor_;
+  
+  builtins::JSError* error_proto_;
+  builtins::JSError* error_ctor_;
+  
+  builtins::JSError* eval_error_proto_;
+  builtins::JSError* eval_error_ctor_;
+
+  builtins::JSError* range_error_proto_;
+  builtins::JSError* range_error_ctor_;
+
+  builtins::JSError* reference_error_proto_;
+  builtins::JSError* reference_error_ctor_;
+  
+  builtins::JSError* syntax_error_proto_;
+  builtins::JSError* syntax_error_ctor_;
+
+  builtins::JSError* type_error_proto_;
+  builtins::JSError* type_error_ctor_;
+
+  builtins::JSError* uri_error_proto_;
+  builtins::JSError* uri_error_ctor_;
+
+  // 
+  builtins::GlobalObject* global_obj_;
   types::LexicalEnvironment* global_env_;
   std::vector<ExecutionContext*> execution_ctxs_;
+
+  //  
   ObjectFactory* object_factory_;
+
+  //
+  builtins::JSError* exception_;
 };
 
 }  // namespace voidjs

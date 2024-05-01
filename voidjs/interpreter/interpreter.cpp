@@ -25,16 +25,19 @@
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/types/internal_types/internal_function.h"
+#include "voidjs/builtins/builtin.h"
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/interpreter/string_table.h"
+#include "voidjs/utils/macros.h"
 
 namespace voidjs {
 
 using namespace ast;
 using namespace types;
+using namespace builtins;
 
 void Interpreter::Initialize() {
   vm_ = new VM{};
@@ -43,101 +46,13 @@ void Interpreter::Initialize() {
   auto object_factory = new ObjectFactory{vm_, string_table};
 
   vm_->SetObjectFactory(object_factory);
-  
-  InitializeBuiltinObjects();
-  SetPropretiesForBuiltinObjects();
+
+  // Initialize builtin objects and set it for vm
+  Builtin::Initialize(vm_);
   
   auto global_env = LexicalEnvironment::NewObjectEnvironmentRecord(vm_, JSValue(vm_->GetGlobalObject()), nullptr);
   
   vm_->SetGlobalEnv(global_env);
-}
-
-void Interpreter::InitializeBuiltinObjects() {
-  auto factory = vm_->GetObjectFactory();
-  
-  // Initialize GlobalObject
-  auto global_obj = factory->NewGlobalObject();
-  vm_->SetGlobalObject(global_obj);
-
-  // Initialize Object Prototype
-  // The value of the [[Prototype]] internal property of the Object prototype object is null,
-  // the value of the [[Class]] internal property is "Object",
-  // and the initial value of the [[Extensible]] internal property is true.
-  auto obj_proto = factory->NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
-  obj_proto->SetType(JSType::JS_OBJECT);
-  obj_proto->SetClassType(ObjectClassType::OBJECT);
-  obj_proto->SetPrototype(JSValue::Null());
-  obj_proto->SetExtensible(true);
-
-  vm_->SetObjectPrototype(obj_proto);
-
-  // Initialzie Function Prototype
-  // The value of the [[Prototype]] internal property of the Function prototype object is
-  // the standard built-in Object prototype object (15.2.4).
-  // The initial value of the [[Extensible]] internal property of the Function prototype object is true.
-  // The Function prototype object does not have a valueOf property of its own;
-  // however, it inherits the valueOf property from the Object prototype Object.
-  auto func_proto = factory->NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
-  func_proto->SetType(JSType::JS_FUNCTION);
-  func_proto->SetClassType(ObjectClassType::FUNCTION);
-  func_proto->SetPrototype(JSValue(obj_proto));
-  func_proto->SetExtensible(true);
-
-  // Initialize Object Constructor
-  // The value of the [[Prototype]] internal property of the Object constructor is
-  // the standard built-in Function prototype object.
-  // Besides the internal properties and the length property (whose value is 1),
-  // the Object constructor has the following properties:
-  auto obj_ctor = factory->NewEmptyObject(builtins::JSObject::SIZE)->AsJSObject();
-  obj_ctor->SetType(JSType::JS_OBJECT);
-  obj_ctor->SetClassType(ObjectClassType::OBJECT);
-  obj_ctor->SetPrototype(JSValue(func_proto));
-  obj_ctor->SetExtensible(true);
-  
-  obj_ctor->SetCallable(true);
-
-  vm_->SetObjectConstructor(obj_ctor);
-  
-  // Initialize Function Constructor
-  // The Function constructor is itself a Function object and its [[Class]] is "Function".
-  // The value of the [[Prototype]] internal property of the Function constructor is
-  // the standard built-in Function prototype object (15.3.4).
-  // The value of the [[Extensible]] internal property of the Function constructor is true.
-  auto func_ctor = factory->NewEmptyObject(builtins::JSFunction::SIZE)->AsJSFunction();
-  func_ctor->SetType(JSType::JS_FUNCTION);
-  func_ctor->SetClassType(ObjectClassType::FUNCTION);
-  func_ctor->SetPrototype(JSValue(func_proto));
-  func_ctor->SetExtensible(true);
-}
-
-void Interpreter::SetPropretiesForBuiltinObjects() {
-  auto global_obj = vm_->GetGlobalObject();
-  auto factory = vm_->GetObjectFactory();
-
-  // Set properties for Global Object
-  SetDataProperty(global_obj, factory->NewStringFromTable(u"Object"),
-                  JSValue(vm_->GetObjectConstructor()), true, false, true);
-}
-
-// SetDataProperty
-void Interpreter::SetDataProperty(Object* obj, String* prop_name, JSValue prop_val,
-                                  bool writable, bool enumerable, bool configurable) {
-  auto props = obj->GetProperties().GetHeapObject()->AsPropertyMap();
-  
-  auto desc = PropertyDescriptor{prop_val, writable, enumerable, configurable};
-  
-  obj->SetProperties(JSValue(PropertyMap::SetProperty(vm_, props, prop_name, desc)));
-}
-
-// SetFunctionProperty
-void Interpreter::SetFunctionProperty(Object* obj, String* prop_name, InternalFunctionType func) {
-  auto props = obj->GetProperties().GetHeapObject()->AsPropertyMap();
-  
-  auto internal_func = vm_->GetObjectFactory()->NewInternalFunction(func);
-  
-  auto desc = PropertyDescriptor{JSValue(internal_func), true, false, true};
-  
-  obj->SetProperties(JSValue(PropertyMap::SetProperty(vm_, props, prop_name, desc)));
 }
 
 void Interpreter::EnterGlobalCode(AstNode* ast_node) {
@@ -2403,7 +2318,7 @@ JSValue Interpreter::GetUsedByGetValue(JSValue base, String* P) {
 void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W) {
   // 1. If Type(V) is not Reference, throw a ReferenceError exception.
   if (!std::get_if<Reference>(&V)) {
-    // todo
+    THROW_REFERENCE_ERROR_AND_RETURN_VOID(vm_, u"PutValue cannot operate on non-Reference type");
   }
 
   auto ref = std::get_if<Reference>(&V);
@@ -2416,7 +2331,8 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
     // a. If IsStrictReference(V) is true, then
     if (ref->IsStrictReference()) {
       // i. Throw ReferenceError exception.
-      // todo
+      THROW_REFERENCE_ERROR_AND_RETURN_VOID(
+        vm_, u"PutValue cannot operate on Undefined value in strict mode");
     }
     // b. Call the [[Put]] internal method of the global object,
     //    passing GetReferencedName(V) for the property name,
@@ -2465,7 +2381,8 @@ void Interpreter::PutUsedByPutValue(JSValue base, String* P, JSValue W, bool Thr
   if (!Object::CanPut(vm_, O, P)) {
     // a. If Throw is true, then throw a TypeError exception.
     if (Throw) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VOID(
+        vm_, u"PutUsedByPutValue fails when Object.CanPut returns false");
     }
     // b. Else return.
     else {
@@ -2480,7 +2397,8 @@ void Interpreter::PutUsedByPutValue(JSValue base, String* P, JSValue W, bool Thr
   if (own_desc.IsDataDescriptor()) {
     // a. If Throw is true, then throw a TypeError exception.
     if (Throw) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VOID(
+        vm_, u"PutUsedByPutValue fails when new property differs from the old one in type.");
     }
     // b. Else return.
     else {
@@ -2505,7 +2423,8 @@ void Interpreter::PutUsedByPutValue(JSValue base, String* P, JSValue W, bool Thr
   else {
     // a. If Throw is true, then throw a TypeError exception.
     if (Throw) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VOID(
+        vm_, u"PutUsedByPutValue fails to create an own property on the transient object");
     }
   }
 

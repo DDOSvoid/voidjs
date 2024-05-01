@@ -6,7 +6,6 @@
 
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
-#include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/interpreter/runtime_call_info.h"
@@ -50,6 +49,9 @@ class ObjectFactory {
   types::Object* NewEmptyObject(std::size_t extra_size);
   builtins::JSObject* NewJSObject(JSValue value);
   builtins::JSFunction* NewJSFunction(JSValue value);
+  builtins::JSError* NewJSError(types::String* msg);
+  builtins::JSError* NewNativeError(ErrorType type, types::String* msg);  
+  builtins::JSError* NewNativeError(ErrorType type, std::u16string_view msg);  
 
  private:
   VM* vm_;

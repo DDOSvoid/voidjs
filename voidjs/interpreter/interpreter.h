@@ -27,7 +27,6 @@ class Interpreter {
   }
   
   void Initialize(); 
-  void InitializeBuiltinObjects();
   void SetPropretiesForBuiltinObjects();
   void SetDataProperty(types::Object* obj, types::String* prop_name, JSValue prop_val,
                        bool writable, bool enumerable, bool configurable);
