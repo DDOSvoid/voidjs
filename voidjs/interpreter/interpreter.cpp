@@ -100,7 +100,7 @@ void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
     auto fn = func->GetName();
 
     // b. Let fo be the result of instantiating FunctionDeclaration f as described in Clause 13.
-    // todo
+    //auto fo = Builtin::InstantiatingFunctionDeclaration(vm_, func, types::LexicalEnvironment *scope, bool strict)
   }
 
   // 6. Let argumentsAlreadyDeclared be the result of
@@ -626,6 +626,33 @@ Completion Interpreter::EvalBreakStatement(BreakStatement* break_stmt) {
   }
 }
 
+// EvalReturnStatement
+// Defined in ECMAScript 5.1 Chapter 12.9
+Completion Interpreter::EvalRetrunStatement(ReturnStatement* return_stmt) {
+  // ReturnStatement : return [no LineTerminator here] Expressionopt ;
+
+  // An ECMAScript program is considered syntactically incorrect if
+  // it contains a return statement that is not within a FunctionBody.
+  // A return statement causes a function to cease execution and return a value to the caller.
+  // If Expression is omitted, the return value is undefined. Otherwise, the return value is the value of Expression.
+  // todo
+
+  // 1. If the Expression is not present, return (return, undefined, empty).
+  if (!return_stmt->GetExpression()) {
+    return Completion{CompletionType::RETURN, JSValue::Undefined()};
+  }
+  
+  // 2. Let exprRef be the result of evaluating Expression.
+  auto expr_ref = EvalExpression(return_stmt->GetExpression());
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+  
+  // 3. Return (return, GetValue(exprRef), empty).
+  auto val = GetValue(expr_ref);
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+
+  return Completion{CompletionType::RETURN, val};
+}
+
 // EvalWithStatement
 // Defined in ECMAScript 5.1 Chapter 12.10
 // todo
@@ -800,6 +827,12 @@ Completion Interpreter::EvalDebuggerStatement(DebuggerStatement* debug_stmt) {
   // 3. Return result.
 
   return Completion{CompletionType::NORMAL};
+}
+
+// EvalFunctionDeclaration
+// Defined in ECMAScript 5.1 Chapter 13
+void Interpreter::EvalFunctionDeclaration(AstNode* ast_node) {
+  
 }
 
 // Eval Expression

@@ -52,13 +52,15 @@ class Interpreter {
   types::Completion EvalForInStatement(ast::ForInStatement* for_in_stmt);
   types::Completion EvalContinueStatement(ast::ContinueStatement* cont_stmt);
   types::Completion EvalBreakStatement(ast::BreakStatement* break_stmt);
+  types::Completion EvalRetrunStatement(ast::ReturnStatement* return_stmt);
   types::Completion EvalWithStatement(ast::WithStatement* with_stmt);
   types::Completion EvalSwitchStatement(ast::SwitchStatement* switch_stmt);
   types::Completion EvalLabelledStatement(ast::LabelledStatement* label_stmt);
   types::Completion EvalThrowStatement(ast::ThrowStatement* throw_stmt);
   types::Completion EvalTryStatement(ast::TryStatement* try_stmt);
-  types::Completion EvalDebuggerStatement(ast::DebuggerStatement* debug_stmt); 
-  types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
+  types::Completion EvalDebuggerStatement(ast::DebuggerStatement* debug_stmt);
+  
+  void EvalFunctionDeclaration(ast::AstNode* ast_node);
 
   std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);
   std::variant<JSValue, types::Reference> EvalSequenceExpression(ast::SequenceExpression* seq_aexpr);
@@ -100,7 +102,8 @@ class Interpreter {
   types::Reference IdentifierResolution(types::String* ident);
   bool AbstractEqualityComparison(JSValue x, JSValue y);
   bool StrictEqualityComparison(JSValue x, JSValue y);
-  JSValue AbstractRelationalComparison(JSValue x, JSValue y, bool left_first); 
+  JSValue AbstractRelationalComparison(JSValue x, JSValue y, bool left_first);
+  JSValue CreateFunctionObjects();
   
   JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
   JSValue GetUsedByGetValue(JSValue base, types::String* P);

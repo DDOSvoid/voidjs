@@ -38,7 +38,7 @@ class ObjectFactory {
   types::String* NewString(std::u16string_view source);
   types::String* NewStringFromTable(std::u16string_view source);
   types::Object* NewObject(
-    JSType type, ObjectClassType class_type, JSValue proto,
+    std::size_t extra_size, JSType type, ObjectClassType class_type, JSValue proto,
     bool extensible, bool callable, bool is_counstructor);
   types::Array* NewArray(std::size_t len);
   types::DataPropertyDescriptor* NewDataPropertyDescriptor(const types::PropertyDescriptor& desc);

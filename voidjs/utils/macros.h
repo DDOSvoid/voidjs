@@ -10,11 +10,11 @@
   }
 
 #define INITIALIZE_NATIVE_ERROR(name)                                   \
-  auto name##_proto = factory->NewObject(JSType::JS_ERROR, ObjectClassType::ERROR, \
+  auto name##_proto = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR, \
                                          JSValue{error_proto}, true, false, false)->AsJSError(); \
                                                                         \
-  auto name##_ctor = factory->NewObject(JSType::JS_ERROR, ObjectClassType::ERROR, \
-                                        JSValue{vm->GetFunctionPrototype()}, true, false, false)->AsJSError(); \
+  auto name##_ctor = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::FUNCTION, \
+                                        JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSError(); \
 
 #define THROW_ERROR_AND_RETURN_VOID(vm, type, message)      \
   do {                                                      \

@@ -43,9 +43,8 @@ JSObject* JSObject::Construct(VM* vm, JSValue value) {
   // 5 .Set the [[Class]] internal property of obj to "Object".
   // 6. Set the [[Extensible]] internal property of obj to true.
   // 7. Set the all the internal methods of obj as specified in 8.12
-  auto obj = factory->NewObject(JSType::JS_OBJECT, ObjectClassType::OBJECT,
-                                JSValue{vm->GetObjectPrototype()},
-                                true, false, false)->AsJSObject();
+  auto obj = factory->NewObject(JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::OBJECT,
+                                JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSObject();
   
   // 8. Return obj.
   return obj;

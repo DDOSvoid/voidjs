@@ -1,11 +1,24 @@
 #ifndef VOIDJS_BUILTINS_BUILTIN_H
 #define VOIDJS_BUILTINS_BUILTIN_H
 
+#include "voidjs/ir/ast.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
 
+namespace types {
+
+class LexicalEnvironment;
+
+}  // namespace types
+
+namespace builtins {
+
+class JSFunction;
+
+}  // namespace builtins
+  
 class VM;
 
 namespace builtins {
@@ -15,6 +28,10 @@ class Builtin {
   static void Initialize(VM* vm);
   static void InitializeBuiltinObjects(VM* vm);
   static void InitializeErrorObjects(VM* vm);
+
+  static builtins::JSFunction* InstantiatingFunctionDeclaration(
+    VM* vm, ast::AstNode* ast_node,
+    types::LexicalEnvironment* scope, bool strict);
   
  private:
   static void SetPropretiesForBuiltinObjects(VM* vm);

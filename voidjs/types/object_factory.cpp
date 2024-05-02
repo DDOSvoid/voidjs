@@ -86,9 +86,9 @@ String* ObjectFactory::NewStringFromTable(std::u16string_view source) {
 }
 
 Object* ObjectFactory::NewObject(
-  JSType type, ObjectClassType class_type, JSValue proto,
-  bool extensible, bool callable, bool is_counstructor) {
-  auto obj = NewHeapObject(Object::SIZE)->AsObject();
+  std::size_t extra_size, JSType type, ObjectClassType class_type,
+  JSValue proto, bool extensible, bool callable, bool is_counstructor) {
+  auto obj = NewHeapObject(Object::SIZE + extra_size)->AsObject();
 
   obj->SetType(type);
   obj->SetClassType(class_type);
@@ -233,7 +233,8 @@ JSError* ObjectFactory::NewNativeError(ErrorType type, String* msg) {
     }
   }
 
-  auto error = NewObject(JSType::JS_ERROR, ObjectClassType::ERROR,
+  auto error = NewObject(JSError::SIZE, JSType::JS_ERROR,
+                         ObjectClassType::ERROR,
                          proto, true, false, false)->AsJSError();
   return error;
 }
