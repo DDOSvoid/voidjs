@@ -55,6 +55,9 @@ class Interpreter {
   types::Completion EvalWithStatement(ast::WithStatement* with_stmt);
   types::Completion EvalSwitchStatement(ast::SwitchStatement* switch_stmt);
   types::Completion EvalLabelledStatement(ast::LabelledStatement* label_stmt);
+  types::Completion EvalThrowStatement(ast::ThrowStatement* throw_stmt);
+  types::Completion EvalTryStatement(ast::TryStatement* try_stmt);
+  types::Completion EvalDebuggerStatement(ast::DebuggerStatement* debug_stmt); 
   types::Completion EvalFunctionDeclaration(ast::AstNode* ast_node);
 
   std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);
@@ -81,6 +84,7 @@ class Interpreter {
   std::pair<types::String*, types::PropertyDescriptor> EvalPropertyAssignment(ast::Property* prop);
   std::vector<JSValue> EvalArgumentList(const ast::Expressions& exprs);
   types::Completion EvalCaseBlock(const ast::CaseClauses& cases, JSValue input);
+  types::Completion EvalCatch(ast::Expression* catch_name, ast::Statement* catch_block, JSValue C);
   
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);

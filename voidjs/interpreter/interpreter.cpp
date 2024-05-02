@@ -30,6 +30,7 @@
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/js_error.h"
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/interpreter/string_table.h"
 #include "voidjs/utils/macros.h"
@@ -254,6 +255,12 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     case AstNodeType::LABELLED_STATEMENT: {
       return EvalLabelledStatement(stmt->AsLabelledStatement());
     }
+    case AstNodeType::THROW_STATEMENT: {
+      return EvalThrowStatement(stmt->AsThrowStatement());
+    }
+    case AstNodeType::TRY_STATEMENT: {
+      return EvalTryStatement(stmt->AsTryStatement());
+    }
     default: {
       return Completion();
     }
@@ -298,7 +305,7 @@ Completion Interpreter::EvalEmptyStatement(EmptyStatement *empty_stmt) {
 Completion Interpreter::EvalExpressionStatement(ExpressionStatement* expr_stmt) {
   // 1. Let exprRef be the result of evaluating Expression.
   auto expr_ref = EvalExpression(expr_stmt->GetExpression());
-  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
 
   // 2. Return (normal, GetValue(exprRef), empty).
   return Completion(CompletionType::NORMAL, GetValue(expr_ref));
@@ -311,7 +318,7 @@ Completion Interpreter::EvalIfStatement(ast::IfStatement* if_stmt) {
   
   // 1. Let exprRef be the result of evaluating Expression.
   auto expr_ref = EvalExpression(if_stmt->GetCondition());
-  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
 
   // 2. If ToBoolean(GetValue(exprRef)) is true, then
   if (JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
@@ -346,7 +353,7 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
   while (iterating) {
     // a. Let stmt be the result of evaluating Statement.
     auto stmt = EvalStatement(do_while_stmt->GetBody());
-    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+    RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
     // b. If stmt.value is not empty, let V = stmt.value.
     if (!stmt.GetValue().IsEmpty()) {
@@ -374,7 +381,7 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
 
     // d. Let exprRef be the result of evaluating Expression.
     auto expr_ref = EvalExpression(do_while_stmt->GetCondition());
-    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+    RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
     // e. If ToBoolean(GetValue(exprRef)) is false, set iterating to false.
     if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
@@ -402,7 +409,7 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
   while (true) {
     // a. Let exprRef be the result of evaluating Expression.
     auto expr_ref = EvalExpression(while_stmt->GetCondition());
-    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+    RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
     // b. If ToBoolean(GetValue(exprRef)) is false, return (normal, V, empty).
     if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
@@ -412,7 +419,7 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
 
     // c. Let stmt be the result of evaluating Statement.
     auto stmt = EvalStatement(while_stmt->GetBody());
-    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+    RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
     // d. If stmt.value is not empty, let V = stmt.value.
     if (!stmt.GetValue().IsEmpty()) {
@@ -456,7 +463,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
       EvalExpression(init->AsExpression());
     }
   }
-  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
   // 2. Let V = empty.
   JSValue V;
@@ -467,7 +474,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     if (for_stmt->GetCondition()) {
       // i. Let testExprRef be the result of evaluating the first Expression.
       auto test_expr_ref = EvalExpression(for_stmt->GetCondition());
-      RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
       // ii. If ToBoolean(GetValue(testExprRef)) is false, return (normal, V, empty).
       if (!JSValue::ToBoolean(vm_, GetValue(test_expr_ref))) {
@@ -478,7 +485,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
 
     // b. Let stmt be the result of evaluating Statement.
     auto stmt = EvalStatement(for_stmt->GetBody());
-    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+    RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
     // c. If stmt.value is not empty, let V = stmt.value
     if (!stmt.GetValue().IsEmpty()) {
@@ -508,11 +515,11 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     if (for_stmt->GetUpdate()) {
       // 1. Let incExprRef be the result of evaluating the second Expression.
       auto inc_expr_ref = EvalExpression(for_stmt->GetUpdate());
-      RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
       // 2. Call GetValue(incExprRef). (This value is not used.)
       GetValue(inc_expr_ref);
-      RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
     }
   }
 }
@@ -530,15 +537,15 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   if (for_in_stmt->GetLeft()->IsVariableDeclaraion()) {
     var_name = EvalVariableDeclaration(for_in_stmt->GetLeft()->AsVariableDeclaration());
   }
-  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
   // 2. Let exprRef be the result of evaluating the Expression.
   auto expr_ref = EvalExpression(for_in_stmt->GetRight());
-  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
   // 3. Let experValue be GetValue(exprRef).
   auto expr_val = GetValue(expr_ref);
-  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
   // 4. If experValue is null or undefined, return (normal, empty, empty).
   if (expr_val.IsNull() || expr_val.IsUndefined()) {
@@ -548,7 +555,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
 
   // 5. Let obj be ToObject(experValue).
   auto obj = JSValue::ToObject(vm_, expr_val);
-  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
   // 6. Let V = empty.
   JSValue V;
@@ -627,11 +634,11 @@ Completion Interpreter::EvalWithStatement(WithStatement* with_stmt) {
 
   // 1. Let val be the result of evaluating Expression.
   auto val = EvalExpression(with_stmt->GetContext());
-  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
   
   // 2. Let obj be ToObject(GetValue(val)).
   auto obj = JSValue::ToObject(vm_, GetValue(val));
-  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
   
   // 3. Let oldEnv be the running execution context’s LexicalEnvironment.
   auto old_env = vm_->GetExecutionContext()->GetLexicalEnvironment();
@@ -647,8 +654,12 @@ Completion Interpreter::EvalWithStatement(WithStatement* with_stmt) {
   
   // 7. Let C be the result of evaluating Statement but if an exception is thrown during the evaluation,
   //    let C be (throw, V, empty), where V is the exception. (Execution now proceeds as if no exception were thrown.)
-  // todo
-  auto C = EvalStatement(with_stmt->GetBody());
+  Completion C;
+  C = EvalStatement(with_stmt->GetBody());
+  if (vm_->HasException()) {
+    C = Completion{CompletionType::THROW, JSValue(vm_->GetException())};
+    vm_->ClearException();
+  }
   
   // 8. Set the running execution context’s Lexical Environment to oldEnv.
   vm_->GetExecutionContext()->SetLexicalEnvironment(old_env);
@@ -666,11 +677,11 @@ Completion Interpreter::EvalSwitchStatement(SwitchStatement* switch_stmt) {
   
   // 1. Let exprRef be the result of evaluating Expression.
   auto expr_ref = EvalExpression(switch_stmt->GetDiscriminant());
-  RETURN_VALUE_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm_);
   
   // 2. Let R be the result of evaluating CaseBlock, passing it GetValue(exprRef) as a parameter.
   auto R = EvalCaseBlock(switch_stmt->GetCaseClauses(), GetValue(expr_ref));
-  RETURN_VALUE_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm_);
   
   // 3. If R.type is break and R.target is in the current label set, return (normal, R.value, empty).
   if (R.GetType() == CompletionType::BREAK &&
@@ -704,7 +715,7 @@ Completion Interpreter::EvalLabelledStatement(LabelledStatement* label_stmt) {
   // these labels are also added to the label set of Statement before evaluating it.
   // If the result of evaluating Statement is (break, V, L) where L is equal to Identifier, the production results in (normal, V, empty).
   auto ret = EvalStatement(label_stmt->GetBody());
-  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
   if (ret.GetType() == CompletionType::BREAK && ret.GetTarget() == label) {
     vm_->GetExecutionContext()->DeleteLabel(label);
     return Completion{CompletionType::NORMAL, ret.GetValue()};
@@ -713,6 +724,82 @@ Completion Interpreter::EvalLabelledStatement(LabelledStatement* label_stmt) {
   vm_->GetExecutionContext()->DeleteLabel(label);
   
   return ret;
+}
+
+// EvalThrowStatement
+// Defined in ECMAScript 5.1 Chapter 12.13
+Completion Interpreter::EvalThrowStatement(ThrowStatement* throw_stmt) {
+  // ThrowStatement : throw [no LineTerminator here] Expression ;
+
+  // 1. Let exprRef be the result of evaluating Expression.
+  auto expr_ref = EvalExpression(throw_stmt->GetExpression());
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+
+  // 2. Return (throw, GetValue(exprRef), empty).
+  auto val = GetValue(expr_ref);
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+
+  return Completion{CompletionType::THROW, val};
+}
+
+// EvalTryStatement
+// Defined in ECMAScript 5.1 Chapter 12.14
+Completion Interpreter::EvalTryStatement(TryStatement* try_stmt) {
+  auto factory = vm_->GetObjectFactory();
+  
+  // TryStatement : try Block Catch
+  // TryStatement : try Block Finally
+  // TryStatement : try Block Catch Finally
+  
+  // 1. Let B be the result of evaluating Block.
+  Completion C;
+  auto B = EvalStatement(try_stmt->GetBody());
+    
+  // 2. If B.type is not throw, return B.
+  if (B.GetType() == CompletionType::THROW) {
+    // a. Let C be the result of evaluating Catch with parameter B.
+    if (try_stmt->GetCatchBlock()) {
+      vm_->ClearException();
+      C = EvalCatch(try_stmt->GetCatchName(), try_stmt->GetCatchBlock(), B.GetValue());
+      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+    }
+  }
+  // 3. Else, B.type is not throw,
+  else {
+    // a. Let C be B.
+    C = B;
+  }
+
+  // 4. Let F be the result of evaluating Finally.
+  if (!try_stmt->GetFinallyBlock()) {
+    return C;
+  }
+  auto F = EvalStatement(try_stmt->GetFinallyBlock());
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+
+  // 5. If F.type is normal, return C.
+  if (F.GetType() == CompletionType::NORMAL) {
+    return C;
+  }
+
+  // 6. Return F.
+  return F;
+}
+
+// EvalDebuggerStatement
+// Defined in ECMAScript 5.1 Chapter 12.15
+// todo
+Completion Interpreter::EvalDebuggerStatement(DebuggerStatement* debug_stmt) {
+  // DebuggerStatement : debugger ;
+
+  // 1. If an implementation defined debugging facility is available and enabled, then
+  // a. Perform an implementation defined debugging action.
+  // b. Let result be an implementation defined Completion value.
+  // 2. Else
+  // a. Let result be (normal, empty, empty).
+  // 3. Return result.
+
+  return Completion{CompletionType::NORMAL};
 }
 
 // Eval Expression
@@ -1145,10 +1232,10 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
     if (!found) {
       // i. Let clauseSelector be the result of evaluating C.
       auto ref = EvalExpression((*it)->GetCondition());
-      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
       
       auto clause_selector = GetValue(ref);
-      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
       
       // ii. If input is equal to clauseSelector as defined by the === operator, then set found to true.
       found = StrictEqualityComparison(clause_selector, input);
@@ -1160,7 +1247,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
       if (!(*it)->GetStatements().empty()) {
         // 1. Evaluate C’s StatementList and let R be the result.
         auto R = EvalStatementList((*it)->GetStatements());
-        RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+        RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
         
         // 2. If R.value is not empty, then let V = R.value.
         if (!R.GetValue().IsEmpty()) {
@@ -1192,10 +1279,10 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
       // i. Let C be the next CaseClause in B.
       // ii. Let clauseSelector be the result of evaluating C.
       auto ref = EvalExpression((*it)->GetCondition());
-      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
       
       auto clause_selector = GetValue(ref);
-      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
       
       // iii. If input is equal to clauseSelector as defined by the === operator, then
       if (StrictEqualityComparison(clause_selector, input)) {
@@ -1206,7 +1293,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
         if (!(*it)->GetStatements().empty()) {
           // 1. Evaluate C’s StatementList and let R be the result.
           auto R = EvalStatementList((*it)->GetStatements());
-          RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+          RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
           
           // 2. If R.value is not empty, then let V = R.value.
           if (!R.GetValue().IsEmpty()) {
@@ -1228,7 +1315,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
   if (!found_in_B && !default_clause->GetStatements().empty()) {
     // a. Evaluate the DefaultClause’s StatementList and let R be the result.
     auto R = EvalStatementList(default_clause->GetStatements());
-    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+    RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
     
     // b. If R.value is not empty, then let V = R.value.
     if (!R.GetValue().IsEmpty()) {
@@ -1248,7 +1335,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
     if (!(*it)->GetStatements().empty()) {
       // i. Evaluate C’s StatementList and let R be the result.
       auto R = EvalStatementList((*it)->GetStatements());
-      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
       
       // ii. If R.value is not empty, then let V = R.value.
       if (!R.GetValue().IsEmpty()) {
@@ -1265,6 +1352,40 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
   }
 
   return Completion{CompletionType::NORMAL, V};
+}
+
+// EvalCatch
+// Defined in ECMAScript 5.1 Chapter 12.14
+Completion Interpreter::EvalCatch(Expression* catch_name, Statement* catch_block, JSValue C) {
+  auto factory = vm_->GetObjectFactory();
+  
+  // 1. Let C be the parameter that has been passed to this production.
+  // 2. Let oldEnv be the running execution context’s LexicalEnvironment.
+  auto old_env = vm_->GetExecutionContext()->GetLexicalEnvironment();
+    
+  // 3. Let catchEnv be the result of calling NewDeclarativeEnvironment passing oldEnv as the argument.
+  auto catch_env = LexicalEnvironment::NewDeclarativeEnvironmentRecord(vm_, old_env);
+    
+  // 4. Call the CreateMutableBinding concrete method of catchEnv passing the Identifier String value as the argument.
+  auto ident_name = factory->NewStringFromTable(catch_name->AsIdentifier()->GetName());
+  EnvironmentRecord::CreateMutableBinding(vm_, catch_env->GetEnvRec(), ident_name, false);
+    
+  // 5. Call the SetMutableBinding concrete method of catchEnv passing the Identifier, C,
+  //    and false as arguments. Note that the last argument is immaterial in this situation.
+  EnvironmentRecord::SetMutableBinding(vm_, catch_env->GetEnvRec(), ident_name, C, false);
+    
+  // 6. Set the running execution context’s LexicalEnvironment to catchEnv.
+  vm_->GetExecutionContext()->SetLexicalEnvironment(catch_env);
+    
+  // 7. Let B be the result of evaluating Block.
+  auto B = EvalStatement(catch_block);
+  RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+  
+  // 8. Set the running execution context’s LexicalEnvironment to oldEnv.
+  vm_->GetExecutionContext()->SetLexicalEnvironment(old_env);
+    
+  // 9. Return B.
+  return B;
 }
 
 // EvalObjectLiteral
@@ -1337,11 +1458,11 @@ Completion Interpreter::EvalStatementList(const Statements &stmts) {
   
   for (auto stmt : stmts) {
     auto s = EvalStatement(stmt);
-    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
-    
-    if (s.GetType() == CompletionType::THROW) {
-        return s;
-    }
+
+    // If an exception was thrown, return (throw, V, empty) where V is the exception.
+    // (Execution now proceeds as if no exception were thrown.)
+    // todo
+    RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
 
     sl = Completion{s.GetType(), s.GetValue().IsEmpty() ? sl.GetValue() : s.GetValue(), s.GetTarget()};
 

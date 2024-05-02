@@ -89,20 +89,29 @@
     }                                               \
   } while (0)                                       \
 
-#define RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm, value) \
-  do {                                                              \
-    if ((vm)->HasException()) {                                     \
-      (vm)->GetExecutionContext()->ExitIteration();                 \
-      return value;                                                 \
-    }                                                               \
-  } while (0)                                                       \
+#define RETURN_COMPLETION_IF_HAS_EXCEPTION(vm)                          \
+  do {                                                                  \
+    if ((vm)->HasException()) {                                         \
+      return Completion{CompletionType::THROW, JSValue{(vm)->GetException()}}; \
+    }                                                                   \
+  } while (0)                                                           \
 
-#define RETURN_VALUE_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm, value)    \
-  do {                                                              \
-    if ((vm)->HasException()) {                                     \
-      (vm)->GetExecutionContext()->ExitSwitch();                    \
-      return value;                                                 \
-    }                                                               \
-  } while (0)                                                       \
+#define RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm)       \
+  do {                                                                  \
+    if ((vm)->HasException()) {                                         \
+      (vm)->GetExecutionContext()->ExitIteration();                     \
+      return Completion{CompletionType::THROW, JSValue{(vm)->GetException()}}; \
+    }                                                                   \
+  } while (0)                                                           \
+
+#define RETURN_COMPLETION_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm)          \
+  do {                                                                  \
+    if ((vm)->HasException()) {                                         \
+      (vm)->GetExecutionContext()->ExitSwitch();                        \
+      return Completion{CompletionType::THROW, JSValue{(vm)->GetException()}}; \
+    }                                                                   \
+  } while (0)                                                           \
+    
+
     
 #endif  // VOIDJS_UTILS_MACROS_H

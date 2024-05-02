@@ -454,6 +454,63 @@ cnt;
   }
 }
 
+TEST(Interpreter, EvalTryStatement) {
+  {
+    Parser parser(uR"(
+try {
+var i = 2;
+i *= i;
+} catch (error) {
+42;
+}
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(4, comp.GetValue().GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+try {
+throw 'Error!';
+} catch (error) {
+error;
+}
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsString());
+    EXPECT_EQ(u"Error!", comp.GetValue().GetHeapObject()->AsString()->GetString());
+  }
+}
+
+TEST(Interpreter, EvalDebuggerStatement) {
+   Parser parser(uR"(
+debugger ;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
 TEST(Interpreter, EvalMemberExpression) {
   Parser parser(uR"(
 var obj = {
