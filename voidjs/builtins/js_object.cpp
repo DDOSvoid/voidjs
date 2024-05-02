@@ -4,6 +4,7 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/interpreter/vm.h"
+#include "voidjs/utils/macros.h"
 
 namespace voidjs {
 namespace builtins {
@@ -11,6 +12,8 @@ namespace builtins {
 // new Object ( [ value ] )
 // Defined in ECMAScript 5.1 Chapter 15.2.2.1
 JSObject* JSObject::Construct(VM* vm, JSValue value) {
+  auto factory = vm->GetObjectFactory();
+  
   // 1. If value is supplied, then
   if (!value.IsEmpty()) {
     // a .If Type(value) is Object, then
@@ -37,17 +40,12 @@ JSObject* JSObject::Construct(VM* vm, JSValue value) {
   
   // 3. Let obj be a newly created native ECMAScript object.
   // 4. Set the [[Prototype]] internal property of obj t to the standard built-in Object prototype object (15.2.4).
-  // todo
-  auto obj = vm->GetObjectFactory()->NewObject(JSValue(vm ->GetObjectPrototype()))->AsJSObject();
-  obj->SetType(JSType::JS_OBJECT);
-  
   // 5 .Set the [[Class]] internal property of obj to "Object".
-  obj->SetClassType(ObjectClassType::OBJECT);
-  
   // 6. Set the [[Extensible]] internal property of obj to true.
-  obj->SetExtensible(true);
-  
   // 7. Set the all the internal methods of obj as specified in 8.12
+  auto obj = factory->NewObject(JSType::JS_OBJECT, ObjectClassType::OBJECT,
+                                JSValue{vm->GetObjectPrototype()},
+                                true, false, false)->AsJSObject();
   
   // 8. Return obj.
   return obj;
@@ -74,7 +72,8 @@ JSValue JSObject::GetPrototypeOf(RuntimeCallInfo* argv) {
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.getPrototypeOf cannot work on non-Object type.", JSValue{});
   }
   
   // 2. Return the value of the [[Prototype]] internal property of O.
@@ -90,7 +89,8 @@ JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.getownPropretyDescriptor cannot work on non-Object type.", JSValue{});
   }
   
   // 2. Let name be ToString(P).
@@ -120,17 +120,19 @@ JSValue JSObject::GetOwnPropertyNames(RuntimeCallInfo* argv) {
 // Object.create(O, [, Properties])
 // Defined in ECMAScript 5.1 Chapter 15.2.3.5
 JSValue JSObject::Create(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
   auto factory = argv->GetVM()->GetObjectFactory();
   auto O = argv->GetArg(0);
   
   // 1. If Type(O) is not Object or Null throw a TypeError exception.
   if (!O.IsObject() && !O.IsNull()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.create cannot work on non-Object type.", JSValue{});
   }
   
   // 2. Let obj be the result of creating a new object as if
   //    by the expression new Object() where Object is the standard built-in constructor with that name
-  auto obj = factory->NewJSObject(JSValue{});
+  auto obj = JSObject::Construct(vm, JSValue{});
   
   // 3. Set the [[Prototype]] internal property of obj to O.
   obj->SetPrototype(O);
@@ -154,7 +156,8 @@ JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.defineProperty cannot work on non-Object type.", JSValue{});
   }
   
   // 2. Let name be ToString(P).
@@ -181,7 +184,8 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.defineProperties cannot work on non-Object type.", JSValue{});
   }
   
   // 2. Let props be ToObject(Properties).
@@ -213,7 +217,8 @@ JSValue JSObject::Seal(RuntimeCallInfo* argv) {
 
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.seal cannot work on non-Object type.", JSValue{});
   }
 
   // 2. For each named own property name P of O,
@@ -237,6 +242,10 @@ JSValue JSObject::Freeze(RuntimeCallInfo* argv) {
   auto O = argv->GetArg(0);
   
   // 1. If Type(O) is not Object throw a TypeError exception.
+  if (!O.IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.freeze cannot work on non-Object type.", JSValue{});
+  }
 
   // 2. For each named own property name P of O,
 
@@ -263,7 +272,8 @@ JSValue JSObject::PreventExtensions(RuntimeCallInfo* argv) {
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.preventExtensions cannot work on non-Object type.", JSValue{});
   }
 
   // 2. Set the [[Extensible]] internal property of O to false.
@@ -280,6 +290,10 @@ JSValue JSObject::IsSealed(RuntimeCallInfo* argv) {
   auto O = argv->GetArg(0);
 
   // 1. If Type(O) is not Object throw a TypeError exception.
+  if (!O.IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.isSealed cannot work on non-Object type.", JSValue{});
+  }
 
   // 2. For each named own property name P of O,
 
@@ -300,6 +314,10 @@ JSValue JSObject::IsFrozen(RuntimeCallInfo* argv) {
   auto O = argv->GetArg(0);
 
   // 1. If Type(O) is not Object throw a TypeError exception.
+  if (!O.IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.isFrozen cannot work on non-Object type.", JSValue{});
+  }
 
   // 2. For each named own property name P of O,
 
@@ -323,7 +341,8 @@ JSValue JSObject::IsExtensible(RuntimeCallInfo* argv) {
   
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.isExtensible cannot work on non-Object type.", JSValue{});
   }
 
   // 2. Return the Boolean value of the [[Extensible]] internal property of O.
@@ -337,6 +356,10 @@ JSValue JSObject::Keys(RuntimeCallInfo* argv) {
   auto O = argv->GetArg(0);
 
   // 1. If the Type(O) is not Object, throw a TypeError exception.
+  if (!O.IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.keys cannot work on non-Object type.", JSValue{});
+  }
 
   // 2. Let n be the number of own enumerable properties of O
 

@@ -16,6 +16,7 @@
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/interpreter/string_table.h"
 #include "voidjs/utils/helper.h"
+#include "voidjs/utils/macros.h"
 
 namespace voidjs {
 
@@ -250,23 +251,26 @@ types::String* JSValue::ToString(VM* vm, JSValue val) {
 // Defined in ECMAScript 5.1 Chapter 9.9
 types::Object* JSValue::ToObject(VM* vm, JSValue val) {
   if (val.IsUndefined() || val.IsNull()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"ToObject fails when object is Undefined or Null", nullptr);
   }
+  
   if (val.IsBoolean()) {
     // todo
   }
+  
   if (val.IsNull()) {
     // todo
   }
+  
   if (val.IsString()) {
     // todo
   }
+  
   if (val.IsObject()) {
     return val.GetHeapObject()->AsObject();
   }
-  
-  // this branch is unreachable
-  return nullptr;
+
+  THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Tobject fails when object is empty.", nullptr);
 }
 
 // StringToNumber
@@ -512,9 +516,9 @@ types::String* JSValue::NumberToString(VM* vm, double num) {
 
 // Check Object Coercible
 // Defined in ECMAScript 5.1 Chapter 9.10
-void JSValue::CheckObjectCoercible() const {
-  if (IsUndefined() || IsNull()) {
-    // Throw a TypeError exception
+void JSValue::CheckObjectCoercible(VM* vm, JSValue obj) {
+  if (obj.IsUndefined() || obj.IsNull()) {
+    THROW_TYPE_ERROR_AND_RETURN_VOID(vm, u"object cannot be converted to Object when it's Undefined or Null");
   }
 }
 

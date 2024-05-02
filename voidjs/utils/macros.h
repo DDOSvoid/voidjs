@@ -10,17 +10,11 @@
   }
 
 #define INITIALIZE_NATIVE_ERROR(name)                                   \
-  auto name##_proto = factory->NewEmptyObject(JSError::SIZE)->AsJSError(); \
-  name##_proto->SetType(JSType::JS_ERROR);                              \
-  name##_proto->SetClassType(ObjectClassType::ERROR);                   \
-  name##_proto->SetPrototype(JSValue(error_proto));                     \
-  name##_proto->SetExtensible(true);                                    \
+  auto name##_proto = factory->NewObject(JSType::JS_ERROR, ObjectClassType::ERROR, \
+                                         JSValue{error_proto}, true, false, false)->AsJSError(); \
                                                                         \
-  auto name##_ctor = factory->NewEmptyObject(JSError::SIZE)->AsJSError(); \
-  name##_ctor->SetType(JSType::JS_ERROR);                               \
-  name##_ctor->SetClassType(ObjectClassType::ERROR);                    \
-  name##_ctor->SetPrototype(JSValue(vm->GetFunctionPrototype()));       \
-  name##_ctor->SetExtensible(true);                                     \
+  auto name##_ctor = factory->NewObject(JSType::JS_ERROR, ObjectClassType::ERROR, \
+                                        JSValue{vm->GetFunctionPrototype()}, true, false, false)->AsJSError(); \
 
 #define THROW_ERROR_AND_RETURN_VOID(vm, type, message)      \
   do {                                                      \
@@ -82,13 +76,33 @@
 
 
 #define RETURN_VOID_IF_HAS_EXCEPTION(vm)        \
-  if ((vm)->HasException()) {                   \
-    return ;                                    \
-  }
+  do {                                          \
+    if ((vm)->HasException()) {                 \
+      return ;                                  \
+    }                                           \
+  } while (0)                                   \
 
 #define RETURN_VALUE_IF_HAS_EXCEPTION(vm, value)    \
-  if ((vm)->HasException()) {                       \
-    return value;                                   \
-  }                                                 \
+  do {                                              \
+    if ((vm)->HasException()) {                     \
+      return value;                                 \
+    }                                               \
+  } while (0)                                       \
 
+#define RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm, value) \
+  do {                                                              \
+    if ((vm)->HasException()) {                                     \
+      (vm)->GetExecutionContext()->ExitIteration();                 \
+      return value;                                                 \
+    }                                                               \
+  } while (0)                                                       \
+
+#define RETURN_VALUE_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm, value)    \
+  do {                                                              \
+    if ((vm)->HasException()) {                                     \
+      (vm)->GetExecutionContext()->ExitSwitch();                    \
+      return value;                                                 \
+    }                                                               \
+  } while (0)                                                       \
+    
 #endif  // VOIDJS_UTILS_MACROS_H

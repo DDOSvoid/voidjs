@@ -5,6 +5,7 @@
 #include <variant>
 #include <iostream>
 #include <functional>
+#include <utility>
 
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
@@ -297,6 +298,7 @@ Completion Interpreter::EvalEmptyStatement(EmptyStatement *empty_stmt) {
 Completion Interpreter::EvalExpressionStatement(ExpressionStatement* expr_stmt) {
   // 1. Let exprRef be the result of evaluating Expression.
   auto expr_ref = EvalExpression(expr_stmt->GetExpression());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 2. Return (normal, GetValue(exprRef), empty).
   return Completion(CompletionType::NORMAL, GetValue(expr_ref));
@@ -309,6 +311,7 @@ Completion Interpreter::EvalIfStatement(ast::IfStatement* if_stmt) {
   
   // 1. Let exprRef be the result of evaluating Expression.
   auto expr_ref = EvalExpression(if_stmt->GetCondition());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 2. If ToBoolean(GetValue(exprRef)) is true, then
   if (JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
@@ -343,6 +346,7 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
   while (iterating) {
     // a. Let stmt be the result of evaluating Statement.
     auto stmt = EvalStatement(do_while_stmt->GetBody());
+    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
     // b. If stmt.value is not empty, let V = stmt.value.
     if (!stmt.GetValue().IsEmpty()) {
@@ -357,17 +361,20 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
       //    return (normal, V, empty).
       if (stmt.GetType() == CompletionType::BREAK &&
           vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        vm_->GetExecutionContext()->ExitIteration();
         return Completion(CompletionType::NORMAL, V);
       }
 
       // ii. If stmt is an abrupt completion, return stmt.
       if (stmt.IsAbruptCompletion()) {
+        vm_->GetExecutionContext()->ExitIteration();
         return stmt;
       }
     }
 
     // d. Let exprRef be the result of evaluating Expression.
     auto expr_ref = EvalExpression(do_while_stmt->GetCondition());
+    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
     // e. If ToBoolean(GetValue(exprRef)) is false, set iterating to false.
     if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
@@ -395,6 +402,7 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
   while (true) {
     // a. Let exprRef be the result of evaluating Expression.
     auto expr_ref = EvalExpression(while_stmt->GetCondition());
+    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
     // b. If ToBoolean(GetValue(exprRef)) is false, return (normal, V, empty).
     if (!JSValue::ToBoolean(vm_, GetValue(expr_ref))) {
@@ -404,6 +412,7 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
 
     // c. Let stmt be the result of evaluating Statement.
     auto stmt = EvalStatement(while_stmt->GetBody());
+    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
     // d. If stmt.value is not empty, let V = stmt.value.
     if (!stmt.GetValue().IsEmpty()) {
@@ -447,6 +456,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
       EvalExpression(init->AsExpression());
     }
   }
+  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 2. Let V = empty.
   JSValue V;
@@ -457,6 +467,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     if (for_stmt->GetCondition()) {
       // i. Let testExprRef be the result of evaluating the first Expression.
       auto test_expr_ref = EvalExpression(for_stmt->GetCondition());
+      RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
       // ii. If ToBoolean(GetValue(testExprRef)) is false, return (normal, V, empty).
       if (!JSValue::ToBoolean(vm_, GetValue(test_expr_ref))) {
@@ -467,6 +478,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
 
     // b. Let stmt be the result of evaluating Statement.
     auto stmt = EvalStatement(for_stmt->GetBody());
+    RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
     // c. If stmt.value is not empty, let V = stmt.value
     if (!stmt.GetValue().IsEmpty()) {
@@ -496,9 +508,11 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     if (for_stmt->GetUpdate()) {
       // 1. Let incExprRef be the result of evaluating the second Expression.
       auto inc_expr_ref = EvalExpression(for_stmt->GetUpdate());
+      RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
       // 2. Call GetValue(incExprRef). (This value is not used.)
       GetValue(inc_expr_ref);
+      RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
     }
   }
 }
@@ -516,12 +530,15 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   if (for_in_stmt->GetLeft()->IsVariableDeclaraion()) {
     var_name = EvalVariableDeclaration(for_in_stmt->GetLeft()->AsVariableDeclaration());
   }
+  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 2. Let exprRef be the result of evaluating the Expression.
   auto expr_ref = EvalExpression(for_in_stmt->GetRight());
+  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 3. Let experValue be GetValue(exprRef).
   auto expr_val = GetValue(expr_ref);
+  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 4. If experValue is null or undefined, return (normal, empty, empty).
   if (expr_val.IsNull() || expr_val.IsUndefined()) {
@@ -531,6 +548,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
 
   // 5. Let obj be ToObject(experValue).
   auto obj = JSValue::ToObject(vm_, expr_val);
+  RETURN_VALUE_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_, Completion{});
 
   // 6. Let V = empty.
   JSValue V;
@@ -552,9 +570,9 @@ Completion Interpreter::EvalContinueStatement(ContinueStatement* cont_stmt) {
   //   2. The program contains a continue statement with the optional Identifier,
   //      where Identifier does not appear in the label set of an enclosing (but not crossing function boundaries) IterationStatement.
   if (auto ident = cont_stmt->GetIdentifier();
-      !vm_->GetExecutionContext()->InIteration() ||
+      !ident && !vm_->GetExecutionContext()->InIteration() ||
       ident && !vm_->GetExecutionContext()->HasLabel(ident->AsIdentifier()->GetName())) {
-    // todo
+    THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of continue.", Completion{});
   }
 
   auto ident = cont_stmt->GetIdentifier();
@@ -582,10 +600,9 @@ Completion Interpreter::EvalBreakStatement(BreakStatement* break_stmt) {
   //      where Identifier does not appear in the label set of an enclosing
   //      (but not crossing function boundaries) Statement.
   if (auto ident = break_stmt->GetIdentifier();
-      !vm_->GetExecutionContext()->InIteration() ||
-      !vm_->GetExecutionContext()->InSwitch()    ||
+      !ident && !vm_->GetExecutionContext()->InIteration() && !vm_->GetExecutionContext()->InSwitch() ||
       ident && !vm_->GetExecutionContext()->HasLabel(ident->AsIdentifier()->GetName())) {
-    // todo
+    THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of break.", Completion{});
   }
 
   auto ident = break_stmt->GetIdentifier();
@@ -610,9 +627,11 @@ Completion Interpreter::EvalWithStatement(WithStatement* with_stmt) {
 
   // 1. Let val be the result of evaluating Expression.
   auto val = EvalExpression(with_stmt->GetContext());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
   
   // 2. Let obj be ToObject(GetValue(val)).
   auto obj = JSValue::ToObject(vm_, GetValue(val));
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
   
   // 3. Let oldEnv be the running execution context’s LexicalEnvironment.
   auto old_env = vm_->GetExecutionContext()->GetLexicalEnvironment();
@@ -647,9 +666,11 @@ Completion Interpreter::EvalSwitchStatement(SwitchStatement* switch_stmt) {
   
   // 1. Let exprRef be the result of evaluating Expression.
   auto expr_ref = EvalExpression(switch_stmt->GetDiscriminant());
+  RETURN_VALUE_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm_, Completion{});
   
   // 2. Let R be the result of evaluating CaseBlock, passing it GetValue(exprRef) as a parameter.
   auto R = EvalCaseBlock(switch_stmt->GetCaseClauses(), GetValue(expr_ref));
+  RETURN_VALUE_AND_EXIT_SWITCH_IF_HAS_EXCEPTION(vm_, Completion{});
   
   // 3. If R.type is break and R.target is in the current label set, return (normal, R.value, empty).
   if (R.GetType() == CompletionType::BREAK &&
@@ -672,7 +693,7 @@ Completion Interpreter::EvalLabelledStatement(LabelledStatement* label_stmt) {
   // if it contains a LabelledStatement that is enclosed by a LabelledStatement with the same Identifier as label.
   // This does not apply to labels appearing within the body of a FunctionDeclaration that
   // is nested, directly or indirectly, within a labelled statement.
-  // todo
+  // THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of label.", Completion{});
 
   auto label = label_stmt->GetLabel()->AsIdentifier()->GetName();
   vm_->GetExecutionContext()->AddLabel(label);
@@ -683,12 +704,14 @@ Completion Interpreter::EvalLabelledStatement(LabelledStatement* label_stmt) {
   // these labels are also added to the label set of Statement before evaluating it.
   // If the result of evaluating Statement is (break, V, L) where L is equal to Identifier, the production results in (normal, V, empty).
   auto ret = EvalStatement(label_stmt->GetBody());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
   if (ret.GetType() == CompletionType::BREAK && ret.GetTarget() == label) {
     vm_->GetExecutionContext()->DeleteLabel(label);
     return Completion{CompletionType::NORMAL, ret.GetValue()};
   }
   
   vm_->GetExecutionContext()->DeleteLabel(label);
+  
   return ret;
 }
 
@@ -759,7 +782,11 @@ std::variant<JSValue, Reference> Interpreter::EvalSequenceExpression(SequenceExp
   const auto& exprs = seq_expr->GetExpressions();
   JSValue val;
   for (auto expr : exprs) {
-    val = GetValue(EvalExpression(expr));
+    auto ref = EvalExpression(expr);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
+    
+    val = GetValue(ref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   }
   return val;
 }
@@ -773,12 +800,15 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
       
     // 1. Let lref be the result of evaluating LeftHandSideExpression.
     auto lref = EvalExpression(assign_expr->GetLeft());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 2. Let rref be the result of evaluating AssignmentExpression.
     auto rref = EvalExpression(assign_expr->GetRight());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 3. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 4. Throw a SyntaxError exception if the following conditions are all true:
     //      Type(lref) is Reference is true
@@ -791,11 +821,16 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
         std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
         (plref->GetReferencedName()->Equal(u"eval")     ||
          plref->GetReferencedName()->Equal(u"arguments"))) {
-      // todo
+      if (plref->GetReferencedName()->Equal(u"eval")) {
+        THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of eval.", JSValue{});
+      } else {
+        THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of arguments.", JSValue{});
+      }
     }
 
     // 5. Call PutValue(lref, rval).
     PutValue(lref, rval);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 6. Return rval.
     return rval;
@@ -804,18 +839,23 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
       
     // 1. Let lref be the result of evaluating LeftHandSideExpression.
     auto lref = EvalExpression(assign_expr->GetLeft());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 3. Let rref be the result of evaluating AssignmentExpression.
     auto rref = EvalExpression(assign_expr->GetRight());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 4. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 5. Let r be the result of applying operator @ to lval and rval.
     JSValue r = ApplyCompoundAssignment(assign_expr->GetOperator(), lval, rval);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 4. Throw a SyntaxError exception if the following conditions are all true:
     //      Type(lref) is Reference is true
@@ -828,11 +868,16 @@ std::variant<JSValue, Reference> Interpreter::EvalAssignmentExpression(Assignmen
         std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
         (plref->GetReferencedName()->Equal(u"eval")     ||
          plref->GetReferencedName()->Equal(u"arguments"))) {
-      // todo
+      if (plref->GetReferencedName()->Equal(u"eval")) {
+        THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of eval.", JSValue{});
+      } else {
+        THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of arguments.", JSValue{});
+      }
     }
 
     // 5. Call PutValue(lref, r).
     PutValue(lref, r);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // 6. Return r.
     return r;
@@ -846,17 +891,20 @@ std::variant<JSValue, Reference> Interpreter::EvalConditionalExpression(Conditio
   
   // 1. Let lref be the result of evaluating LogicalORExpression.
   auto lref = EvalExpression(cond_expr->GetConditional());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 2. If ToBoolean(GetValue(lref)) is true, then
   if (JSValue::ToBoolean(vm_, GetValue(lref))) {
     // a. Let trueRef be the result of evaluating the first AssignmentExpression.
     auto true_ref = EvalExpression(cond_expr->GetConsequent());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // b. Return GetValue(trueRef).
     return true_ref;
   } else {
     // a. Let falseRef be the result of evaluating the second AssignmentExpression.
     auto false_ref = EvalExpression(cond_expr->GetAlternate());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
     // b. Return GetValue(falseRef).
     return false_ref;
@@ -932,9 +980,11 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
   
   // 1. Let baseReference be the result of evaluating MemberExpression.
   auto base_ref = EvalExpression(mem_expr->GetObject());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 2. Let baseValue be GetValue(baseReference).
   auto base_val = GetValue(base_ref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 3. Let propertyNameReference be the result of evaluating Expression.
   // todo
@@ -947,12 +997,15 @@ std::variant<JSValue, Reference> Interpreter::EvalMemberExpression(MemberExpress
       return EvalExpression(expr);
     }
   }, mem_expr->GetProperty(), mem_expr->IsDot());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 4. Let propertyNameValue be GetValue(propertyNameReference).
   auto prop_name_val = GetValue(prop_name_ref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 5. Call CheckObjectCoercible(baseValue).
-  base_val.CheckObjectCoercible();
+  JSValue::CheckObjectCoercible(vm_, base_val);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 6. Let propertyNameString be ToString(propertyNameValue).
   auto prop_name_str = JSValue::ToString(vm_, prop_name_val); 
@@ -976,17 +1029,21 @@ std::variant<JSValue, types::Reference> Interpreter::EvalNewExpression(ast::NewE
 
   // 1. Let ref be the result of evaluating NewExpression.
   auto ref = EvalExpression(new_expr->GetConstructor());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Let constructor be GetValue(ref).
   auto ctor = GetValue(ref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 3. Let argList be the result of evaluating Arguments,
   //    producing an internal list of argument values (11.2.4).
   auto arg_list = EvalArgumentList(new_expr->GetArguments());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 4. If Type(constructor) is not Object, throw a TypeError exception.
   if (!ctor.IsObject()) {
-    // todo
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      vm_, u"Cannot use new on values that aren't Object.", JSValue{});
   }
   
   // 5. If constructor does not implement the [[Construct]] internal method, throw a TypeError exception.
@@ -1002,21 +1059,26 @@ std::variant<JSValue, Reference> Interpreter::EvalCallExpression(CallExpression*
 
   // 1. Let ref be the result of evaluating MemberExpression.
   auto ref = EvalExpression(call_expr->GetCallee());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Let func be GetValue(ref).
   auto func = GetValue(ref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 3. Let argList be the result of evaluating Arguments, producing an internal list of argument values (see 11.2.4).
   auto arg_list = EvalArgumentList(call_expr->GetArguments());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 4. If Type(func) is not Object, throw a TypeError exception.
   if (!func.IsObject()) {
-    // todo
+    THROW_SYNTAX_ERROR_AND_RETURN_VALUE(
+      vm_, u"Function call on non-object value.", JSValue{});
   }
   
   // 5. If IsCallable(func) is false, throw a TypeError exception.
   if (!func.IsCallable()) {
-    // todo
+    THROW_SYNTAX_ERROR_AND_RETURN_VALUE(
+      vm_, u"Function call on non-callable value.", JSValue{});
   }
 
   JSValue this_value {};
@@ -1050,7 +1112,13 @@ std::variant<JSValue, Reference> Interpreter::EvalCallExpression(CallExpression*
 std::vector<JSValue> Interpreter::EvalArgumentList(const ast::Expressions& exprs) {
   std::vector<JSValue> vals;
   for (auto expr : exprs) {
-    vals.push_back(GetValue(EvalExpression(expr)));
+    auto ref = EvalExpression(expr);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, {});
+
+    auto val = GetValue(ref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, {});
+    
+    vals.push_back(val);
   }
   return vals;
 }
@@ -1076,7 +1144,11 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
     // a. If found is false, then
     if (!found) {
       // i. Let clauseSelector be the result of evaluating C.
-      auto clause_selector = GetValue(EvalExpression((*it)->GetCondition()));
+      auto ref = EvalExpression((*it)->GetCondition());
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      
+      auto clause_selector = GetValue(ref);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
       
       // ii. If input is equal to clauseSelector as defined by the === operator, then set found to true.
       found = StrictEqualityComparison(clause_selector, input);
@@ -1088,6 +1160,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
       if (!(*it)->GetStatements().empty()) {
         // 1. Evaluate C’s StatementList and let R be the result.
         auto R = EvalStatementList((*it)->GetStatements());
+        RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
         
         // 2. If R.value is not empty, then let V = R.value.
         if (!R.GetValue().IsEmpty()) {
@@ -1118,7 +1191,11 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
     while (it != cases.end() && !found_in_B) {
       // i. Let C be the next CaseClause in B.
       // ii. Let clauseSelector be the result of evaluating C.
-      auto clause_selector = GetValue(EvalExpression((*it)->GetCondition()));
+      auto ref = EvalExpression((*it)->GetCondition());
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
+      
+      auto clause_selector = GetValue(ref);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
       
       // iii. If input is equal to clauseSelector as defined by the === operator, then
       if (StrictEqualityComparison(clause_selector, input)) {
@@ -1129,6 +1206,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
         if (!(*it)->GetStatements().empty()) {
           // 1. Evaluate C’s StatementList and let R be the result.
           auto R = EvalStatementList((*it)->GetStatements());
+          RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
           
           // 2. If R.value is not empty, then let V = R.value.
           if (!R.GetValue().IsEmpty()) {
@@ -1150,6 +1228,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
   if (!found_in_B && !default_clause->GetStatements().empty()) {
     // a. Evaluate the DefaultClause’s StatementList and let R be the result.
     auto R = EvalStatementList(default_clause->GetStatements());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
     
     // b. If R.value is not empty, then let V = R.value.
     if (!R.GetValue().IsEmpty()) {
@@ -1169,6 +1248,7 @@ Completion Interpreter::EvalCaseBlock(const CaseClauses& cases, JSValue input) {
     if (!(*it)->GetStatements().empty()) {
       // i. Evaluate C’s StatementList and let R be the result.
       auto R = EvalStatementList((*it)->GetStatements());
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
       
       // ii. If R.value is not empty, then let V = R.value.
       if (!R.GetValue().IsEmpty()) {
@@ -1198,7 +1278,7 @@ JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
   // 1. Return a new object created as if by the expression
   //    new Object() where Object is the standard built-in constructor with that name.
   if (props.empty()) {
-    return JSValue(factory->NewJSObject(JSValue{}));
+    return JSValue(JSObject::Construct(vm_, JSValue{}));
   }
 
   // ObjectLiteral : { PropertyNameAndValueList }
@@ -1257,6 +1337,7 @@ Completion Interpreter::EvalStatementList(const Statements &stmts) {
   
   for (auto stmt : stmts) {
     auto s = EvalStatement(stmt);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, Completion{});
     
     if (s.GetType() == CompletionType::THROW) {
         return s;
@@ -1277,6 +1358,7 @@ Completion Interpreter::EvalStatementList(const Statements &stmts) {
 void Interpreter::EvalVariableDeclarationList(const VariableDeclarations& decls) {
   for (auto decl : decls) {
     EvalVariableDeclaration(decl);
+    RETURN_VOID_IF_HAS_EXCEPTION(vm_);
   }
 }
 
@@ -1285,18 +1367,22 @@ void Interpreter::EvalVariableDeclarationList(const VariableDeclarations& decls)
 JSValue Interpreter::EvalVariableDeclaration(VariableDeclaration* decl) {
   // 1. Let lhs be the result of evaluating Identifier as described in 11.1.2.
   auto lhs = EvalExpression(decl->GetIdentifier());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 2. Let rhs be the result of evaluating Initialiser.
   if (!decl->GetInitializer()) {
     return JSValue(vm_->GetObjectFactory()->NewStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()));
   }
   auto rhs = EvalExpression(decl->GetInitializer());
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 3. Let value be GetValue(rhs).
   auto value = GetValue(rhs);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 4. Call PutValue(lhs, value).
   PutValue(lhs, value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   // 5. Return a String value containing the same sequence of characters as in the Identifier.
   return JSValue(vm_->GetObjectFactory()->NewStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()));
@@ -1310,11 +1396,12 @@ JSValue Interpreter::EvalPropertyNameAndValueList(const ast::Properties& props) 
   // PropertyNameAndValueList : PropertyNameAndValueList , PropertyAssignment
 
   // 1. Let obj be the result of evaluating PropertyNameAndValueList.
-  auto obj = factory->NewJSObject(JSValue{});
+  auto obj = JSObject::Construct(vm_, JSValue{});
 
   for (auto prop : props) {
     // 2. Let propId be the result of evaluating PropertyAssignment.
     auto [prop_id_name, prop_id_desc] = EvalPropertyAssignment(prop);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 3. Let previous be the result of calling the [[GetOwnProperty]] internal method of obj with argument propId.name.
     auto previous = Object::GetOwnProperty(vm_, obj, prop_id_name);
@@ -1333,13 +1420,14 @@ JSValue Interpreter::EvalPropertyNameAndValueList(const ast::Properties& props) 
 
     // 5. Call the [[DefineOwnProperty]] internal method of obj with arguments propId.name, propId.descriptor, and false.
     Object::DefineOwnProperty(vm_, obj, prop_id_name, prop_id_desc, false);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   }
   
   // 6. Return obj.
   return JSValue(obj);
 }
 
-// EvalPropAssignment
+// EvalPropertyAssignment
 // Defined in ECMAScript 5.1 Chapter 11.1.5
 std::pair<String*, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::Property* prop) {
   auto factory = vm_->GetObjectFactory();
@@ -1362,9 +1450,11 @@ std::pair<String*, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::
     
     // 2. Let exprValue be the result of evaluating AssignmentExpression.
     auto expr_value = EvalExpression(prop->GetValue());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, std::make_pair(nullptr, PropertyDescriptor{}));
     
     // 3. Let propValue be GetValue(exprValue).
     auto prop_value = GetValue(expr_value);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, std::make_pair(nullptr, PropertyDescriptor{}));
     
     // 4. Let desc be the Property Descriptor{[[Value]]: propValue, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}
     auto desc = PropertyDescriptor(prop_value, true, true, true);
@@ -1376,6 +1466,7 @@ std::pair<String*, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::
 
     // 1. Let propName be the result of evaluating PropertyName.
     auto prop_name = EvalExpression(prop->GetKey());
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, std::make_pair(nullptr, PropertyDescriptor{}));
     
     // 2. Let closure be the result of creating a new Function object as specified in 13.2
     //    with an empty parameter list and body specified by FunctionBody.
@@ -1395,7 +1486,6 @@ std::pair<String*, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::
 }
 
 // ApplyCompoundAssignment
-// todo
 JSValue Interpreter::ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval) {
   switch (op) {
     case TokenType::MUL_ASSIGN: {
@@ -1481,9 +1571,11 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
   if (op == TokenType::LOGICAL_AND) {
     // 1. Let lref be the result of evaluating LogicalANDExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 3. If ToBoolean(lval) is false, return lval.
     if (!JSValue::ToBoolean(vm_, lval)) {
@@ -1492,6 +1584,7 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
     
     // 4. Let rref be the result of evaluating BitwiseORExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 5. Return GetValue(rref).
     return GetValue(rref);
@@ -1500,9 +1593,11 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
 
     // 1. Let lref be the result of evaluating LogicalORExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 3. If ToBoolean(lval) is true, return lval.
     if (JSValue::ToBoolean(vm_, lval)) {
@@ -1511,6 +1606,7 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
     
     // 4. Let rref be the result of evaluating LogicalANDExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 5. Return GetValue(rref).
     return GetValue(rref);
@@ -1522,15 +1618,19 @@ JSValue Interpreter::ApplyLogicalOperator(TokenType op, Expression* left, Expres
 JSValue Interpreter::ApplyBitwiseOperator(TokenType op, Expression* left, Expression* right) {
   // 1. Let lref be the result of evaluating A.
   auto lref = EvalExpression(left);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Let lval be GetValue(lref).
   auto lval = GetValue(lref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 3. Let rref be the result of evaluating B.
   auto rref = EvalExpression(right);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 4. Let rval be GetValue(rref).
   auto rval = GetValue(rref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 5. Let lnum be ToInt32(lval).
   auto lnum = JSValue::ToInt32(vm_, lval);
@@ -1557,15 +1657,19 @@ JSValue Interpreter::ApplyEqualityOperator(TokenType op, Expression* left, Expre
 
   // 1. Let lref be the result of evaluating EqualityExpression.
   auto lref = EvalExpression(left);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Let lval be GetValue(lref).
   auto lval = GetValue(lref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 3. Let rref be the result of evaluating RelationalExpression.
   auto rref = EvalExpression(right);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 4. Let rval be GetValue(rref).
   auto rval = GetValue(rref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
   if (op == TokenType::EQUAL) {
     return JSValue(AbstractEqualityComparison(lval, rval));
@@ -1587,15 +1691,19 @@ JSValue Interpreter::ApplyRelationalOperator(TokenType op, Expression* left, Exp
   if (op != TokenType::KEYWORD_INSTANCEOF && op != TokenType::KEYWORD_IN) {
     // 1. Let lref be the result of evaluating RelationalExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 3. Let rref be the result of evaluating ShiftExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 4. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 5. Let r be the result of performing abstract relational comparison lval op rval. (see 11.8.5)
     if (op == TokenType::LESS_THAN) {
@@ -1615,18 +1723,24 @@ JSValue Interpreter::ApplyRelationalOperator(TokenType op, Expression* left, Exp
   } else if (op == TokenType::KEYWORD_INSTANCEOF) {
     // 1. Let lref be the result of evaluating RelationalExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
+    
     // 3. Let rref be the result of evaluating ShiftExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 4. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 5. If Type(rval) is not Object, throw a TypeError exception.
     if (!rval.IsObject()) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VALUE(
+        vm_, u"instanceof cannot operate on primitive value.", JSValue::False());
     }
     
     // 6. If rval does not have a [[HasInstance]] internal method, throw a TypeError exception.
@@ -1639,19 +1753,24 @@ JSValue Interpreter::ApplyRelationalOperator(TokenType op, Expression* left, Exp
     
     // 1. Let lref be the result of evaluating RelationalExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 3. Let rref be the result of evaluating ShiftExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 4. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 5. If Type(rval) is not Object, throw a TypeError exception.
     if (!rval.IsObject()) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VALUE(
+        vm_, u"in operator cannot operate on primitive value.", JSValue::False());
     }
     
     // 6. Return the result of calling the [[HasProperty]] internal method of rval with argument ToString(lval).
@@ -1666,15 +1785,19 @@ JSValue Interpreter::ApplyShiftOperator(TokenType op, Expression* left, Expressi
 
   // 1. Let lref be the result of evaluating ShiftExpression.
   auto lref = EvalExpression(left);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Let lval be GetValue(lref).
   auto lval = GetValue(lref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 3. Let rref be the result of evaluating AdditiveExpression.
   auto rref = EvalExpression(right);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 4. Let rval be GetValue(rref).
   auto rval = GetValue(rref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 5. Let lnum be ToInt32(lval).
   auto lnum = JSValue::ToInt32(vm_, lval);
@@ -1711,15 +1834,19 @@ JSValue Interpreter::ApplyAdditiveOperator(TokenType op, Expression* left, Expre
   if (op == TokenType::ADD) {
     // 1. Let lref be the result of evaluating AdditiveExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 3. Let rref be the result of evaluating MultiplicativeExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 4. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
     
     // 5. Let lprim be ToPrimitive(lval).
     auto lprim = JSValue::ToPrimitive(vm_, lval, PreferredType::NUMBER);
@@ -1745,15 +1872,19 @@ JSValue Interpreter::ApplyAdditiveOperator(TokenType op, Expression* left, Expre
 
     // 1. Let lref be the result of evaluating AdditiveExpression.
     auto lref = EvalExpression(left);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
       
     // 2. Let lval be GetValue(lref).
     auto lval = GetValue(lref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
       
     // 3. Let rref be the result of evaluating MultiplicativeExpression.
     auto rref = EvalExpression(right);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
       
     // 4. Let rval be GetValue(rref).
     auto rval = GetValue(rref);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
       
     // 5. Let lnum be ToNumber(lval).
     auto lnum = JSValue::ToNumber(vm_, lval);
@@ -1774,15 +1905,19 @@ JSValue Interpreter::ApplyMultiplicativeOperator(TokenType op, Expression* left,
 
   // 1. Let left be the result of evaluating MultiplicativeExpression.
   auto lref = EvalExpression(left);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Let leftValue be GetValue(left).
   auto lval = GetValue(lref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 3. Let right be the result of evaluating UnaryExpression.
   auto rref = EvalExpression(right);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 4. Let rightValue be GetValue(right).
   auto rval = GetValue(rref);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 5. Let leftNum be ToNumber(leftValue).
   auto lnum = JSValue::ToNumber(vm_, lval);
@@ -1809,15 +1944,61 @@ JSValue Interpreter::ApplyMultiplicativeOperator(TokenType op, Expression* left,
 // ApplyUnaryOperator
 // todo
 JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
+  auto factory = vm_->GetObjectFactory();
+  
   auto ref = EvalExpression(expr);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
+  
   switch (op) {
     case TokenType::KEYWORD_DELETE: {
-      // todo
-      return {};
+      // 1. Let ref be the result of evaluating UnaryExpression.
+      // 2. If Type(ref) is not Reference, return true.
+      if (!std::get_if<Reference>(&ref)) {
+        return JSValue::True();
+      }
+      auto pref = std::get<Reference>(ref);
+      
+      // 3. If IsUnresolvableReference(ref) then,
+      if (pref.IsUnresolvableReference()) {
+        // a. If IsStrictReference(ref) is true, throw a SyntaxError exception.
+        if (pref.IsStrictReference()) {
+          THROW_SYNTAX_ERROR_AND_RETURN_VALUE(
+            vm_, u"Cannot delete.", JSValue::False());
+        }
+        // b. Else, return true.
+        else {
+          return JSValue::True();
+        }
+      }
+      
+      // 4. If IsPropertyReference(ref) is true, then
+      if (pref.IsPropertyReference()) {
+        // a. Return the result of calling the [[Delete]] internal method on
+        // ToObject(GetBase(ref)) providing GetReferencedName(ref) and IsStrictReference(ref) as the arguments.
+        auto ret = Object::Delete(vm_, JSValue::ToObject(vm_, std::get<JSValue>(pref.GetBase())),
+                                  pref.GetReferencedName(), pref.IsStrictReference());
+        RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{ret});
+        return JSValue{ret};
+      }
+      // 5. Else, ref is a Reference to an Environment Record binding, so
+      else {
+        // a. If IsStrictReference(ref) is true, throw a SyntaxError exception.
+        if (pref.IsStrictReference()) {
+          THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Cannot delete.", JSValue::False());
+        }
+        
+        // b. Let bindings be GetBase(ref).
+        auto bindings = std::get<EnvironmentRecord*>(pref.GetBase());
+        
+        // c. Return the result of calling the DeleteBinding concrete method of bindings,
+        //    providing GetReferencedName(ref) as the argument.
+        return JSValue{EnvironmentRecord::DeleteBinding(vm_, bindings, pref.GetReferencedName())};
+      }
     }
     case TokenType::KEYWORD_VOID: {
       // 1. Call GetValue(expr)
       GetValue(ref);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
       // 2. Return undefined
       return JSValue::Undefined();
@@ -1834,7 +2015,23 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
       auto val = GetValue(ref);
       
       // 4. Return a String determined by Type(val) according to Table 20.
-      // todo
+      std::u16string_view str;
+      if (val.IsUndefined()) {
+        str = u"undefined";
+      } else if (val.IsNull()) {
+        str = u"null";
+      } else if (val.IsBoolean()) {
+        str = u"boolean";
+      } else if (val.IsNumber()) {
+        str = u"number";
+      } else if (val.IsString()) {
+        str = u"string";
+      } else if (val.IsObject() && !val.GetHeapObject()->GetCallable()) {
+        str = u"object";
+      } else if (val.IsObject() && val.GetHeapObject()->GetCallable()) {
+        str = u"function";
+      }
+      return JSValue{factory->NewStringFromTable(str)};
     }
     case TokenType::INC: {
       // 1. Throw a SyntaxError exception if the following conditions are all true:
@@ -1848,7 +2045,11 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
           std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
           (plref->GetReferencedName()->Equal(u"eval")     ||
            plref->GetReferencedName()->Equal(u"arguments"))) {
-        // todo
+        if (plref->GetReferencedName()->Equal(u"eval")) {
+          THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of eval.", JSValue{});
+        } else {
+          THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of arguments.", JSValue{});
+        }
       }
 
       // 2. Let oldValue be ToNumber(GetValue(expr)).
@@ -1860,6 +2061,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
 
       // 4. Call PutValue(expr, newValue).
       PutValue(ref, new_val);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
       // 5. Return newValue.
       return new_val;
@@ -1876,7 +2078,11 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
           std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
           (plref->GetReferencedName()->Equal(u"eval")     ||
            plref->GetReferencedName()->Equal(u"arguments"))) {
-        // todo
+        if (plref->GetReferencedName()->Equal(u"eval")) {
+          THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of eval.", JSValue{});
+        } else {
+          THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of arguments.", JSValue{});
+        }
       }
 
       // 2. Let oldValue be ToNumber(GetValue(expr)).
@@ -1888,6 +2094,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
 
       // 4. Call PutValue(expr, newValue).
       PutValue(ref, new_val);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
 
       // 5. Return newValue.
       return new_val;
@@ -1941,6 +2148,7 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
 JSValue Interpreter::ApplyPostfixOperator(TokenType op, Expression* expr) {
   // 1. Let lhs be the result of evaluating LeftHandSideExpression.
   auto lhs = EvalExpression(expr);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 2. Throw a SyntaxError exception if the following conditions are all true:
   //      Type(lhs) is Reference is true
@@ -1953,7 +2161,11 @@ JSValue Interpreter::ApplyPostfixOperator(TokenType op, Expression* expr) {
       std::get_if<EnvironmentRecord*>(&(plref->GetBase()))    &&
       (plref->GetReferencedName()->Equal(u"eval")     ||
        plref->GetReferencedName()->Equal(u"arguments"))) {
-    // todo
+    if (plref->GetReferencedName()->Equal(u"eval")) {
+      THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of eval.", JSValue{});
+    } else {
+      THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm_, u"Incorrect use of arguments.", JSValue{});
+    }
   }
   
   // 3. Let oldValue be ToNumber(GetValue(lhs)).
@@ -1970,6 +2182,7 @@ JSValue Interpreter::ApplyPostfixOperator(TokenType op, Expression* expr) {
   
   // 5. Call PutValue(lhs, newValue).
   PutValue(lhs, new_val);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
   
   // 6. Return oldValue.
   return old_val;
@@ -2255,7 +2468,8 @@ JSValue Interpreter::GetValue(const std::variant<JSValue, Reference>& V) {
 
   // 3. If IsUnresolvableReference(V), throw a ReferenceError exception.
   if (ref.IsUnresolvableReference()) {
-    // todo
+    THROW_REFERENCE_ERROR_AND_RETURN_VALUE(
+      vm_, u"GetValue cannot work on unresolveable reference.", JSValue{});
   }
 
   // 4. If IsPropertyReference(V), then

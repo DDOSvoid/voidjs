@@ -43,7 +43,7 @@ PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, String* P) {
     // 1. Set D.[[Get]] to the value of X’s [[Get]] attribute.
     D.SetGetter(X->AsAccessorPropertyDescriptor()->GetGetter());
 
-    // 2. Set D.[[Get]] to the value of X’s [[Get]] attribute.
+    // 2. Set D.[[Set]] to the value of X’s [[Set]] attribute.
     D.SetSetter(X->AsAccessorPropertyDescriptor()->GetSetter());
   }
 
@@ -187,6 +187,7 @@ void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, valueDesc, and Throw as arguments.
     DefineOwnProperty(vm, O, P, value_desc, Throw);
+    RETURN_VOID_IF_HAS_EXCEPTION(vm);
 
     // c. Return.
     return ;
@@ -212,6 +213,7 @@ void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, newDesc, and Throw as arguments.
     DefineOwnProperty(vm, O, P, new_desc, Throw);
+    RETURN_VOID_IF_HAS_EXCEPTION(vm);
   }
 
   // 7. Return.
@@ -259,8 +261,9 @@ bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
 
 // DefaultValue
 // Defined in ECMAScript 5.1 Chapter 8.12.8
-// todo
 JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
+  auto factory = vm->GetObjectFactory();
+  
   if (hint == PreferredType::STRING) {
     // 1. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
     auto to_string = Get(vm, O, vm->GetObjectFactory()->NewStringFromTable(u"toString"));
@@ -269,12 +272,66 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
     if (to_string.IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      // todo
+      auto str = Call(vm, to_string.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
 
       // b. If str is a primitive value, return str.
+      if (str.IsPrimitive()) {
+        return str;
+      }
     }
+
+    // 3. Let valueOf be the result of calling the [[Get]] internal method of object O with argument "valueOf".
+    auto value_of = Object::Get(vm, O, factory->NewStringFromTable(u"valueOf"));
+
+    // 4. If IsCallable(valueOf) is true then,
+    if (value_of.IsCallable()) {
+      // a. Let val be the result of calling the [[Call]] internal method of valueOf,
+      //    with O as the this value and an empty argument list.
+      auto val = Call(vm, value_of.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+      
+      // b. If val is a primitive value, return val.
+      if (val.IsPrimitive()) {
+        return val;
+      }
+    }
+
+    // 5. Throw a TypeError exception.
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Object.DefaultValue fails when toString and valueOf both fail", JSValue{});
   } else {
-    
+    // hint must be PreferredType::NUMBER
+
+    // 1. Let valueOf be the result of calling the [[Get]] internal method of object O with argument "valueOf".
+    auto value_of = Object::Get(vm, O, factory->NewStringFromTable(u"valueOf"));
+
+    // 2. If IsCallable(valueOf) is true then,
+    if (value_of.IsCallable()) {
+      // a. Let val be the result of calling the [[Call]] internal method of valueOf,
+      //    with O as the this value and an empty argument list.
+      auto val = Call(vm, value_of.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+      
+      // b. If val is a primitive value, return val.
+      if (val.IsPrimitive()) {
+        return val;
+      }
+    }
+
+    // 3. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
+    auto to_string = Get(vm, O, vm->GetObjectFactory()->NewStringFromTable(u"toString"));
+
+    // 4. If IsCallable(toString) is true then,
+    if (to_string.IsCallable()) {
+      // a. Let str be the result of calling the [[Call]] internal method of toString,
+      //    with O as the this value and an empty argument list.
+      auto str = Call(vm, to_string.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+
+      // b. If str is a primitive value, return str.
+      if (str.IsPrimitive()) {
+        return str;
+      }
+    }
+
+    // 5. Throw a TypeError exception.
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Object.DefaultValue fails when toString and valueOf both fail", JSValue{});
   }
 }
 

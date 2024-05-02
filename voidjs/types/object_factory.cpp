@@ -66,6 +66,12 @@ RuntimeCallInfo* ObjectFactory::NewRuntimeCallInfo(std::size_t args_num) {
   return call_info;
 }
 
+// used to create builtin objects
+Object* ObjectFactory::NewEmptyObject(
+  std::size_t extra_size, JSType type, ObjectClassType class_type, JSValue proto,
+  bool extensible, bool callable, bool is_counstructor) {
+}
+
 String* ObjectFactory::NewString(std::u16string_view source) {
   auto len = source.size();
   auto str = NewHeapObject(sizeof(std::size_t) + len * sizeof(char16_t))->AsString();
@@ -79,12 +85,18 @@ String* ObjectFactory::NewStringFromTable(std::u16string_view source) {
   return string_table_->GetOrInsert(source);
 }
 
-Object* ObjectFactory::NewObject(JSValue proto) {
+Object* ObjectFactory::NewObject(
+  JSType type, ObjectClassType class_type, JSValue proto,
+  bool extensible, bool callable, bool is_counstructor) {
   auto obj = NewHeapObject(Object::SIZE)->AsObject();
 
-  obj->SetType(JSType::OBJECT);
+  obj->SetType(type);
+  obj->SetClassType(class_type);
   obj->SetProperties(JSValue(NewPropertyMap()));
   obj->SetPrototype(proto);
+  obj->SetExtensible(extensible);
+  obj->SetCallable(callable);
+  obj->SetIsConstructor(is_counstructor);
   
   return obj;
 }
@@ -188,82 +200,31 @@ LexicalEnvironment* ObjectFactory::NewLexicalEnvironment(LexicalEnvironment* out
   return env;
 }
 
-// used to create builtin object
-Object* ObjectFactory::NewEmptyObject(std::size_t extra_size) {
-  auto obj = NewHeapObject(Object::SIZE + extra_size)->AsObject();
-  return obj;
-}
-
-// new Object ( [ value ] )
-// Defined in ECMAScript 5.1 Chapter 15.2.2.1
-JSObject* ObjectFactory::NewJSObject(JSValue value) {
-  // 1. If value is supplied, then
-  if (!value.IsEmpty()) {
-    // a .If Type(value) is Object, then
-    if (value.IsObject()) {
-      // i. If the value is a native ECMAScript object, do not create a new object but simply return value.
-      if (value.GetHeapObject()->IsJSObject()) {
-        return value.GetHeapObject()->AsJSObject();
-      }
-      
-      // ii. If the value is a host object, then actions are taken and
-      //     a result is returned in an implementation-dependent manner that may depend on the host object.
-      // todo
-    }
-    
-    // b. If Type(value) is String, return ToObject(value).
-    // c. If Type(value) is Boolean, return ToObject(value).
-    // d. If Type(value) is Number, return ToObject(value).
-    if (value.IsString() || value.IsBoolean() || value.IsNumber()) {
-      return JSValue::ToObject(vm_, value)->AsJSObject();
-    }
-  }
-
-  // 2. Assert: The argument value was not supplied or its type was Null or Undefined.
-  
-  // 3. Let obj be a newly created native ECMAScript object.
-  // 4. Set the [[Prototype]] internal property of obj t to the standard built-in Object prototype object (15.2.4).
-  // todo
-  auto obj = NewObject(JSValue(vm_->GetObjectPrototype()))->AsJSObject();
-  obj->SetType(JSType::JS_OBJECT);
-  
-  // 5 .Set the [[Class]] internal property of obj to "Object".
-  obj->SetClassType(ObjectClassType::OBJECT);
-  
-  // 6. Set the [[Extensible]] internal property of obj to true.
-  obj->SetExtensible(true);
-  
-  // 7. Set the all the internal methods of obj as specified in 8.12
-  
-  // 8. Return obj.
-  return obj;
-}
-
 JSError* ObjectFactory::NewNativeError(ErrorType type, String* msg) {
   JSValue proto {JSValue::Null()};
   switch (type) {
     case ErrorType::EVAL_ERROR: {
-      proto = JSValue(vm_->GetEvalErrorPrototype());
+      proto = JSValue{vm_->GetEvalErrorPrototype()};
       break;
     }
     case ErrorType::RANGE_ERROR: {
-      proto = JSValue(vm_->GetRangeErrorPrototype());
+      proto = JSValue{vm_->GetRangeErrorPrototype()};
       break;
     }
     case ErrorType::REFERENCE_ERROR: {
-      proto = JSValue(vm_->GetReferenceErrorPrototype());
+      proto = JSValue{vm_->GetReferenceErrorPrototype()};
       break;
     }
     case ErrorType::SYNTAX_ERROR: {
-      proto = JSValue(vm_->GetSyntaxErrorPrototype());
+      proto = JSValue{vm_->GetSyntaxErrorPrototype()};
       break;
     }
     case ErrorType::TYPE_ERROR: {
-      proto = JSValue(vm_->GetTypeErrorPrototype());
+      proto = JSValue{vm_->GetTypeErrorPrototype()};
       break;
     }
     case ErrorType::URI_ERROR: {
-      proto = JSValue(vm_->GetURIErrorPrototype());
+      proto = JSValue{vm_->GetURIErrorPrototype()};
       break;
     }
     default: {
@@ -272,11 +233,8 @@ JSError* ObjectFactory::NewNativeError(ErrorType type, String* msg) {
     }
   }
 
-  auto error = NewObject(proto)->AsJSError();
-  
-  error->SetClassType(ObjectClassType::ERROR);
-  error->SetExtensible(true);
-
+  auto error = NewObject(JSType::JS_ERROR, ObjectClassType::ERROR,
+                         proto, true, false, false)->AsJSError();
   return error;
 }
 

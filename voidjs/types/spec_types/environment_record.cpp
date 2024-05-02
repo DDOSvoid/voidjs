@@ -8,6 +8,7 @@
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/internal_types/hash_map.h"
+#include "voidjs/utils/macros.h"
 
 namespace voidjs {
 namespace types {
@@ -39,6 +40,7 @@ void EnvironmentRecord::CreateMutableBinding(VM* vm, EnvironmentRecord* env, Str
 void EnvironmentRecord::SetMutableBinding(VM* vm, EnvironmentRecord* env, String* N, JSValue V, bool S) {
   if (env->IsDeclarativeEnvironmentRecord()) {
     DeclarativeEnvironmentRecord::SetMutableBinding(vm, env->AsDeclarativeEnvironmentRecord(), N, V, S);
+    RETURN_VOID_IF_HAS_EXCEPTION(vm);
   } else {
     // env must be ObjectEnvironmentRecord
     ObjectEnvironmentRecord::SetMutableBinding(vm, env->AsObjectEnvironmentRecord(), N, V, S);
@@ -108,7 +110,8 @@ void DeclarativeEnvironmentRecord::SetMutableBinding(VM* vm, DeclarativeEnvironm
     binding->SetValue(V);
   } else {
     if (S) {
-      // todo
+      THROW_TYPE_ERROR_AND_RETURN_VOID(
+        vm, u"SetMutableBinding cannot change the value fo an immutable binding.");
     }
   }
 

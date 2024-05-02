@@ -29,10 +29,17 @@ class ObjectFactory {
   HeapObject* NewHeapObject(std::size_t size);
 
   RuntimeCallInfo* NewRuntimeCallInfo(std::size_t args_num);
+
+  // used to create builtin objects
+  types::Object* NewEmptyObject(
+    std::size_t extra_size, JSType type, ObjectClassType class_type,
+    JSValue proto, bool extensible, bool callable, bool is_counstructor);
   
   types::String* NewString(std::u16string_view source);
   types::String* NewStringFromTable(std::u16string_view source);
-  types::Object* NewObject(JSValue proto);
+  types::Object* NewObject(
+    JSType type, ObjectClassType class_type, JSValue proto,
+    bool extensible, bool callable, bool is_counstructor);
   types::Array* NewArray(std::size_t len);
   types::DataPropertyDescriptor* NewDataPropertyDescriptor(const types::PropertyDescriptor& desc);
   types::AccessorPropertyDescriptor* NewAccessorPropertyDescriptor(const types::PropertyDescriptor& desc);
@@ -46,7 +53,6 @@ class ObjectFactory {
   types::ObjectEnvironmentRecord* NewObjectEnvironmentRecord(types::Object* obj);
   types::LexicalEnvironment* NewLexicalEnvironment(types::LexicalEnvironment* outer, types::EnvironmentRecord* env_rec);
 
-  types::Object* NewEmptyObject(std::size_t extra_size);
   builtins::JSObject* NewJSObject(JSValue value);
   builtins::JSFunction* NewJSFunction(JSValue value);
   builtins::JSError* NewJSError(types::String* msg);

@@ -79,43 +79,43 @@ class HeapObject {
   ObjectClassType GetClassType() const { return ClassTypeBitSet::Get(*GetMetaData()); }
   void SetClassType(ObjectClassType type) { ClassTypeBitSet::Set(GetMetaData(), type); }
 
-  using ErrorTypeBitSet = utils::BitSet<ErrorType, 8, 16>;
+  using ErrorTypeBitSet = utils::BitSet<ErrorType, 16, 24>;
   ErrorType GetErrorType() const { return ErrorTypeBitSet::Get(*GetMetaData()); }
   void SetErrorType(ErrorType type) { ErrorTypeBitSet::Set(GetMetaData(), type); }
 
-  using ExtensibleBitSet = utils::BitSet<bool, 16, 17>;
+  using ExtensibleBitSet = utils::BitSet<bool, 24, 25>;
   bool GetExtensible() const { return ExtensibleBitSet::Get(*GetMetaData()); }
   void SetExtensible(bool flag) { ExtensibleBitSet::Set(GetMetaData(), flag); }
 
-  using CallableBitSet = utils::BitSet<bool, 17, 18>;
+  using CallableBitSet = utils::BitSet<bool, 25, 26>;
   bool GetCallable() const { return CallableBitSet::Get(*GetMetaData()); }
   void SetCallable(bool flag) { CallableBitSet::Set(GetMetaData(), flag); }
 
-  using IsConstructorBitSet = utils::BitSet<bool, 18, 19>;
+  using IsConstructorBitSet = utils::BitSet<bool, 26, 27>;
   bool IsConstructor() const { return IsConstructorBitSet::Get(*GetMetaData()); }
   void SetIsConstructor(bool flag) { IsConstructorBitSet::Set(GetMetaData(), flag); }
   
-  using WritableBitSet = utils::BitSet<bool, 19, 20>;
+  using WritableBitSet = utils::BitSet<bool, 27, 28>;
   bool GetWritable() const { return WritableBitSet::Get(*GetMetaData()); }
   void SetWritable(bool flag) { WritableBitSet::Set(GetMetaData(), flag); }
 
-  using EnumerableBitSet = utils::BitSet<bool, 20, 21>;
+  using EnumerableBitSet = utils::BitSet<bool, 28, 29>;
   bool GetEnumerable() const { return EnumerableBitSet::Get(*GetMetaData()); }
   void SetEnumerable(bool flag) { EnumerableBitSet::Set(GetMetaData(), flag); }
 
-  using ConfigurableBitSet = utils::BitSet<bool, 21, 22>;
+  using ConfigurableBitSet = utils::BitSet<bool, 29, 30>;
   bool GetConfigurable() const { return ConfigurableBitSet::Get(*GetMetaData()); }
   void SetConfigurable(bool flag) { ConfigurableBitSet::Set(GetMetaData(), flag); }
 
-  using DeletableBitSet = utils::BitSet<bool, 22, 23>;
+  using DeletableBitSet = utils::BitSet<bool, 30, 31>;
   bool GetDeletable() const { return DeletableBitSet::Get(*GetMetaData()); }
   void SetDeletable(bool flag) { DeletableBitSet::Set(GetMetaData(), flag); }
 
-  using MutableBitSet = utils::BitSet<bool, 23, 24>;
+  using MutableBitSet = utils::BitSet<bool, 31, 32>;
   bool GetMutable() const { return MutableBitSet::Get(*GetMetaData()); }
   void SetMutable(bool flag) { MutableBitSet::Set(GetMetaData(), flag); }
 
-  using ProvideThisBitSet = utils::BitSet<bool, 24, 25>;
+  using ProvideThisBitSet = utils::BitSet<bool, 32, 33>;
   bool GetProvideThis() const { return ProvideThisBitSet::Get(*GetMetaData()); }
   void SetProvideThis(bool flag) { ProvideThisBitSet::Set(GetMetaData(), flag); }
 

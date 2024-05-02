@@ -1,6 +1,7 @@
 #include "voidjs/builtins/builtin.h"
 
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/js_type.h"
 #include "voidjs/types/object_class_type.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/property_map.h"
@@ -30,11 +31,8 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   // The value of the [[Prototype]] internal property of the Object prototype object is null,
   // the value of the [[Class]] internal property is "Object",
   // and the initial value of the [[Extensible]] internal property is true.
-  auto obj_proto = factory->NewEmptyObject(JSObject::SIZE)->AsJSObject();
-  obj_proto->SetType(JSType::JS_OBJECT);
-  obj_proto->SetClassType(ObjectClassType::OBJECT);
-  obj_proto->SetPrototype(JSValue::Null());
-  obj_proto->SetExtensible(true);
+  auto obj_proto = factory->NewObject(JSType::JS_OBJECT, ObjectClassType::OBJECT,
+                                      JSValue::Null(), true, false, false)->AsJSObject();
 
   // Initialzie Function Prototype
   // The value of the [[Prototype]] internal property of the Function prototype object is
@@ -42,37 +40,24 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   // The initial value of the [[Extensible]] internal property of the Function prototype object is true.
   // The Function prototype object does not have a valueOf property of its own;
   // however, it inherits the valueOf property from the Object prototype Object.
-  auto func_proto = factory->NewEmptyObject(JSFunction::SIZE)->AsJSFunction();
-  func_proto->SetType(JSType::JS_FUNCTION);
-  func_proto->SetClassType(ObjectClassType::FUNCTION);
-  func_proto->SetPrototype(JSValue(obj_proto));
-  func_proto->SetExtensible(true);
+  auto func_proto = factory->NewObject(JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+                                       JSValue{obj_proto}, true, false, false)->AsJSFunction();
 
   // Initialize Object Constructor
   // The value of the [[Prototype]] internal property of the Object constructor is
   // the standard built-in Function prototype object.
   // Besides the internal properties and the length property (whose value is 1),
   // the Object constructor has the following properties:
-  auto obj_ctor = factory->NewEmptyObject(JSObject::SIZE)->AsJSObject();
-  obj_ctor->SetType(JSType::JS_OBJECT);
-  obj_ctor->SetClassType(ObjectClassType::OBJECT);
-  obj_ctor->SetPrototype(JSValue(func_proto));
-  obj_ctor->SetExtensible(true);
-
-  // todo
-  obj_ctor->SetCallable(true);
-
+  auto obj_ctor = factory->NewObject(JSType::JS_OBJECT, ObjectClassType::OBJECT,
+                                     JSValue{func_proto}, true, true, false)->AsJSObject();
   
   // Initialize Function Constructor
   // The Function constructor is itself a Function object and its [[Class]] is "Function".
   // The value of the [[Prototype]] internal property of the Function constructor is
   // the standard built-in Function prototype object (15.3.4).
   // The value of the [[Extensible]] internal property of the Function constructor is true.
-  auto func_ctor = factory->NewEmptyObject(JSFunction::SIZE)->AsJSFunction();
-  func_ctor->SetType(JSType::JS_FUNCTION);
-  func_ctor->SetClassType(ObjectClassType::FUNCTION);
-  func_ctor->SetPrototype(JSValue(func_proto));
-  func_ctor->SetExtensible(true);
+  auto func_ctor = factory->NewObject(JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+                                      JSValue{func_proto}, true, true, false)->AsJSFunction();
 
   
   vm->SetObjectPrototype(obj_proto);
@@ -89,20 +74,14 @@ void Builtin::InitializeErrorObjects(VM* vm) {
   // The Error prototype object is itself an Error object (its [[Class]] is "Error").
   // The value of the [[Prototype]] internal property of the Error prototype object is
   // the standard built-in Object prototype object (15.2.4).
-  auto error_proto = factory->NewEmptyObject(JSError::SIZE)->AsJSError();
-  error_proto->SetType(JSType::JS_ERROR);
-  error_proto->SetClassType(ObjectClassType::ERROR);
-  error_proto->SetPrototype(JSValue(vm->GetObjectPrototype()));
-  error_proto->SetExtensible(true);
-
+  auto error_proto = factory->NewObject(JSType::JS_ERROR, ObjectClassType::ERROR,
+                                        JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSError();
+  
   // Initialize Error Constructor
   // The value of the [[Prototype]] internal property of the Error constructor is
   // the Function prototype object (15.3.4).
-  auto error_ctor = factory->NewEmptyObject(JSError::SIZE)->AsJSError();
-  error_ctor->SetType(JSType::JS_ERROR);
-  error_ctor->SetClassType(ObjectClassType::ERROR);
-  error_ctor->SetPrototype(JSValue(vm->GetFunctionPrototype()));
-  error_ctor->SetExtensible(true);
+  auto error_ctor = factory->NewObject(JSType::JS_ERROR, ObjectClassType::ERROR,
+                                       JSValue{vm->GetFunctionPrototype()}, true, false, false)->AsJSError();
 
   // Initialize Native Error Object, which includes
   // EvalError Prototype, EvalError Constructor, 

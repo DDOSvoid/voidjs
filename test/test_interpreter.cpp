@@ -555,17 +555,59 @@ i;
   EXPECT_DOUBLE_EQ(14.2857, comp.GetValue().GetDouble());
 }
 
-TEST(Interpreter, EvalUnaryExpresion) {
-  Parser parser(u"1 + -2");
+TEST(Interpreter, EvalUnaryExpression) {
+  {
+    Parser parser(u"1 + -2");
+
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(-1, val.GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+var obj = {
+  value1 : 42,
+  value2 : 43
+};
+delete obj.value1;
+obj.value1;
+)");
 
   Interpreter interpreter;
 
-  auto ast_node = parser.ParseBinaryExpression();
-  ASSERT_TRUE(ast_node->IsBinaryExpression());
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+  
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  EXPECT_TRUE(comp.GetValue().IsUndefined());
+  }
 
-  auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-  ASSERT_TRUE(val.IsInt());
-  EXPECT_EQ(-1, val.GetInt());
+  {
+    Parser parser(uR"(
+var obj = {
+  value1 : 42,
+  value2 : 43
+};
+typeof(obj);
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+  
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsString());
+    EXPECT_EQ(u"object", comp.GetValue().GetHeapObject()->AsString()->GetString());
+  }
 }
 
 TEST(Interpreter, EvalBinaryExpression) {

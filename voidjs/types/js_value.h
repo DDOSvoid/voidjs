@@ -156,7 +156,7 @@ class JSValue {
 
   // Type Testing
   // Defined in ECMAScript 5.1 Chapter 9
-  void CheckObjectCoercible() const;
+  static void CheckObjectCoercible(VM* vm, JSValue obj);
   bool IsCallable() const;
   static bool SameValue(JSValue x, JSValue y);
 
