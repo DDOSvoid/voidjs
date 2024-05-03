@@ -42,7 +42,7 @@ using namespace types;
 using namespace builtins;
 
 void Interpreter::Initialize() {
-  vm_ = new VM{};
+  vm_ = new VM{this};
 
   auto string_table = new StringTable{};
   auto object_factory = new ObjectFactory{vm_, string_table};
@@ -57,93 +57,8 @@ void Interpreter::Initialize() {
   vm_->SetGlobalEnv(global_env);
 }
 
-void Interpreter::EnterGlobalCode(AstNode* ast_node) {
-  // 1. Initialize the execution context using the global code as described in 10.4.1.1.
-  auto global_ctx = new ExecutionContext(vm_->GetGlobalEnv(), vm_->GetGlobalEnv(), vm_->GetGlobalObject());
-  vm_->PushExecutionContext(global_ctx);
-
-  // 2. Perform Declaration Binding Instantiation as described in 10.5 using the global code.
-  DeclarationBindingInstantiation(ast_node);
-}
-
-void Interpreter::DeclarationBindingInstantiation(AstNode* ast_node) {
-  auto factory = vm_->GetObjectFactory();
-  
-  // 1. Let env be the environment record component of the running execution context’s VariableEnvironment.
-  auto env = vm_->GetExecutionContext()->GetVariableEnvironment()->GetEnvRec();
-
-  // 2. If code is eval code, then let configurableBindings be true else let configurableBindings be false.
-  // todo
-  bool configurable_bindings = false;
-
-  // 3. If code is strict mode code, then let strict be true else let strict be false.
-  // todo
-  auto strict = false;
-
-  // 4. If code is function code, then
-  // todo
-
-  // 5. For each FunctionDeclaration f in code, in source text order do
-  const auto& func_decls = std::invoke([](AstNode* ast_node) -> const FunctionDeclarations& {
-    if (ast_node->IsProgram()) {
-      return ast_node->AsProgram()->GetFunctionDeclarations();
-    } else if ( ast_node->IsFunctionDeclaration()) {
-      return ast_node->AsFunctionDeclaration()->GetFunctionDeclarations();
-    } else {
-      // ast_node must be FunctionExpression
-      return ast_node->AsFunctionExpression()->GetFunctionDeclarations();
-    }
-  }, ast_node);
-  
-  for (auto func : func_decls) {
-    // a. Let fn be the Identifier in FunctionDeclaration f.
-    auto fn = func->GetName();
-
-    // b. Let fo be the result of instantiating FunctionDeclaration f as described in Clause 13.
-    //auto fo = Builtin::InstantiatingFunctionDeclaration(vm_, func, types::LexicalEnvironment *scope, bool strict)
-  }
-
-  // 6. Let argumentsAlreadyDeclared be the result of
-  //    calling env’s HasBinding concrete method passing "arguments" as the argument
-  // auto args_already_declared_ = env->HasBinding(ObjectFactory::NewString(u"arguments"));
-
-  // 7. If code is function code and argumentsAlreadyDeclared is false, then
-  // todo
-
-  // 8. For each VariableDeclaration and VariableDeclarationNoIn d in code, in source text order do
-  const auto& var_decls = std::invoke([](AstNode* ast_node) -> const VariableDeclarations& {
-    if (ast_node->IsProgram()) {
-      return ast_node->AsProgram()->GetVariableDeclarations();
-    } else if ( ast_node->IsFunctionDeclaration()) {
-      return ast_node->AsFunctionDeclaration()->GetVariableDeclarations();
-    } else {
-      // ast_node must be FunctionExpression
-      return ast_node->AsFunctionExpression()->GetVariableDeclarations();
-    }
-  }, ast_node);
-
-  for (auto var_decl : var_decls) {
-    // a. Let dn be the Identifier in d.
-    auto dn = var_decl->GetIdentifier()->AsIdentifier();
-    auto dn_str = factory->NewString(dn->GetName());
-
-    // b. Let varAlreadyDeclared be the result of calling env’s HasBinding concrete method passing dn as the argument.
-    auto var_already_declared = EnvironmentRecord::HasBinding(vm_, env, dn_str);
-
-    // c. If varAlreadyDeclared is false, then
-    if (!var_already_declared) {
-      // i. Call env’s CreateMutableBinding concrete method
-      //    passing dn and configurableBindings as the arguments.
-      EnvironmentRecord::CreateMutableBinding(vm_, env, dn_str, configurable_bindings);
-
-      // ii. Call env’s SetMutableBinding concrete method passing dn, undefined, and strict as the arguments.
-      EnvironmentRecord::SetMutableBinding(vm_, env, dn_str, JSValue::Undefined(), strict);
-    }
-  }
-}
-
 Completion Interpreter::Execute(AstNode* ast_node) {
-  EnterGlobalCode(ast_node);
+  ExecutionContext::EnterGlobalCode(vm_, ast_node);
   return EvalProgram(ast_node);
 }
   
@@ -168,41 +83,8 @@ Completion Interpreter::EvalProgram(AstNode *ast_node) {
   // 3. Let progCxt be a new execution context for global code as described in 10.4.1.
 
   // 4. Let result be the result of evaluating SourceElements.
-  Completion result;
-  {
-    // 1. Let headResult be the result of evaluating SourceElements.
-    const auto& stmts = prog->GetStatements();
-    auto stmt = stmts.front();
-    Completion head_result;
-    if (stmt->IsFunctionDeclaration()) {
-      // head_result = EvalFunctionDeclaration(stmt);
-    } else {
-      head_result = EvalStatement(stmt);
-    }
-    
-    // 2. If headResult is an abrupt completion, return headResult
-    // 3. Let tailResult be result of evaluating SourceElement.
-    // 4. If tailResult.value is empty, let V = headResult.value, otherwise let V = tailResult.value.
-    Completion tail_result;
-    for (std::size_t i = 1; i < stmts.size(); ++i) {
-      if (head_result.IsAbruptCompletion()) {
-        break;
-      }
-      if (auto stmt = stmts[i]; stmt->IsFunctionDeclaration()) {
-        // tail_result = EvalFunctionDeclaration(stmt);
-      } else {
-        tail_result = EvalStatement(stmt);
-      }
-      head_result = Completion{
-        tail_result.GetType(),
-        tail_result.GetValue().IsEmpty() ? head_result.GetValue() : tail_result.GetValue(),
-        tail_result.GetTarget()};
-    }
-
-    // 5. Return (tailResult.type, V, tailResult.target)
-    result = head_result;
-  }
-
+  auto result = EvalSourceElements(prog->GetStatements());
+  
   // 5. Exit the execution context progCxt.
 
   // 6. Return result
@@ -245,6 +127,9 @@ Completion Interpreter::EvalStatement(Statement* stmt) {
     }
     case AstNodeType::BREAK_STATEMENT: {
       return EvalBreakStatement(stmt->AsBreakStatement());
+    }
+    case AstNodeType::RETURN_STATEMENT: {
+      return EvalRetrunStatement(stmt->AsReturnStatement());
     }
     case AstNodeType::WITH_STATEMENT: {
       return EvalWithStatement(stmt->AsWithStatement());
@@ -832,7 +717,9 @@ Completion Interpreter::EvalDebuggerStatement(DebuggerStatement* debug_stmt) {
 // EvalFunctionDeclaration
 // Defined in ECMAScript 5.1 Chapter 13
 void Interpreter::EvalFunctionDeclaration(AstNode* ast_node) {
-  
+  // FunctionDeclaration was instantiated during Declaration Binding instantiation
+  // Builtin::InstantiatingFunctionDeclaration(vm_, ast_node, vm_->GetExecutionContext()->GetLexicalEnvironment(), false);
+  return ;
 }
 
 // Eval Expression
@@ -865,6 +752,9 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
     }
     case AstNodeType::CALL_EXPRESSION: {
       return EvalCallExpression(expr->AsCallExpression());
+    }
+    case AstNodeType::FUNCTION_EXPRESSION: {
+      return EvalFunctionExpression(expr->AsFunctionExpression());
     }
     case AstNodeType::OBJECT_LITERAL: {
       return EvalObjectLiteral(expr->AsObjectLiteral());
@@ -1227,6 +1117,45 @@ std::variant<JSValue, Reference> Interpreter::EvalCallExpression(CallExpression*
   return Object::Call(vm_, func.GetHeapObject()->AsObject(), this_value, arg_list);
 }
 
+// EvalFunctionExpression
+// Defined in ECMAScript 5.1 Chapter 13
+JSValue Interpreter::EvalFunctionExpression(FunctionExpression* func_expr) {
+  // FunctionExpression : function ( FormalParameterListopt ) { FunctionBody }
+  // FunctionExpression : function Identifier ( FormalParameterListopt ) { FunctionBody }
+  
+  // todo
+  if (!func_expr->GetName()) {
+    return JSValue{Builtin::InstantiatingFunctionDeclaration(
+        vm_, func_expr, vm_->GetExecutionContext()->GetLexicalEnvironment(), false)};
+  }
+  auto ident = vm_->GetObjectFactory()->NewStringFromTable(
+    func_expr->GetName()->AsIdentifier()->GetName());
+
+  // 1. Let funcEnv be the result of calling NewDeclarativeEnvironment passing
+  //    the running execution context’s Lexical Environment as the argument
+  auto func_env = LexicalEnvironment::NewDeclarativeEnvironmentRecord(
+    vm_, vm_->GetExecutionContext()->GetLexicalEnvironment());
+  
+  // 2. Let envRec be funcEnv’s environment record.
+  auto env_rec = func_env->GetEnvRec()->AsDeclarativeEnvironmentRecord();
+  
+  // 3. Call the CreateImmutableBinding(N) concrete method of envRec passing the String value of Identifier as the argument.
+  DeclarativeEnvironmentRecord::CreateImmutableBinding(vm_, env_rec, ident);
+  
+  // 4. Let closure be the result of creating a new Function object as specified in 13.2
+  //    with parameters specified by FormalParameterListopt and body specified by FunctionBody.
+  //    Pass in funcEnv as the Scope. Pass in true as the Strict flag if
+  //    the FunctionExpression is contained in strict code or if its FunctionBody is strict code.
+  // todo
+  auto closure = Builtin::InstantiatingFunctionDeclaration(vm_, func_expr, func_env, false);
+  
+  // 5. Call the InitializeImmutableBinding(N,V) concrete method of envRec passing the String value of Identifier and closure as the arguments.
+  DeclarativeEnvironmentRecord::InitializeImmutableBinding(vm_, env_rec, ident, JSValue{closure});
+  
+  // 6. Return closure.
+  return JSValue{closure};
+}
+
 // EvalArgumentList
 // Defined in ECMAScript 5.1 Chapter 11.2.4
 std::vector<JSValue> Interpreter::EvalArgumentList(const ast::Expressions& exprs) {
@@ -1474,6 +1403,40 @@ Reference Interpreter::EvalIdentifier(Identifier* ident) {
   return IdentifierResolution(vm_->GetObjectFactory()->NewStringFromTable(ident->GetName()));
 }
 
+// EvalSourceElements
+// Defined in ECMAScript 5.1 Chapter 14
+Completion Interpreter::EvalSourceElements(const Statements &stmts) {
+  // 1. Let headResult be the result of evaluating SourceElements.
+  auto stmt = stmts.front();
+  Completion head_result;
+  if (stmt->IsFunctionDeclaration()) {
+    // head_result = EvalFunctionDeclaration(stmt);
+  } else {
+    head_result = EvalStatement(stmt);
+  }
+    
+  // 2. If headResult is an abrupt completion, return headResult
+  // 3. Let tailResult be result of evaluating SourceElement.
+  // 4. If tailResult.value is empty, let V = headResult.value, otherwise let V = tailResult.value.
+  Completion tail_result;
+  for (std::size_t i = 1; i < stmts.size(); ++i) {
+    if (head_result.IsAbruptCompletion()) {
+      break;
+    }
+    if (auto stmt = stmts[i]; stmt->IsFunctionDeclaration()) {
+      // tail_result = EvalFunctionDeclaration(stmt);
+    } else {
+      tail_result = EvalStatement(stmt);
+    }
+    head_result = Completion{
+      tail_result.GetType(),
+      tail_result.GetValue().IsEmpty() ? head_result.GetValue() : tail_result.GetValue(),
+      tail_result.GetTarget()};
+  }
+
+  // 5. Return (tailResult.type, V, tailResult.target)
+  return head_result;
+}
 
 // Eval StatementList
 // Defined in ECMAScript 5.1 Chapter 12.1
@@ -2356,8 +2319,7 @@ Reference Interpreter::IdentifierResolution(String* ident) {
   // 3. Return the result of calling GetIdentifierReference function passing env,
   //    Identifier, and strict as arguments.
   return LexicalEnvironment::GetIdentifierReference(
-    vm_, 
-    vm_->GetExecutionContext()->GetLexicalEnvironment(), ident, strict);
+    vm_, vm_->GetExecutionContext()->GetLexicalEnvironment(), ident, strict);
 }
 
 // AbstractEqualityComparison

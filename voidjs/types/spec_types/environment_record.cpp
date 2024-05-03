@@ -160,7 +160,7 @@ JSValue DeclarativeEnvironmentRecord::ImplicitThisValue(VM* vm, DeclarativeEnvir
   return JSValue::Undefined();
 }
 
-void DeclarativeEnvironmentRecord::CreateInmmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N) {
+void DeclarativeEnvironmentRecord::CreateImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N) {
   // 1. Let envRec be the declarative environment record for which the method was invoked.
   // 2. Assert: envRec does not already have a binding for N.
   // 3. Create an immutable binding in envRec for N and record that it is uninitialized.
@@ -199,8 +199,8 @@ void ObjectEnvironmentRecord::CreateMutableBinding(VM* vm, ObjectEnvironmentReco
   //    passing N, Property Descriptor {[[Value]]:undefined, [[Writable]]: true,
   //    [[Enumerable]]: true , [[Configurable]]: configValue}, and true as arguments.
   Object::DefineOwnProperty(vm, env->GetObject(), N,
-                             PropertyDescriptor(JSValue::Undefined(), true, true, config_value),
-                             true);
+                            PropertyDescriptor{JSValue::Undefined(), true, true, config_value},
+                            true);
 }
 
 void ObjectEnvironmentRecord::SetMutableBinding(VM* vm, ObjectEnvironmentRecord* env, String* N, JSValue V, bool S) {

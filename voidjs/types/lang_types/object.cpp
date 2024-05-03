@@ -1,12 +1,16 @@
 #include "voidjs/types/lang_types/object.h"
 
+#include "voidjs/interpreter/execution_context.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/builtins/js_object.h"
+#include "voidjs/builtins/js_function.h"
 #include "voidjs/interpreter/runtime_call_info.h"
+#include "voidjs/interpreter/interpreter.h"
+#include "voidjs/types/spec_types/completion.h"
 #include "voidjs/utils/macros.h"
 
 
@@ -569,7 +573,7 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
 // Construct
 // Only used for forwarding to concrete [[Construct]]
 JSValue Object::Construct(VM* vm, Object* O, const std::vector<JSValue>& args) {
-  if (O->IsJSObject()) {
+  if (O == vm->GetObjectConstructor()) {
     return JSValue(builtins::JSObject::Construct(vm, args.empty() ? JSValue{} : args[0]));
   }
 }
@@ -577,8 +581,46 @@ JSValue Object::Construct(VM* vm, Object* O, const std::vector<JSValue>& args) {
 // Call
 // Only used for forwarding to concrete [[Call]]
 JSValue Object::Call(VM* vm, Object* O, JSValue this_value, const std::vector<JSValue>& args) {
-  if (O->IsJSObject()) {
+  if (O == vm->GetObjectConstructor()) {
     return builtins::JSObject::Call(vm, args.empty() ? JSValue{} : args[0]);
+  }
+
+  if (O->IsJSFunction()) {
+    auto F = O->AsJSFunction();
+    // 1. Let funcCtx be the result of establishing a new execution context for function code
+    //    using the value of F's [[FormalParameters]] internal property,
+    //    the passed arguments List args, and the this value as described in 10.4.3.
+    ExecutionContext::EnterFunctionCode(vm, F->GetCode(), F, this_value, args);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    
+    // 2. Let result be the result of evaluating the FunctionBody that is the value of F's [[Code]] internal property.
+    //    If F does not have a [[Code]] internal property or if its value is an empty FunctionBody,
+    //    then result is (normal, undefined, empty).
+    const auto& stmts = std::invoke([=]() {
+      auto ast_node = F->GetCode();
+      if (ast_node->AsFunctionDeclaration()) {
+        return ast_node->AsFunctionDeclaration()->GetStatements();
+      } else {
+        // ast_node must be FunctionExpression
+        return ast_node->AsFunctionExpression()->GetStatements();
+      }
+    });
+    auto result = vm->GetInterpreter()->EvalSourceElements(stmts);
+    
+    // 3. Exit the execution context funcCtx, restoring the previous execution context.
+    vm->PopExecutionContext();
+    
+    // 4. If result.type is throw then throw result.value.
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    
+    // 5. If result.type is return then return result.value.
+    if (result.GetType() == CompletionType::RETURN) {
+      return result.GetValue();
+    }
+    // 6. Otherwise result.type must be normal. Return undefined.
+    else {
+      return JSValue::Undefined();
+    }
   }
 }
 

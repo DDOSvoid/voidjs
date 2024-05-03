@@ -351,7 +351,7 @@ class FunctionDeclaration : public Statement {
   Expression* name_;
   Expressions parameters_;
   Statements statements_;
-  bool is_strict_;
+  bool is_strict_ {};
   
   VariableDeclarations variable_declarations_;
   FunctionDeclarations function_declarations_;

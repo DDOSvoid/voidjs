@@ -511,6 +511,22 @@ debugger ;
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
 }
 
+TEST(Interpreter, EvalFunctionDeclaration) {
+  Parser parser(uR"(
+function foo(a, b) {
+  return a + b;
+}
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
 TEST(Interpreter, EvalMemberExpression) {
   Parser parser(uR"(
 var obj = {
@@ -574,11 +590,11 @@ obj2["value"];
 TEST(Interpreter, EvalCallExpression) {
   {
     Parser parser(uR"(
-var obj1 = {
-    value : 42,
-};
-var obj2 = Object(obj1);
-obj2["value"];
+function foo(a, b) {
+  return a + b; 
+}
+
+foo(1, 2); 
 )");
 
     Interpreter interpreter;
@@ -589,7 +605,94 @@ obj2["value"];
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
     ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(42, comp.GetValue().GetInt());
+    EXPECT_EQ(3, comp.GetValue().GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+function foo(i, n) {
+  return i < n ? 1 + foo(i + 1, n) : 0; 
+}
+
+foo(0, 10);
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(10, comp.GetValue().GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+function fib(n) {
+  if (n < 0) return 0;
+  if (n < 2) return n;
+  return fib(n - 1) + fib(n - 2);
+}
+
+fib(20);
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(6765, comp.GetValue().GetInt());
+  }
+}
+
+TEST(Interpreter, EvalFunctionExpression) {
+  {
+    Parser parser(uR"(
+var add = function (a, b) {
+  return a + b; 
+};
+
+add(2 * 2, 1);
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(5, comp.GetValue().GetInt());
+  }
+  
+  {
+    Parser parser(uR"(
+function add(k) {
+  return function (n) {
+    return n + k;
+  };
+}
+
+var foo = add(42);
+foo(2);
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue().IsInt());
+    EXPECT_EQ(44, comp.GetValue().GetInt());
   }
 }
 

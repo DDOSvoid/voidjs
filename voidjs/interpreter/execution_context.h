@@ -3,6 +3,7 @@
 
 #include <unordered_set>
 
+#include "voidjs/ir/ast.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
@@ -49,6 +50,19 @@ class ExecutionContext {
   types::LexicalEnvironment* GetVariableEnvironment() const {
     return variable_environment_;
   }
+  void SetVariabelEnvironment(types::LexicalEnvironment* variable_environment) {
+    variable_environment_ = variable_environment;
+  }
+
+  types::Object* GetThisBinding() const { return this_binding_; }
+  void SetThisBinding(types::Object* this_binding) { this_binding_ = this_binding; }
+
+
+  static void EnterGlobalCode(VM* vm, ast::AstNode* ast_node);
+  static void EnterEvalCode(VM* vm);
+  static void EnterFunctionCode(
+    VM* vm, ast::AstNode* ast_node, builtins::JSFunction* F, JSValue this_arg, const std::vector<JSValue>& args);
+  static void DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSValue>& args);
   
  private:
   std::unordered_set<std::u16string_view> label_set_;  // contain "" initially

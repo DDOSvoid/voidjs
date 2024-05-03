@@ -3,6 +3,7 @@
 
 #include <variant>
 
+#include "voidjs/builtins/js_function.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/lexer/token.h"
 #include "voidjs/lexer/token_type.h"
@@ -27,16 +28,8 @@ class Interpreter {
   }
   
   void Initialize(); 
-  void SetPropretiesForBuiltinObjects();
-  void SetDataProperty(types::Object* obj, types::String* prop_name, JSValue prop_val,
-                       bool writable, bool enumerable, bool configurable);
-  void SetFunctionProperty(types::Object* obj, types::String* prop_name, InternalFunctionType func);
   
   types::Completion Execute(ast::AstNode* ast_node);
-  void EnterGlobalCode(ast::AstNode* ast_node);
-  void EnterEvalCode();
-  void EnterFunctionCode();
-  void DeclarationBindingInstantiation(ast::AstNode* ast_node);
 
   types::Completion EvalProgram(ast::AstNode* ast_node);
 
@@ -72,13 +65,15 @@ class Interpreter {
   std::variant<JSValue, types::Reference> EvalMemberExpression(ast::MemberExpression* mem_expr);
   std::variant<JSValue, types::Reference> EvalNewExpression(ast::NewExpression* new_expr);
   std::variant<JSValue, types::Reference> EvalCallExpression(ast::CallExpression* call_expr);
+  JSValue EvalFunctionExpression(ast::FunctionExpression* func_expr);
   JSValue EvalObjectLiteral(ast::ObjectLiteral* object); 
   JSValue EvalNullLiteral(ast::NullLiteral* nul);
   JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
   JSValue EvalNumericLiteral(ast::NumericLiteral* num);
   JSValue EvalStringLiteral(ast::StringLiteral* str);
   types::Reference EvalIdentifier(ast::Identifier* ident);
-  
+
+  types::Completion EvalSourceElements(const ast::Statements& stmts);
   types::Completion EvalStatementList(const ast::Statements& stmts);
   void EvalVariableDeclarationList(const ast::VariableDeclarations& decls);
   JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl);

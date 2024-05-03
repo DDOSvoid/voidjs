@@ -183,10 +183,12 @@ class This: public Expression {
 
 class FunctionExpression : public Expression {
   public:
-  FunctionExpression(Expression* name, Expressions parameters, Statements statements,
+  FunctionExpression(Expression* name, Expressions parameters,
+                     Statements statements, bool is_strict, 
                      VariableDeclarations var_decls, FunctionDeclarations func_decls)
     : Expression(AstNodeType::FUNCTION_EXPRESSION),
-      name_(name), parameters_(parameters), statements_(statements),
+      name_(name), parameters_(parameters),
+      statements_(statements), is_strict_(is_strict),
       variable_declarations_(std::move(var_decls)),
       function_declarations_(std::move(func_decls))
   {}
@@ -197,10 +199,13 @@ class FunctionExpression : public Expression {
   const VariableDeclarations& GetVariableDeclarations() const { return variable_declarations_; }
   const FunctionDeclarations& GetFunctionDeclarations() const { return function_declarations_; }
 
+  bool IsStrict() const { return is_strict_; }
+
  private:
   Expression* name_;
   Expressions parameters_;
   Statements statements_;
+  bool is_strict_ {};
   
   VariableDeclarations variable_declarations_;
   FunctionDeclarations function_declarations_;

@@ -11,15 +11,22 @@ namespace voidjs {
 
 class StringTable;
 class ObjectFactory;
+class Interpreter;
 
 class VM {
  public:
+  VM(Interpreter* interpreter)
+    : interpreter_{interpreter}
+  {}
+
+  Interpreter* GetInterpreter() const { return interpreter_; }
+  
   ExecutionContext* GetExecutionContext() const { return execution_ctxs_.back(); }
   void PushExecutionContext(ExecutionContext* ctx) { execution_ctxs_.push_back(ctx); }
   void PopExecutionContext() { execution_ctxs_.pop_back(); }
   
   PROPERTY_ACCESSORS(types::LexicalEnvironment*, GlobalEnv, global_env_)
-  PROPERTY_ACCESSORS( builtins::GlobalObject*, GlobalObject, global_obj_)
+  PROPERTY_ACCESSORS(builtins::GlobalObject*, GlobalObject, global_obj_)
   PROPERTY_ACCESSORS(ObjectFactory*, ObjectFactory, object_factory_)
   
   PROPERTY_ACCESSORS(builtins::JSObject*, ObjectPrototype, object_proto_)
@@ -86,7 +93,9 @@ class VM {
   ObjectFactory* object_factory_;
 
   //
-  builtins::JSError* exception_;
+  builtins::JSError* exception_ {nullptr};
+
+  Interpreter* interpreter_;
 };
 
 }  // namespace voidjs

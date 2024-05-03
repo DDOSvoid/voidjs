@@ -1054,6 +1054,18 @@ Expression* Parser::ParseFunctionExpression() {
   }
   lexer_.NextToken();
 
+  bool is_strict = false;
+  if (lexer_.GetToken().GetType() == TokenType::STRING &&
+      lexer_.GetToken().GetString() == u"use strict") {
+    is_strict = true;
+    lexer_.NextToken();
+    
+    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      ThrowSyntaxError("expects a ';'");
+    }
+    lexer_.NextToken();
+  }
+
   EnterFunctionScope();
   Statements stmts;
   while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
@@ -1070,7 +1082,7 @@ Expression* Parser::ParseFunctionExpression() {
   lexer_.NextToken();
 
   auto [var_decls, func_decls] = ExitFunctionScope();
-  return new FunctionExpression(ident, std::move(params), std::move(stmts),
+  return new FunctionExpression(ident, std::move(params), std::move(stmts), is_strict,
                                 std::move(var_decls), std::move(func_decls));
 }
 
@@ -1474,6 +1486,18 @@ Property* Parser::ParsePropertyAssignment() {
     }
     lexer_.NextToken();
 
+    bool is_strict = false;
+    if (lexer_.GetToken().GetType() == TokenType::STRING &&
+        lexer_.GetToken().GetString() == u"use strict") {
+      is_strict = true;
+      lexer_.NextToken();
+    
+      if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+        ThrowSyntaxError("expects a ';'");
+      }
+      lexer_.NextToken();
+    }
+
     EnterFunctionScope();
     Statements stmts;
     while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
@@ -1491,7 +1515,7 @@ Property* Parser::ParsePropertyAssignment() {
     
     auto [var_decls, func_decls] = ExitFunctionScope();
 
-    auto value = new FunctionExpression(nullptr, Expressions{}, std::move(stmts),
+    auto value = new FunctionExpression(nullptr, Expressions{}, std::move(stmts), is_strict,
                                         std::move(var_decls), std::move(func_decls));
 
     return new Property(type, key, value);
@@ -1529,6 +1553,18 @@ Property* Parser::ParsePropertyAssignment() {
     }
     lexer_.NextToken();
 
+    bool is_strict = false;
+    if (lexer_.GetToken().GetType() == TokenType::STRING &&
+        lexer_.GetToken().GetString() == u"use strict") {
+      is_strict = true;
+      lexer_.NextToken();
+    
+      if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+        ThrowSyntaxError("expects a ';'");
+      }
+      lexer_.NextToken();
+    }
+
     EnterFunctionScope();
     Statements stmts;
     while (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACE) {
@@ -1546,7 +1582,7 @@ Property* Parser::ParsePropertyAssignment() {
 
     auto [var_decls, func_decls] = ExitFunctionScope();
       
-    auto value = new FunctionExpression(nullptr, std::move(params), std::move(stmts),
+    auto value = new FunctionExpression(nullptr, std::move(params), std::move(stmts), is_strict,
                                         std::move(var_decls), std::move(func_decls));
 
     return new Property(type, key, value);

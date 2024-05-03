@@ -40,8 +40,8 @@ class DeclarativeEnvironmentRecord : public EnvironmentRecord {
   static JSValue ImplicitThisValue(VM* vm, DeclarativeEnvironmentRecord* env);
 
   // Additional methods of DeclarativeEnvironmentRecord
-  void CreateInmmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
-  void InitializeImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, JSValue V);
+  static void CreateImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
+  static void InitializeImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, JSValue V);
 
   static constexpr std::size_t BINDING_MAP_OFFSET = EnvironmentRecord::END_OFFSET;
   HashMap* GetBindingMap() const { return *utils::BitGet<HashMap**>(this, BINDING_MAP_OFFSET); }
