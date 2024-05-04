@@ -20,7 +20,7 @@ namespace types {
 // GetOwnProperty
 // Defind in ECMAScript 5.1 Chapter 8.12.2
 PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, String* P) {
-  auto props = O->GetProperties().GetHeapObject()->AsPropertyMap();
+  auto props = O->GetPropertyMap();
   
   // 1. If O doesn’t have an own property with name P, return undefined.
   auto prop = props->GetProperty(vm, P);
@@ -248,7 +248,7 @@ bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
   // 3. If desc.[[Configurable]] is true, then
   if (desc.GetConfigurable()) {
     // a. Remove the own property with name P from O.
-    O->GetProperties().GetHeapObject()->AsPropertyMap()->DeleteProperty(vm, P);
+    O->GetPropertyMap()->DeleteProperty(vm, P);
 
     // b. Return true.
     return true;
@@ -371,8 +371,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //    If the value of an attribute field of Desc is absent,
       //    the attribute of the newly created property is set to its default value.
       auto own_desc = PropertyDescriptor(Desc.GetValue(), Desc.GetWritable(), Desc.GetEnumerable(), Desc.GetConfigurable());
-      auto prop_map = O->GetProperties().GetHeapObject()->AsPropertyMap();
-      O->SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
+      auto prop_map = O->GetPropertyMap();
+      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
     }
     // b. Else, Desc must be an accessor Property Descriptor so,
     else {
@@ -381,8 +381,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //    If the value of an attribute field of Desc is absent,
       //    the attribute of the newly created property is set to its default value.
       auto own_desc = PropertyDescriptor(Desc.GetGetter(), Desc.GetSetter(), Desc.GetEnumerable(), Desc.GetConfigurable());
-      auto prop_map = O->GetProperties().GetHeapObject()->AsPropertyMap();
-      O->SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
+      auto prop_map = O->GetPropertyMap();
+      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
     }
 
     // c. Return true
@@ -468,8 +468,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //    and set the rest of the property’s attributes to their default values.
       auto own_desc = PropertyDescriptor(JSValue::Undefined(), JSValue::Undefined(),
                                          current.GetEnumerable(), current.GetConfigurable());
-      auto prop_map = O->GetProperties().GetHeapObject()->AsPropertyMap();
-      O->SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
+      auto prop_map = O->GetPropertyMap();
+      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
     }
     // c. Else
     else {
@@ -479,8 +479,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
       //    and set the rest of the property’s attributes to their default values.
       auto own_desc = PropertyDescriptor(JSValue::Undefined(), current.GetWritable(),
                                          current.GetEnumerable(), current.GetConfigurable());
-      auto prop_map = O->GetProperties().GetHeapObject()->AsPropertyMap();
-      O->SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, own_desc)));
+      auto prop_map = O->GetPropertyMap();
+      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
     }
   }
   // 10. Else, if IsDataDescriptor(current) and IsDataDescriptor(Desc) are both true, then
@@ -566,8 +566,8 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
     if (Desc.HasConfigurable()) {
       current.SetConfigurable(Desc.GetConfigurable());
     }
-    auto prop_map = O->GetProperties().GetHeapObject()->AsPropertyMap();
-    O->SetProperties(JSValue(PropertyMap::SetProperty(vm, prop_map, P, current)));
+    auto prop_map = O->GetPropertyMap();
+    O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, current));
   }
 
   // 13. Return true.

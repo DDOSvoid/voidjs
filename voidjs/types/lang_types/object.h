@@ -23,8 +23,8 @@ class String;
 class Object : public HeapObject {
  public:
   static constexpr std::size_t PROPERTIES_OFFSET = HeapObject::SIZE;
-  JSValue GetProperties() const { return *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET); }
-  void SetProperties(JSValue props) { *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET) = props; }
+  PropertyMap* GetPropertyMap() const { return *utils::BitGet<PropertyMap**>(this, PROPERTIES_OFFSET); }
+  void SetPropertyMap(PropertyMap* prop_map) { *utils::BitGet<PropertyMap**>(this, PROPERTIES_OFFSET) = prop_map; }
 
   static constexpr std::size_t PROTOTYPE_OFFSET = PROPERTIES_OFFSET + sizeof(JSValue);
   JSValue GetPrototype() const { return *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET); }

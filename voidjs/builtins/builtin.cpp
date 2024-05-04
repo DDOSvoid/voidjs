@@ -56,8 +56,8 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   // the standard built-in Function prototype object.
   // Besides the internal properties and the length property (whose value is 1),
   // the Object constructor has the following properties:
-  auto obj_ctor = factory->NewObject(JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::FUNCTION,
-                                     JSValue{func_proto}, true, true, false)->AsJSObject();
+  auto obj_ctor = factory->NewObject(JSObject::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+                                     JSValue{func_proto}, true, true, false)->AsJSFunction();
   
   // Initialize Function Constructor
   // The Function constructor is itself a Function object and its [[Class]] is "Function".
@@ -89,7 +89,7 @@ void Builtin::InitializeErrorObjects(VM* vm) {
   // The value of the [[Prototype]] internal property of the Error constructor is
   // the Function prototype object (15.3.4).
   auto error_ctor = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::FUNCTION,
-                                       JSValue{vm->GetFunctionPrototype()}, true, false, false)->AsJSError();
+                                       JSValue{vm->GetFunctionPrototype()}, true, false, false)->AsJSFunction();
 
   // Initialize Native Error Object, which includes
   // EvalError Prototype, EvalError Constructor, 
@@ -237,11 +237,11 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
 
 void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,
                               bool writable, bool enumerable, bool configurable) {
-  auto props = obj->GetProperties().GetHeapObject()->AsPropertyMap();
+  auto prop_map = obj->GetPropertyMap();
   
   auto desc = types::PropertyDescriptor{prop_val, writable, enumerable, configurable};
   
-  obj->SetProperties(JSValue(types::PropertyMap::SetProperty(vm, props, prop_name, desc)));
+  obj->SetPropertyMap(types::PropertyMap::SetProperty(vm, prop_map, prop_name, desc));
 }
 
 void Builtin::SetFunctionProperty(VM* vm, types::Object* obj, types::String* prop_name, InternalFunctionType func,

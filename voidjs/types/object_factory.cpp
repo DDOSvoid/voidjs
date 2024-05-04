@@ -44,7 +44,7 @@ GlobalObject* ObjectFactory::NewGlobalObject() {
   auto obj = NewHeapObject(Object::SIZE)->AsGlobalObject();
   obj->SetType(JSType::GLOBAL_OBJECT);
   obj->SetClassType(ObjectClassType::GLOBAL_OBJECT);
-  obj->SetProperties(JSValue(NewPropertyMap()));
+  obj->SetPropertyMap(NewPropertyMap());
   obj->SetExtensible(true);
   obj->SetCallable(false);
   obj->SetIsConstructor(false);
@@ -95,7 +95,7 @@ Object* ObjectFactory::NewObject(
 
   obj->SetType(type);
   obj->SetClassType(class_type);
-  obj->SetProperties(JSValue(NewPropertyMap()));
+  obj->SetPropertyMap(NewPropertyMap());
   obj->SetPrototype(proto);
   obj->SetExtensible(extensible);
   obj->SetCallable(callable);

@@ -39,6 +39,7 @@ class PropertyMap : public HashMap {
   void DeleteProperty(VM* vm, String* key) {
     Erase(vm, key);
   }
+
 };
 
 }  // namespace types
