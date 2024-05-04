@@ -44,21 +44,37 @@ TEST(InternalTypes, HashMap) {
   auto hashmap = factory->NewHashMap(2);
   
   auto key1 = factory->NewStringFromTable(u"key1");
-  auto val1 = JSValue(42);
+  auto val1 = JSValue{42};
 
   auto key2 = factory->NewStringFromTable(u"key2");
-  auto val2 = JSValue(factory->NewStringFromTable(u"42"));
+  auto val2 = JSValue{factory->NewStringFromTable(u"42")};
 
   auto key3 = factory->NewStringFromTable(u"key3");
-  auto val3 = JSValue(-2);
+  auto val3 = JSValue{-2};
 
   auto key4 = factory->NewStringFromTable(u"key4");
-  auto val4 = JSValue(100);
+  auto val4 = JSValue{100};
+
+  auto key5 = factory->NewStringFromTable(u"1");
+  auto val5 = JSValue{0};
+
+  auto key6 = factory->NewStringFromTable(u"2");
+  auto val6 = JSValue{0};
+
+  auto key7 = factory->NewStringFromTable(u"3");
+  auto val7 = JSValue{-10};
+
+  auto key8 = factory->NewStringFromTable(u"4");
+  auto val8 = JSValue{0};
 
   hashmap = types::HashMap::Insert(vm, hashmap, key1, val1);
   hashmap = types::HashMap::Insert(vm, hashmap, key2, val2);
   hashmap = types::HashMap::Insert(vm, hashmap, key3, val3);
   hashmap = types::HashMap::Insert(vm, hashmap, key4, val4);
+  hashmap = types::HashMap::Insert(vm, hashmap, key5, val5);
+  hashmap = types::HashMap::Insert(vm, hashmap, key6, val6);
+  hashmap = types::HashMap::Insert(vm, hashmap, key7, val7);
+  hashmap = types::HashMap::Insert(vm, hashmap, key8, val8);
 
   {
     auto val = hashmap->Find(vm, key1);
@@ -77,6 +93,12 @@ TEST(InternalTypes, HashMap) {
   {
     auto val = hashmap->Find(vm, key2);
     EXPECT_TRUE(val.IsEmpty());
+  }
+
+  {
+    auto val = hashmap->Find(vm, key7);
+    ASSERT_TRUE(val.IsInt());
+    EXPECT_EQ(-10, val.GetInt());
   }
 }
 

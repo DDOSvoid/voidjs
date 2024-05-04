@@ -30,6 +30,7 @@
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/js_array.h"
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/interpreter/string_table.h"
@@ -759,6 +760,9 @@ std::variant<JSValue, Reference> Interpreter::EvalExpression(Expression* expr) {
     case AstNodeType::OBJECT_LITERAL: {
       return EvalObjectLiteral(expr->AsObjectLiteral());
     }
+    case AstNodeType::ARRAY_LITERAL: {
+      return EvalArrayLiteral(expr->AsArrayLiteral());
+    }
     case AstNodeType::NULL_LITERAL: {
       return EvalNullLiteral(expr->AsNullLiteral());
     }
@@ -1371,6 +1375,15 @@ JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
   return EvalPropertyNameAndValueList(props);
 }
 
+// EvalArrayLiteral
+// Defined in ECMAScript 5.1 Chapter 11.1.4
+JSValue Interpreter::EvalArrayLiteral(ArrayLiteral* array) {
+  // ArrayLiteral : [ Elisionopt ]
+  // ArrayLiteral : [ ElementList ]
+
+  return EvalElementList(array->GetElements());
+}
+
 // Eval NullLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSValue Interpreter::EvalNullLiteral(NullLiteral* nul) {
@@ -1602,6 +1615,49 @@ std::pair<String*, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::
     // 4. Return Property Identifier (propName, desc).
   }
   
+}
+
+// EvalArrayLiteral
+// Defined in ECMAScript 5.1 Chapter
+JSValue Interpreter::EvalElementList(const Expressions& exprs) {
+  auto factory = vm_->GetObjectFactory();
+  
+  // ElementList : Elisionopt AssignmentExpression
+  // ElementList : ElementList , Elisionopt AssignmentExpression
+
+  // 1. Let array be the result of creating a new object as if
+  //    by the expression new Array() where Array is the standard built-in constructor with that name.
+  // 2. Let firstIndex be the result of evaluating Elision; if not present, use the numeric value zero.
+  // 3. Let initResult be the result of evaluating AssignmentExpression.
+  // 4. Let initValue be GetValue(initResult).
+  // 5. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(firstIndex),
+  //    the Property Descriptor { [[Value]]: initValue, [[Writable]]: true, [[Enumerable]]: true,
+  //    [[Configurable]]: true}, and false.
+  // 6. Return array.
+
+  auto len = exprs.size();
+
+  auto array = JSArray::Construct(
+    factory->NewRuntimeCallInfo(
+      JSValue::Undefined(), std::vector<JSValue>{JSValue{static_cast<int>(len)}}));
+
+  for (std::size_t idx = 0; idx < len; ++idx ) {
+    auto expr = exprs[idx];
+    JSValue val {};
+    if (expr) {
+      auto ref = EvalExpression(expr);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
+
+      val = GetValue(ref);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm_, JSValue{});
+    } else {
+      val = JSValue::Undefined();
+    }
+    Builtin::SetDataProperty(
+      vm_, array.GetHeapObject()->AsJSArray(), JSValue::NumberToString(vm_, idx), val, true, true, false);
+  }
+
+  return array;
 }
 
 // ApplyCompoundAssignment

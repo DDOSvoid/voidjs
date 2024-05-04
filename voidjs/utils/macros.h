@@ -13,7 +13,7 @@
   auto name##_proto = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR, \
                                          JSValue{error_proto}, true, false, false)->AsJSError(); \
                                                                         \
-  auto name##_ctor = factory->NewObject(JSError::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION, \
+  auto name##_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION, \
                                         JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction(); \
 
 #define THROW_ERROR_AND_RETURN_VOID(vm, type, message)      \

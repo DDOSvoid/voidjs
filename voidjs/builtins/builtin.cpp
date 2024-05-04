@@ -16,6 +16,7 @@
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/js_array.h"
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/macros.h"
@@ -25,6 +26,8 @@ namespace builtins {
 
 void Builtin::Initialize(VM* vm) {
   InitializeBuiltinObjects(vm);
+  InitializeArrayObjects(vm);
+  InitializeErrorObjects(vm);
   SetPropretiesForBuiltinObjects(vm);
 }
 
@@ -56,7 +59,7 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   // the standard built-in Function prototype object.
   // Besides the internal properties and the length property (whose value is 1),
   // the Object constructor has the following properties:
-  auto obj_ctor = factory->NewObject(JSObject::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+  auto obj_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
                                      JSValue{func_proto}, true, true, false)->AsJSFunction();
   
   // Initialize Function Constructor
@@ -75,6 +78,33 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   vm->SetFunctionConstructor(func_ctor);
 }
 
+
+void Builtin::InitializeArrayObjects(VM* vm) {
+  auto factory = vm->GetObjectFactory();
+  auto obj_proto = vm->GetObjectPrototype();
+  auto func_proto = vm->GetFunctionPrototype();
+  
+  // Initialize Array Prototype
+  // The value of the [[Prototype]] internal property of the Array prototype object is
+  // the standard built-in Object prototype object (15.2.4).
+  // The Array prototype object is itself an array; its [[Class]] is "Array",
+  // and it has a length property (whose initial value is +0) and
+  // the special [[DefineOwnProperty]] internal method described in 15.4.5.1.
+  auto arr_proto = factory->NewObject(JSArray::SIZE, JSType::JS_ARRAY, ObjectClassType::ARRAY,
+                                      JSValue{obj_proto}, true, false, false)->AsJSArray();
+
+
+  // Initialize Array Constructor
+  // The value of the [[Prototype]] internal property of the Array constructor is the Function prototype object (15.3.4).
+  // Besides the internal properties and the length property (whose value is 1),
+  // the Array constructor has the following properties:
+  auto arr_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+                                     JSValue{func_proto}, true, true, false)->AsJSFunction();
+  
+  vm->SetArrayPrototype(arr_proto);
+  vm->SetArrayConstructor(arr_ctor);
+}
+
 void Builtin::InitializeErrorObjects(VM* vm) {
   auto factory = vm->GetObjectFactory();
   
@@ -89,7 +119,7 @@ void Builtin::InitializeErrorObjects(VM* vm) {
   // The value of the [[Prototype]] internal property of the Error constructor is
   // the Function prototype object (15.3.4).
   auto error_ctor = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::FUNCTION,
-                                       JSValue{vm->GetFunctionPrototype()}, true, false, false)->AsJSFunction();
+                                       JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction();
 
   // Initialize Native Error Object, which includes
   // EvalError Prototype, EvalError Constructor, 
@@ -210,29 +240,41 @@ builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
 void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   auto global_obj = vm->GetGlobalObject();
   auto factory = vm->GetObjectFactory();
-  auto obj_ctro = vm->GetObjectConstructor();
+  auto obj_ctor = vm->GetObjectConstructor();
   auto obj_proto = vm->GetObjectPrototype();
-  auto func_ctro = vm->GetFunctionConstructor();
+  auto func_ctor = vm->GetFunctionConstructor();
+  auto arr_ctor = vm->GetArrayConstructor();
+  auto arr_proto = vm->GetArrayPrototype();
 
   // Set properties for Global Object
   SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Object"),
-                  JSValue{obj_ctro}, true, false, true);
+                  JSValue{obj_ctor}, true, false, true);
   SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Function"),
-                  JSValue{func_ctro}, true, false, true);
+                  JSValue{func_ctor}, true, false, true);
+  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Array"),
+                  JSValue{arr_ctor}, true, false, true);
 
   // Set propreties for Object Constructor
-  SetDataProperty(vm, obj_ctro, factory->NewString(u"length"), JSValue{1}, false, false, false);
-  SetDataProperty(vm, obj_ctro, factory->NewString(u"prototype"), JSValue{obj_proto}, false, false, false);
-  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"getPrototypeOf"),
+  SetDataProperty(vm, obj_ctor, factory->NewString(u"length"), JSValue{1}, false, false, false);
+  SetDataProperty(vm, obj_ctor, factory->NewString(u"prototype"), JSValue{obj_proto}, false, false, false);
+  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"getPrototypeOf"),
                       JSObject::GetPrototypeOf, true, false, true);
-  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"getOwnPropertyDescriptor"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"getOwnPropertyDescriptor"),
                       JSObject::GetOwnPropretyDescriptor, true, false, true);
-  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"defineProperty"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"defineProperty"),
                       JSObject::DefineProperty, true, false, true);
-  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"preventExtensions"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"preventExtensions"),
                       JSObject::PreventExtensions, true, false, true);
-  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"isExtensible"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"isExtensible"),
                       JSObject::IsExtensible, true, false, true);
+
+  // Set properties for Array Constructor
+  SetFunctionProperty(vm, arr_ctor, factory->NewStringFromTable(u"isArray"),
+                      JSArray::IsArray, true, false, true);
+  
+  // Set propreties for Array Prototype
+  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"concat"),
+                      JSArray::Concat, true, false, true);
 }
 
 void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,

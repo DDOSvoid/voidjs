@@ -9,6 +9,7 @@
 #include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/js_array.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/utils/macros.h"
@@ -343,9 +344,18 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
   }
 }
 
+// only used to forward
+bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw) {
+  if (O->IsJSArray()) {
+    return builtins::JSArray::DefineOwnProperty(vm, O, P, Desc, Throw);
+  } else {
+    return DefineOwnPropertyDefault(vm, O, P, Desc, Throw);
+  }
+}
+
 // DefineOwnProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.9
-bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw) {
+bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw) {
   // 1. Let current be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto current = GetOwnProperty(vm, O, P);
 
@@ -586,6 +596,10 @@ JSValue Object::Construct(Object* O, RuntimeCallInfo* argv) {
   if (O == vm->GetFunctionConstructor()) {
     return JSValue{builtins::JSFunction::Construct(argv)};
   }
+
+  if (O == vm->GetArrayConstructor()) {
+    return JSValue{builtins::JSArray::Construct(argv)};
+  }
 }
 
 // Call
@@ -595,6 +609,14 @@ JSValue Object::Call(Object* O, RuntimeCallInfo* argv) {
   
   if (O == vm->GetObjectConstructor()) {
     return builtins::JSObject::Call(argv);
+  }
+
+  if (O == vm->GetFunctionConstructor()) {
+    return builtins::JSFunction::Call(argv);
+  }
+
+  if (O == vm->GetArrayConstructor()) {
+    return builtins::JSArray::Call(argv);
   }
 
   if (O->IsJSFunction()) {

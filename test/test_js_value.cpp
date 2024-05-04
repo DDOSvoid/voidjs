@@ -129,6 +129,11 @@ TEST(JSValue, ToUint32) {
   auto vm = interpreter.GetVM();
   
   auto ui32_max = std::numeric_limits<std::uint32_t>::max();
+
+  {
+    auto val = JSValue(1);
+    EXPECT_EQ(1, JSValue::ToInt32(vm, val));
+  }
   
   {
     auto val = JSValue(std::pow(2, 32) + 3);
@@ -172,6 +177,13 @@ TEST(JSValue, ToString) {
     auto str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"42", str->GetString());
+  }
+
+  { 
+    auto val = JSValue(1);
+    auto str = JSValue::ToString(vm, val);
+
+    EXPECT_EQ(u"1", str->GetString());
   }
 
   { 

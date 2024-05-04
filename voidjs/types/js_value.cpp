@@ -24,6 +24,10 @@ bool JSValue::IsString() const {
   return IsHeapObject() && GetHeapObject()->IsString();
 }
 
+types::String* JSValue::GetString() const {
+  return GetHeapObject()->AsString();
+}
+
 // ToPrimitive
 // Defined in ECMAScript 5.1 Chapter 9.1
 JSValue JSValue::ToPrimitive(VM* vm, JSValue val, PreferredType type) {
@@ -148,7 +152,7 @@ std::int32_t JSValue::ToInt32(VM* vm, JSValue val) {
   //   return int32_bit;
   // }
 
-  return utils::DoubleToInt<32>(val.GetNumber());
+  return utils::DoubleToInt<32>(ToNumber(vm, val).GetNumber());
 }
 
 // ToUint32
@@ -182,7 +186,7 @@ std::uint32_t JSValue::ToUint32(VM* vm, JSValue val) {
 
   // return int32_bit;
 
-  return utils::DoubleToInt<32>(val.GetNumber());
+  return utils::DoubleToInt<32>(ToNumber(vm, val).GetNumber());
 }
 
 // ToUint16
@@ -216,7 +220,7 @@ std::uint16_t JSValue::ToUint16(VM* vm, JSValue val) {
 
   // return int16_bit;
 
-  return utils::DoubleToInt<16>(val.GetNumber());
+  return utils::DoubleToInt<16>(ToNumber(vm, val).GetNumber());
 }
 
 // ToString

@@ -35,6 +35,7 @@ namespace builtins {
 class GlobalObject;
 class JSObject;
 class JSFunction;
+class JSArray;
 class JSError;
 
 }  // namespace builtins
@@ -141,6 +142,7 @@ class HeapObject {
   bool IsGlobalObject() const { return GetType() == JSType::GLOBAL_OBJECT; }
   bool IsJSObject() const { return GetType() == JSType::JS_OBJECT; }
   bool IsJSFunction() const { return GetType() == JSType::JS_FUNCTION; }
+  bool IsJSArray() const { return GetType() == JSType::JS_ARRAY; }
   bool IsJSError() const { return GetType() == JSType::JS_ERROR; }
 
   // As Cast
@@ -161,6 +163,7 @@ class HeapObject {
   builtins::GlobalObject* AsGlobalObject() { return reinterpret_cast<builtins::GlobalObject*>(this); }
   builtins::JSObject* AsJSObject() { return reinterpret_cast<builtins::JSObject*>(this); }
   builtins::JSFunction* AsJSFunction() { return reinterpret_cast<builtins::JSFunction*>(this); }
+  builtins::JSArray* AsJSArray() { return reinterpret_cast<builtins::JSArray*>(this); }
   builtins::JSError* AsJSError() { return reinterpret_cast<builtins::JSError*>(this); }
 
   // As Cast
@@ -181,6 +184,7 @@ class HeapObject {
   const builtins::GlobalObject* AsGlobalObject() const { return reinterpret_cast<const builtins::GlobalObject*>(this); }
   const builtins::JSObject* AsJSObject() const { return reinterpret_cast<const builtins::JSObject*>(this); }
   const builtins::JSFunction* AsJSFunction() const { return reinterpret_cast<const builtins::JSFunction*>(this); }
+  const builtins::JSArray* AsJSArray() const { return reinterpret_cast<const builtins::JSArray*>(this); }
   const builtins::JSError* AsJSError() const { return reinterpret_cast<const builtins::JSError*>(this); }
 };
 

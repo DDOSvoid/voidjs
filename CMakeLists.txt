@@ -26,6 +26,7 @@ add_library(voidjs_obj OBJECT
   voidjs/builtins/builtin.cpp
   voidjs/builtins/js_object.cpp
   voidjs/builtins/js_function.cpp
+  voidjs/builtins/js_array.cpp
   voidjs/interpreter/interpreter.cpp
   voidjs/interpreter/execution_context.cpp
 )

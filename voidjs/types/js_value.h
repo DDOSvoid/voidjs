@@ -135,6 +135,7 @@ class JSValue {
   double GetNumber() const { return IsInt() ? GetInt() : GetDouble(); } 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
   double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }
+  types::String* GetString() const; 
 
   HeapObject* GetHeapObject() const { return reinterpret_cast<HeapObject*>(value_); }
 

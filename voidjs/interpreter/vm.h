@@ -34,6 +34,9 @@ class VM {
   
   PROPERTY_ACCESSORS(builtins::JSFunction*, FunctionPrototype, function_proto_)
   PROPERTY_ACCESSORS(builtins::JSFunction*, FunctionConstructor, function_ctor_)
+
+  PROPERTY_ACCESSORS(builtins::JSArray*, ArrayPrototype, array_proto_)
+  PROPERTY_ACCESSORS(builtins::JSFunction*, ArrayConstructor, array_ctor_)
   
   PROPERTY_ACCESSORS(builtins::JSError*, ErrorPrototype, error_proto_)
   PROPERTY_ACCESSORS(builtins::JSFunction*, ErrorConstructor, error_ctor_)
@@ -62,6 +65,9 @@ class VM {
   
   builtins::JSFunction* function_proto_;
   builtins::JSFunction* function_ctor_;
+
+  builtins::JSArray* array_proto_;
+  builtins::JSFunction* array_ctor_;
   
   builtins::JSError* error_proto_;
   builtins::JSFunction* error_ctor_;

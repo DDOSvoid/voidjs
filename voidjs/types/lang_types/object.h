@@ -44,6 +44,7 @@ class Object : public HeapObject {
   static bool Delete(VM* vm, Object* O, String* P, bool Throw);
   static JSValue DefaultValue(VM* vm, Object* O, PreferredType hint);
   static bool DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw);
+  static bool DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw);
 
   // Internal function properties only defined for some objects
   // Methods defined below ponly used for forwarding

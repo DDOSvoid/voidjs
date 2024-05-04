@@ -66,7 +66,8 @@ class Interpreter {
   std::variant<JSValue, types::Reference> EvalNewExpression(ast::NewExpression* new_expr);
   std::variant<JSValue, types::Reference> EvalCallExpression(ast::CallExpression* call_expr);
   JSValue EvalFunctionExpression(ast::FunctionExpression* func_expr);
-  JSValue EvalObjectLiteral(ast::ObjectLiteral* object); 
+  JSValue EvalObjectLiteral(ast::ObjectLiteral* object);
+  JSValue EvalArrayLiteral(ast::ArrayLiteral* array);
   JSValue EvalNullLiteral(ast::NullLiteral* nul);
   JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
   JSValue EvalNumericLiteral(ast::NumericLiteral* num);
@@ -82,6 +83,7 @@ class Interpreter {
   std::vector<JSValue> EvalArgumentList(const ast::Expressions& exprs);
   types::Completion EvalCaseBlock(const ast::CaseClauses& cases, JSValue input);
   types::Completion EvalCatch(ast::Expression* catch_name, ast::Statement* catch_block, JSValue C);
+  JSValue EvalElementList(const ast::Expressions& exprs);
   
   JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
   JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);

@@ -1166,6 +1166,10 @@ Expression* Parser::ParseArrayLiteral() {
     }
   }
 
+  if (!exprs.empty() && exprs.back() == nullptr) {
+    exprs.pop_back();
+  }
+
   if (lexer_.GetToken().GetType() != TokenType::RIGHT_BRACKET) {
     ThrowSyntaxError("expects a ']'");
   }

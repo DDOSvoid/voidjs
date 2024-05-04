@@ -28,6 +28,7 @@ enum class JSType : std::uint8_t {
   GLOBAL_OBJECT,
   JS_OBJECT,
   JS_FUNCTION,
+  JS_ARRAY,
   JS_ERROR,
 };
 

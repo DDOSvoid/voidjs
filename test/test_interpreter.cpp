@@ -10,6 +10,7 @@
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/builtins/js_object.h"
+#include "voidjs/builtins/js_array.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/utils/helper.h"
 
@@ -1032,6 +1033,51 @@ TEST(Interpreter, EvalObjectLiteral) {
       auto prop = types::Object::GetProperty(vm, obj, key);
       ASSERT_TRUE(prop.GetValue().IsInt());
       EXPECT_EQ(42, prop.GetValue().GetInt());
+    }
+  }
+}
+
+TEST(Interpreter, EvalArrayLiteral) {
+  {
+    Parser parser(u"[]");
+
+    Interpreter interpreter;
+    auto vm = interpreter.GetVM();
+
+    auto ast_node = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(ast_node->IsArrayLiteral());
+
+    auto array = interpreter.EvalArrayLiteral(ast_node->AsArrayLiteral());
+    ASSERT_TRUE(array.IsObject());
+    ASSERT_TRUE(array.GetHeapObject()->IsJSArray());
+  }
+
+  {
+    Parser parser(u"['Hello', 1, 2, , , , 3,]");
+
+    Interpreter interpreter;
+    auto vm = interpreter.GetVM();
+    auto factory = vm->GetObjectFactory();
+
+    auto ast_node = parser.ParsePrimaryExpression();
+    ASSERT_TRUE(ast_node->IsArrayLiteral());
+
+    auto array = interpreter.EvalArrayLiteral(ast_node->AsArrayLiteral());
+    ASSERT_TRUE(array.IsObject());
+    ASSERT_TRUE(array.GetHeapObject()->IsJSArray());
+
+    {
+      auto key = factory->NewStringFromTable(u"0");
+      auto prop = types::Object::GetOwnProperty(vm, array.GetHeapObject()->AsJSArray(), key);
+      ASSERT_TRUE(prop.GetValue().IsString());
+      EXPECT_EQ(u"Hello", prop.GetValue().GetHeapObject()->AsString()->GetString());
+    }
+
+    {
+      auto key = factory->NewStringFromTable(u"length");
+      auto prop = types::Object::GetOwnProperty(vm, array.GetHeapObject()->AsJSArray(), key);
+      ASSERT_TRUE(prop.GetValue().IsInt());
+      EXPECT_EQ(7, prop.GetValue().GetInt());
     }
   }
 }
