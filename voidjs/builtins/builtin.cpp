@@ -181,7 +181,7 @@ builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
   
   // 16. Let proto be the result of creating a new object as would be constructed by the expression new Object()
   //     where Object is the standard built-in constructor with that name.
-  auto proto = JSObject::Construct(vm, JSValue{});
+  auto proto = JSObject::Construct(factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{}));
   
   // 17. Call the [[DefineOwnProperty]] internal method of proto with arguments "constructor",
   ///    Property Descriptor {[[Value]]: F, { [[Writable]]: true, [[Enumerable]]: false,

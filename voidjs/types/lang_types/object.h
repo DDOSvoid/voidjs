@@ -47,8 +47,8 @@ class Object : public HeapObject {
 
   // Internal function properties only defined for some objects
   // Methods defined below ponly used for forwarding
-  static JSValue Construct(VM* vm, Object* O, const std::vector<JSValue>& args);
-  static JSValue Call(VM* vm, Object* O, JSValue this_value, const std::vector<JSValue>& args);
+  static JSValue Construct(Object* O, RuntimeCallInfo* argv);
+  static JSValue Call(Object* O, RuntimeCallInfo* argv);
 };
 
 }  // namespace types

@@ -1059,7 +1059,8 @@ std::variant<JSValue, types::Reference> Interpreter::EvalNewExpression(ast::NewE
   // 5. If constructor does not implement the [[Construct]] internal method, throw a TypeError exception.
   // 6. Return the result of calling the [[Construct]] internal method on constructor,
   //    providing the list argList as the argument values.
-  return Object::Construct(vm_, ctor.GetHeapObject()->AsObject(), arg_list);
+  return Object::Construct(ctor.GetHeapObject()->AsObject(),
+                           vm_->GetObjectFactory()->NewRuntimeCallInfo(JSValue::Undefined(), arg_list));
 }
 
 // EvalCallExpression
@@ -1114,7 +1115,8 @@ std::variant<JSValue, Reference> Interpreter::EvalCallExpression(CallExpression*
   
   // 8. Return the result of calling the [[Call]] internal method on func,
   //    providing thisValue as the this value and providing the list argList as the argument values.
-  return Object::Call(vm_, func.GetHeapObject()->AsObject(), this_value, arg_list);
+  return Object::Call(func.GetHeapObject()->AsObject(),
+                      vm_->GetObjectFactory()->NewRuntimeCallInfo(this_value, arg_list));
 }
 
 // EvalFunctionExpression
@@ -1361,7 +1363,7 @@ JSValue Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
   // 1. Return a new object created as if by the expression
   //    new Object() where Object is the standard built-in constructor with that name.
   if (props.empty()) {
-    return JSValue(JSObject::Construct(vm_, JSValue{}));
+    return JSValue{JSObject::Construct(factory->NewRuntimeCallInfo(JSValue{}, std::vector<JSValue>{}))};
   }
 
   // ObjectLiteral : { PropertyNameAndValueList }
@@ -1513,7 +1515,7 @@ JSValue Interpreter::EvalPropertyNameAndValueList(const ast::Properties& props) 
   // PropertyNameAndValueList : PropertyNameAndValueList , PropertyAssignment
 
   // 1. Let obj be the result of evaluating PropertyNameAndValueList.
-  auto obj = JSObject::Construct(vm_, JSValue{});
+  auto obj = JSObject::Construct(factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{}));
 
   for (auto prop : props) {
     // 2. Let propId be the result of evaluating PropertyAssignment.

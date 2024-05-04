@@ -276,7 +276,8 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
     if (to_string.IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      auto str = Call(vm, to_string.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+      auto str = Call(to_string.GetHeapObject()->AsObject(),
+                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
 
       // b. If str is a primitive value, return str.
       if (str.IsPrimitive()) {
@@ -291,7 +292,8 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
     if (value_of.IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
-      auto val = Call(vm, value_of.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+      auto val = Call(value_of.GetHeapObject()->AsObject(),
+                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
       
       // b. If val is a primitive value, return val.
       if (val.IsPrimitive()) {
@@ -311,7 +313,8 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
     if (value_of.IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
-      auto val = Call(vm, value_of.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+      auto val = Call(value_of.GetHeapObject()->AsObject(),
+                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
       
       // b. If val is a primitive value, return val.
       if (val.IsPrimitive()) {
@@ -326,7 +329,8 @@ JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
     if (to_string.IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      auto str = Call(vm, to_string.GetHeapObject()->AsObject(), JSValue(O), std::vector<JSValue>{});
+      auto str = Call(to_string.GetHeapObject()->AsObject(),
+                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
 
       // b. If str is a primitive value, return str.
       if (str.IsPrimitive()) {
@@ -572,24 +576,31 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
 
 // Construct
 // Only used for forwarding to concrete [[Construct]]
-JSValue Object::Construct(VM* vm, Object* O, const std::vector<JSValue>& args) {
+JSValue Object::Construct(Object* O, RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  
   if (O == vm->GetObjectConstructor()) {
-    return JSValue{builtins::JSObject::Construct(vm, args.empty() ? JSValue{} : args[0])};
+    return JSValue{builtins::JSObject::Construct(argv)};
   }
 
   if (O == vm->GetFunctionConstructor()) {
-    return JSValue{builtins::JSFunction::Construct(vm, args)};
+    return JSValue{builtins::JSFunction::Construct(argv)};
   }
 }
 
 // Call
 // Only used for forwarding to concrete [[Call]]
-JSValue Object::Call(VM* vm, Object* O, JSValue this_value, const std::vector<JSValue>& args) {
+JSValue Object::Call(Object* O, RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  
   if (O == vm->GetObjectConstructor()) {
-    return builtins::JSObject::Call(vm, args.empty() ? JSValue{} : args[0]);
+    return builtins::JSObject::Call(argv);
   }
 
   if (O->IsJSFunction()) {
+    auto this_value {argv->GetThis()};
+    std::vector<JSValue> args {argv->GetArgs(), argv->GetArgs() + argv->GetArgsNum()};
+  
     auto F = O->AsJSFunction();
     // 1. Let funcCtx be the result of establishing a new execution context for function code
     //    using the value of F's [[FormalParameters]] internal property,

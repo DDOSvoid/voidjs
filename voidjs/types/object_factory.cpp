@@ -58,11 +58,14 @@ HeapObject* ObjectFactory::NewHeapObject(std::size_t size) {
   return obj;
 }
 
-RuntimeCallInfo* ObjectFactory::NewRuntimeCallInfo(std::size_t args_num) {
+RuntimeCallInfo* ObjectFactory::NewRuntimeCallInfo(JSValue this_arg, const std::vector<JSValue>& args) {
+  auto len = args.size();
   auto call_info = reinterpret_cast<RuntimeCallInfo*>(
-    Allocate(sizeof(std::uint64_t) + args_num * sizeof(JSValue)));
-  call_info->SetArgsNum(args_num);
-  std::fill_n(call_info->GetArgs(), args_num, JSValue{});
+    Allocate(RuntimeCallInfo::SIZE + len * sizeof(JSValue)));
+  call_info->SetVM(vm_);
+  call_info->SetThis(this_arg);
+  call_info->SetArgsNum(len);
+  std::copy(args.begin(), args.end(), call_info->GetArgs());
   return call_info;
 }
 

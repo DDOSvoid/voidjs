@@ -9,26 +9,28 @@ namespace voidjs {
 class RuntimeCallInfo {
  public:
   static constexpr std::size_t VM_OFFSET = 0;
-  VM* GetVM() const { return utils::BitGet<VM*>(this, VM_OFFSET); }
+  VM* GetVM() const { return *utils::BitGet<VM**>(this, VM_OFFSET); }
   void SetVM(VM* vm) { *utils::BitGet<VM**>(this, VM_OFFSET) = vm; }
+
+  static constexpr std::size_t THIS_OFFSET = VM_OFFSET + sizeof(std::uintptr_t);
+  JSValue GetThis() const { return *utils::BitGet<JSValue*>(this, THIS_OFFSET); }
+  void SetThis(JSValue val) { *utils::BitGet<JSValue*>(this, THIS_OFFSET) = val; }
   
-  static constexpr std::size_t ARGS_NUM_OFFSET = 0;
+  static constexpr std::size_t ARGS_NUM_OFFSET = THIS_OFFSET + sizeof(JSValue);
   std::uint64_t GetArgsNum() const { return *utils::BitGet<std::uint64_t*>(this, ARGS_NUM_OFFSET); }
   void SetArgsNum(std::uint64_t num) { *utils::BitGet<std::uint64_t*>(this, ARGS_NUM_OFFSET) = num; }
 
   static constexpr std::size_t ARGS_OFFSET = ARGS_NUM_OFFSET + sizeof(std::uint64_t);
   JSValue* GetArgs() const { return utils::BitGet<JSValue*>(this, ARGS_OFFSET); }
 
+  static constexpr std::size_t SIZE = sizeof(std::uintptr_t) + sizeof(JSValue) + sizeof(std::uint64_t);
 
-  static constexpr std::size_t THIS_INDEX = 0;
-  static constexpr std::size_t ARGS_START_INDEX = 1;
 
-  JSValue GetThis() const { return Get(THIS_INDEX); }
   JSValue GetArg(std::size_t idx) const {
-    return idx + ARGS_START_INDEX >= GetArgsNum() ?
-      JSValue::Undefined() : Get(idx + ARGS_START_INDEX); 
+    return idx >= GetArgsNum() ?
+      JSValue::Undefined() : Get(idx); 
   }
-  void SetArg(std::size_t idx, JSValue val) { Set(idx + ARGS_START_INDEX, val); }
+  void SetArg(std::size_t idx, JSValue val) { Set(idx, val); }
 
  private:
   JSValue Get(std::size_t idx) const { return *(GetArgs() + idx); }

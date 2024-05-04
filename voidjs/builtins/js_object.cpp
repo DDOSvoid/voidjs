@@ -11,11 +11,13 @@ namespace builtins {
 
 // new Object ( [ value ] )
 // Defined in ECMAScript 5.1 Chapter 15.2.2.1
-JSObject* JSObject::Construct(VM* vm, JSValue value) {
+JSObject* JSObject::Construct(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  auto value = argv->GetArg(0);
   auto factory = vm->GetObjectFactory();
   
   // 1. If value is supplied, then
-  if (!value.IsEmpty()) {
+  if (!value.IsEmpty() && !value.IsUndefined() && !value.IsNull()) {
     // a .If Type(value) is Object, then
     if (value.IsObject()) {
       // i. If the value is a native ECMAScript object, do not create a new object but simply return value.
@@ -52,12 +54,15 @@ JSObject* JSObject::Construct(VM* vm, JSValue value) {
 
 // Object([value])
 // Defined in ECMAScript 5.1 Chapter 15.2.1.1
-JSValue JSObject::Call(VM* vm, JSValue value) {
+JSValue JSObject::Call(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  auto value = argv->GetArg(0);
+  
   // 1. If value is null, undefined or not supplied,
   //    create and return a new Object object exactly as if
   //    the standard built-in Object constructor had been called with the same arguments (15.2.2.1).
   if (value.IsNull() || value.IsUndefined() || value.IsEmpty()) {
-    return JSValue(Construct(vm, value));
+    return JSValue(Construct(argv));
   }
 
   // 2. Return ToObject(value).
@@ -131,7 +136,8 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   
   // 2. Let obj be the result of creating a new object as if
   //    by the expression new Object() where Object is the standard built-in constructor with that name
-  auto obj = JSObject::Construct(vm, JSValue{});
+  auto obj = JSObject::Construct(
+    factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{}));
   
   // 3. Set the [[Prototype]] internal property of obj to O.
   obj->SetPrototype(O);

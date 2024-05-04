@@ -28,7 +28,7 @@ class ObjectFactory {
   
   HeapObject* NewHeapObject(std::size_t size);
 
-  RuntimeCallInfo* NewRuntimeCallInfo(std::size_t args_num);
+  RuntimeCallInfo* NewRuntimeCallInfo(JSValue this_arg, const std::vector<JSValue>& args);
 
   // used to create builtin objects
   types::Object* NewEmptyObject(
