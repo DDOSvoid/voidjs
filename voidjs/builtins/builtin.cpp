@@ -212,12 +212,13 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   auto factory = vm->GetObjectFactory();
   auto obj_ctro = vm->GetObjectConstructor();
   auto obj_proto = vm->GetObjectPrototype();
+  auto func_ctro = vm->GetFunctionConstructor();
 
   // Set properties for Global Object
   SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Object"),
-                  JSValue(vm->GetObjectConstructor()), true, false, true);
+                  JSValue{obj_ctro}, true, false, true);
   SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Function"),
-                  JSValue(vm->GetFunctionConstructor()), true, false, true);
+                  JSValue{func_ctro}, true, false, true);
 
   // Set propreties for Object Constructor
   SetDataProperty(vm, obj_ctro, factory->NewString(u"length"), JSValue{1}, false, false, false);
@@ -225,7 +226,13 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"getPrototypeOf"),
                       JSObject::GetPrototypeOf, true, false, true);
   SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"getOwnPropertyDescriptor"),
-                      JSObject::GetPrototypeOf, true, false, true);
+                      JSObject::GetOwnPropretyDescriptor, true, false, true);
+  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"defineProperty"),
+                      JSObject::DefineProperty, true, false, true);
+  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"preventExtensions"),
+                      JSObject::PreventExtensions, true, false, true);
+  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"isExtensible"),
+                      JSObject::IsExtensible, true, false, true);
 }
 
 void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,

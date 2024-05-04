@@ -6,11 +6,11 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/internal_types/property_map.h"
+#include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/interpreter/interpreter.h"
-#include "voidjs/types/spec_types/completion.h"
 #include "voidjs/utils/macros.h"
 
 
@@ -636,6 +636,11 @@ JSValue Object::Call(Object* O, RuntimeCallInfo* argv) {
     else {
       return JSValue::Undefined();
     }
+  }
+
+  if (O->IsInternalFunction()) {
+    auto func = O->AsInternalFunction()->GetFunction();
+    return func(argv);
   }
 }
 

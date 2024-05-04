@@ -21,6 +21,7 @@ add_library(voidjs_obj OBJECT
   voidjs/types/lang_types/object.cpp
   voidjs/types/spec_types/environment_record.cpp
   voidjs/types/spec_types/lexical_environment.cpp
+  voidjs/types/spec_types/property_descriptor.cpp
   voidjs/types/internal_types/array.cpp
   voidjs/builtins/builtin.cpp
   voidjs/builtins/js_object.cpp

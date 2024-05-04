@@ -162,6 +162,7 @@ InternalFunction* ObjectFactory::NewInternalFunction(InternalFunctionType func) 
   auto internal_func = NewHeapObject(InternalFunction::SIZE)->AsInternalFunction();
   internal_func->SetType(JSType::INTERNAL_FUNCTION);
   internal_func->SetFunction(func);
+  internal_func->SetCallable(true);
   return internal_func;
 }
 

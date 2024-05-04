@@ -2234,10 +2234,10 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
       // 3. Return the result of negating oldValue;
       //    that is, compute a Number with the same magnitude but opposite sign.
       if (old_val.IsInt()) {
-        return JSValue(-old_val.GetInt());
+        return JSValue{-old_val.GetInt()};
       } else {
         // old_val must be Double
-        return JSValue(-old_val.GetDouble());
+        return JSValue{-old_val.GetDouble()};
       }
     }
     case TokenType::BIT_NOT: {
@@ -2246,15 +2246,15 @@ JSValue Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
       
       // 2. Return the result of applying bitwise complement to oldValue.
       //    The result is a signed 32-bit integer.
-      return JSValue(~old_val);
+      return JSValue{~old_val};
     }
-    case TokenType::LOGICAL_AND: {
+    case TokenType::LOGICAL_NOT: {
       // 1. Let oldValue be ToBoolean(GetValue(expr)).
       auto old_val = JSValue::ToBoolean(vm_, GetValue(ref));
       
       // 2. If oldValue is true, return false.
       // 3. Return true.
-      return JSValue(old_val);
+      return JSValue{!old_val};
     }
     default: {
       return {};
@@ -2689,7 +2689,6 @@ void Interpreter::PutValue(const std::variant<JSValue, Reference>& V, JSValue W)
       auto base_prim = std::get<JSValue>(base);
       PutUsedByPutValue(base_prim, ref->GetReferencedName(), W, ref->IsStrictReference());
     }
-
   }
   // 5. Else base must be a reference whose base is an environment record. So,
   else {

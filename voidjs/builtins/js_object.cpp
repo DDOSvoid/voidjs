@@ -3,6 +3,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/macros.h"
 
@@ -94,7 +95,7 @@ JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
   // 1. If Type(O) is not Object throw a TypeError exception.
   if (!O.IsObject()) {
     THROW_TYPE_ERROR_AND_RETURN_VALUE(
-      argv->GetVM(), u"Object.getownPropretyDescriptor cannot work on non-Object type.", JSValue{});
+      argv->GetVM(), u"Object.getownPropretyDescriptor cannot work on non-object type.", JSValue{});
   }
   
   // 2. Let name be ToString(P).
@@ -104,7 +105,7 @@ JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
   auto desc = Object::GetOwnProperty(vm, O.GetHeapObject()->AsObject(), name);
   
   // 4. Return the result of calling FromPropertyDescriptor(desc) (8.10.4).
-  return desc.FromPropertyDescriptor();
+  return desc.FromPropertyDescriptor(vm);
 }
 
 // Object.getOwnPropertyNames(O)
@@ -145,7 +146,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   // 4. If the argument Properties is present and not undefined,
   //    add own properties to obj as if by calling the standard built-in function
   //    Object.defineProperties with arguments obj and Properties.
-  // todo
+  
   
   // 5. Return obj.
   return JSValue(obj);
@@ -169,8 +170,7 @@ JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
   auto name = JSValue::ToString(vm, P);
   
   // 3. Let desc be the result of calling ToPropertyDescriptor with Attributes as the argument.
-  // todo
-  const auto& desc = types::PropertyDescriptor::ToPropertyDescriptor(Attributes);
+  const auto& desc = types::PropertyDescriptor::ToPropertyDescriptor(vm, Attributes);
   
   // 4. Call the [[DefineOwnProperty]] internal method of O with arguments name, desc, and true.
   Object::DefineOwnProperty(vm, O.GetHeapObject()->AsObject(), name, desc, true);
@@ -195,6 +195,7 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
   
   // 2. Let props be ToObject(Properties).
   auto props = JSValue::ToObject(vm, Properties);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 3. Let names be an internal list containing the names of each enumerable own property of props.
   
@@ -351,7 +352,7 @@ JSValue JSObject::IsExtensible(RuntimeCallInfo* argv) {
   }
 
   // 2. Return the Boolean value of the [[Extensible]] internal property of O.
-  return JSValue(O.GetHeapObject()->GetExtensible());
+  return JSValue{O.GetHeapObject()->GetExtensible()};
 }
 
 // Object.keys

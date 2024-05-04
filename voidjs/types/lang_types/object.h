@@ -49,6 +49,8 @@ class Object : public HeapObject {
   // Methods defined below ponly used for forwarding
   static JSValue Construct(Object* O, RuntimeCallInfo* argv);
   static JSValue Call(Object* O, RuntimeCallInfo* argv);
+
+  static void GetAllEnumerableProps(Object* O);
 };
 
 }  // namespace types
