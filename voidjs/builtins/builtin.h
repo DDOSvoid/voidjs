@@ -37,7 +37,8 @@ class Builtin {
   static void SetPropretiesForBuiltinObjects(VM* vm);
   static void SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,
                               bool writable, bool enumerable, bool configurable);
-  static void SetFunctionProperty(VM* vm, types::Object* obj, types::String* prop_name, InternalFunctionType func);
+  static void SetFunctionProperty(VM* vm, types::Object* obj, types::String* prop_name, InternalFunctionType func,
+                                 bool writable, bool enumerable, bool configurable);
 };
 
 }  // namespace builtins

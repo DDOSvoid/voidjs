@@ -574,7 +574,11 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
 // Only used for forwarding to concrete [[Construct]]
 JSValue Object::Construct(VM* vm, Object* O, const std::vector<JSValue>& args) {
   if (O == vm->GetObjectConstructor()) {
-    return JSValue(builtins::JSObject::Construct(vm, args.empty() ? JSValue{} : args[0]));
+    return JSValue{builtins::JSObject::Construct(vm, args.empty() ? JSValue{} : args[0])};
+  }
+
+  if (O == vm->GetFunctionConstructor()) {
+    return JSValue{builtins::JSFunction::Construct(vm, args)};
   }
 }
 

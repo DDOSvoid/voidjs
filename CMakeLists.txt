@@ -24,6 +24,7 @@ add_library(voidjs_obj OBJECT
   voidjs/types/internal_types/array.cpp
   voidjs/builtins/builtin.cpp
   voidjs/builtins/js_object.cpp
+  voidjs/builtins/js_function.cpp
   voidjs/interpreter/interpreter.cpp
   voidjs/interpreter/execution_context.cpp
 )
@@ -49,6 +50,7 @@ add_executable(
   test/test_interpreter.cpp
   test/test_js_value.cpp
   test/test_internal_types.cpp
+  test/test_builtins.cpp
 )
 target_link_libraries(
   unit_test

@@ -39,6 +39,14 @@ class String : public HeapObject {
     return vm->GetObjectFactory()->NewStringFromTable(str);
   }
 
+  static String* Concat(VM* vm, String* str1, String* str2, String* str3) {
+    std::u16string str;
+    str += str1->GetString();
+    str += str2->GetString();
+    str += str3->GetString();
+    return vm->GetObjectFactory()->NewStringFromTable(str);
+  }
+
   // used for print 
   std::u16string_view GetString() const {
     auto len = GetLength();

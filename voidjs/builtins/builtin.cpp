@@ -210,10 +210,22 @@ builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
 void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   auto global_obj = vm->GetGlobalObject();
   auto factory = vm->GetObjectFactory();
+  auto obj_ctro = vm->GetObjectConstructor();
+  auto obj_proto = vm->GetObjectPrototype();
 
   // Set properties for Global Object
   SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Object"),
                   JSValue(vm->GetObjectConstructor()), true, false, true);
+  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Function"),
+                  JSValue(vm->GetFunctionConstructor()), true, false, true);
+
+  // Set propreties for Object Constructor
+  SetDataProperty(vm, obj_ctro, factory->NewString(u"length"), JSValue{1}, false, false, false);
+  SetDataProperty(vm, obj_ctro, factory->NewString(u"prototype"), JSValue{obj_proto}, false, false, false);
+  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"getPrototypeOf"),
+                      JSObject::GetPrototypeOf, true, false, true);
+  SetFunctionProperty(vm, obj_ctro, factory->NewStringFromTable(u"getOwnPropertyDescriptor"),
+                      JSObject::GetPrototypeOf, true, false, true);
 }
 
 void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,
@@ -225,14 +237,11 @@ void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_na
   obj->SetProperties(JSValue(types::PropertyMap::SetProperty(vm, props, prop_name, desc)));
 }
 
-void Builtin::SetFunctionProperty(VM* vm, types::Object* obj, types::String* prop_name, InternalFunctionType func) {
-  auto props = obj->GetProperties().GetHeapObject()->AsPropertyMap();
-  
-  auto internal_func = vm->GetObjectFactory()->NewInternalFunction(func);
-  
-  auto desc = types::PropertyDescriptor{JSValue(internal_func), true, false, true};
-  
-  obj->SetProperties(JSValue(types::PropertyMap::SetProperty(vm, props, prop_name, desc)));
+void Builtin::SetFunctionProperty(VM* vm, types::Object* obj, types::String* prop_name, InternalFunctionType func,
+                                  bool writable, bool enumerable, bool configurable) {
+  SetDataProperty(vm, obj, prop_name,
+                  JSValue{vm->GetObjectFactory()->NewInternalFunction(func)},
+                  writable, enumerable, configurable);
 }
 
 }  // namespace builtins

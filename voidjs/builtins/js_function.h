@@ -32,7 +32,8 @@ class JSFunction : public types::Object {
   static_assert(SIZE == 16);
   
   // The Function Constructor
-  static JSValue FunctionConsturctor(RuntimeCallInfo* argv);
+  static JSValue Call(VM* vm, const std::vector<JSValue>& args);
+  static JSValue Construct(VM* vm, const std::vector<JSValue>& args);
 
   // Function properties of the Function Constructor
 
