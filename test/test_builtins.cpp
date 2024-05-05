@@ -2,6 +2,7 @@
 
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/builtins/js_array.h"
+#include "voidjs/builtins/js_boolean.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/types/js_value.h"
 
@@ -401,4 +402,40 @@ paragraph.indexOf(searchTerm);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue().IsInt());
   EXPECT_EQ(15, comp.GetValue().GetInt());
+}
+
+TEST(JSBoolean, Construct) {
+  Parser parser(uR"(
+var flag = new Boolean();
+
+flag;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSBoolean());
+  EXPECT_EQ(false, comp.GetValue().GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetBoolean());
+}
+
+TEST(JSNumber, Construct) {
+  Parser parser(uR"(
+var num = new Number(123);
+
+num;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSNumber());
+  EXPECT_EQ(123, comp.GetValue().GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetInt());
 }

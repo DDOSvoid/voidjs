@@ -19,6 +19,7 @@
 #include "voidjs/builtins/js_array.h"
 #include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
+#include "voidjs/builtins/js_number.h"
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/macros.h"
@@ -30,6 +31,8 @@ void Builtin::Initialize(VM* vm) {
   InitializeBuiltinObjects(vm);
   InitializeArrayObjects(vm);
   InitializeStringObjects(vm);
+  InitializeBooleanObjects(vm);
+  InitializeNumberObjects(vm);
   InitializeErrorObjects(vm);
   SetPropretiesForBuiltinObjects(vm);
 }
@@ -161,6 +164,33 @@ void Builtin::InitializeBooleanObjects(VM* vm) {
 
   vm->SetBooleanPrototype(bool_proto);
   vm->SetBooleanConstructor(bool_ctor);
+}
+
+void Builtin::InitializeNumberObjects(VM* vm) {
+  auto factory = vm->GetObjectFactory();
+
+  // Initialize Number Prototype
+  // 
+  // The Number prototype object is itself a Number object (its [[Class]] is "Number") whose value is +0.
+  //
+  // The value of the [[Prototype]] internal property of the Number prototype object is
+  // the standard built-in Object prototype object (15.2.4).
+  //
+  // Unless explicitly stated otherwise, the methods of the Number prototype object defined below
+  // are not generic and the this value passed to them must be either a Number value or
+  // an Object for which the value of the [[Class]] internal property is "Number".
+  auto num_proto = factory->NewObject(JSNumber::SIZE, JSType::JS_NUMBER, ObjectClassType::NUMBER,
+                                      JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSNumber();
+
+  // Initialize Number Constructor
+  //
+  // The value of the [[Prototype]] internal property of the Number constructor is
+  // the Function prototype object (15.3.4).
+  auto num_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+                                     JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction();
+
+  vm->SetNumberPrototype(num_proto);
+  vm->SetNumberConstructor(num_ctor);
 }
 
 void Builtin::InitializeErrorObjects(VM* vm) {
@@ -312,6 +342,10 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
                   JSValue{func_ctor}, true, false, true);
   SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Array"),
                   JSValue{arr_ctor}, true, false, true);
+  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Boolean"),
+                  JSValue{vm->GetBooleanConstructor()}, true, false, true);
+  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Number"),
+                  JSValue{vm->GetNumberConstructor()}, true, false, true);
 
   // Set propreties for Object Constructor
   SetDataProperty(vm, obj_ctor, factory->NewString(u"length"), JSValue{1}, false, false, false);

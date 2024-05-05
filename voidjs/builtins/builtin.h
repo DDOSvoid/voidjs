@@ -30,6 +30,7 @@ class Builtin {
   static void InitializeArrayObjects(VM* vm);
   static void InitializeStringObjects(VM* vm);
   static void InitializeBooleanObjects(VM* vm);
+  static void InitializeNumberObjects(VM* vm);
   static void InitializeErrorObjects(VM* vm);
 
   static builtins::JSFunction* InstantiatingFunctionDeclaration(

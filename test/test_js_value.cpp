@@ -10,6 +10,7 @@
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
+#include "voidjs/builtins/js_number.h"
 #include "voidjs/interpreter/interpreter.h"
 
 using namespace voidjs;
@@ -219,6 +220,18 @@ TEST(JSValue, ToObject) {
 
     ASSERT_TRUE(boolean->GetPrimitiveValue().IsBoolean());
     EXPECT_EQ(false, boolean->GetPrimitiveValue().GetBoolean());
+  }
+
+  {
+    auto val = JSValue{42};
+    auto obj = JSValue::ToObject(vm, val);
+
+    ASSERT_TRUE(obj->IsJSNumber());
+    
+    auto num = obj->AsJSNumber();
+
+    ASSERT_TRUE(num->GetPrimitiveValue().IsInt());
+    EXPECT_EQ(42, num->GetPrimitiveValue().GetInt());
   }
   
   {

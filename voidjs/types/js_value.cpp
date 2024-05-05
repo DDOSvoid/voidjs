@@ -15,6 +15,7 @@
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
+#include "voidjs/builtins/js_number.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/interpreter/string_table.h"
 #include "voidjs/utils/helper.h"
@@ -267,8 +268,9 @@ types::Object* JSValue::ToObject(VM* vm, JSValue val) {
       factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{val})).GetHeapObject()->AsJSBoolean();
   }
   
-  if (val.IsNull()) {
-    // todo
+  if (val.IsNumber()) {
+    return builtins::JSNumber::Construct(
+      factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{val})).GetHeapObject()->AsJSNumber();
   }
   
   if (val.IsString()) {

@@ -1,5 +1,6 @@
 #include "voidjs/types/lang_types/object.h"
 
+#include "voidjs/builtins/js_boolean.h"
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
@@ -10,6 +11,8 @@
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/builtins/js_array.h"
+#include "voidjs/builtins/js_boolean.h"
+#include "voidjs/builtins/js_number.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/utils/macros.h"
@@ -599,6 +602,14 @@ JSValue Object::Construct(Object* O, RuntimeCallInfo* argv) {
 
   if (O == vm->GetArrayConstructor()) {
     return JSValue{builtins::JSArray::Construct(argv)};
+  }
+
+  if (O == vm->GetBooleanConstructor()) {
+    return JSValue{builtins::JSBoolean::Construct(argv)};
+  }
+
+  if (O == vm->GetNumberConstructor()) {
+    return JSValue{builtins::JSNumber::Construct(argv)};
   }
 }
 
