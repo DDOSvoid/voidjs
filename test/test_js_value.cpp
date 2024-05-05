@@ -9,6 +9,7 @@
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/builtins/js_string.h"
+#include "voidjs/builtins/js_boolean.h"
 #include "voidjs/interpreter/interpreter.h"
 
 using namespace voidjs;
@@ -207,6 +208,18 @@ TEST(JSValue, ToObject) {
   Interpreter interpreter;
   auto vm = interpreter.GetVM();
   auto factory = vm->GetObjectFactory();
+
+  {
+    auto val = JSValue{false};
+    auto obj = JSValue::ToObject(vm, val);
+
+    ASSERT_TRUE(obj->IsJSBoolean());
+    
+    auto boolean = obj->AsJSBoolean();
+
+    ASSERT_TRUE(boolean->GetPrimitiveValue().IsBoolean());
+    EXPECT_EQ(false, boolean->GetPrimitiveValue().GetBoolean());
+  }
   
   {
     auto val = JSValue{factory->NewStringFromTable(u"Hello")};

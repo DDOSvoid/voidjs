@@ -40,6 +40,9 @@ class VM {
   
   PROPERTY_ACCESSORS(builtins::JSString*, StringPrototype, string_proto_)
   PROPERTY_ACCESSORS(builtins::JSFunction*, StringConstructor, string_ctor_)
+
+  PROPERTY_ACCESSORS(builtins::JSBoolean*, BooleanPrototype, boolean_proto_)
+  PROPERTY_ACCESSORS(builtins::JSFunction*, BooleanConstructor, boolean_ctor_)
   
   PROPERTY_ACCESSORS(builtins::JSError*, ErrorPrototype, error_proto_)
   PROPERTY_ACCESSORS(builtins::JSFunction*, ErrorConstructor, error_ctor_)
@@ -74,6 +77,9 @@ class VM {
 
   builtins::JSString* string_proto_;
   builtins::JSFunction* string_ctor_;
+
+  builtins::JSBoolean* boolean_proto_;
+  builtins::JSFunction* boolean_ctor_;
   
   builtins::JSError* error_proto_;
   builtins::JSFunction* error_ctor_;

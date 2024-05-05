@@ -18,6 +18,7 @@
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/builtins/js_array.h"
 #include "voidjs/builtins/js_string.h"
+#include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/macros.h"
@@ -138,6 +139,28 @@ void Builtin::InitializeStringObjects(VM *vm) {
 
   vm->SetStringPrototype(str_proto);
   vm->SetStringConstructor(str_ctor);
+}
+
+void Builtin::InitializeBooleanObjects(VM* vm) {
+  auto factory = vm->GetObjectFactory();
+  
+  // Initialize Boolean Prototype
+  //
+  // The Boolean prototype object is itself a Boolean object (its [[Class]] is "Boolean") whose value is false.
+  // 
+  // The value of the [[Prototype]] internal property of the Boolean prototype object is
+  // the standard built-in Object prototype object (15.2.4).
+  auto bool_proto = factory->NewObject(JSBoolean::SIZE, JSType::JS_BOOLEAN, ObjectClassType::BOOLEAN,
+                                      JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSBoolean();
+
+  // Initialize Boolean Constructor
+  //
+  // The value of the [[Prototype]] internal property of the Boolean constructor is the Function prototype object (15.3.4).
+  auto bool_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+                                     JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction();
+
+  vm->SetBooleanPrototype(bool_proto);
+  vm->SetBooleanConstructor(bool_ctor);
 }
 
 void Builtin::InitializeErrorObjects(VM* vm) {

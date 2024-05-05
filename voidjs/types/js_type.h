@@ -30,6 +30,7 @@ enum class JSType : std::uint8_t {
   JS_FUNCTION,
   JS_ARRAY,
   JS_STRING,
+  JS_BOOLEAN,
   JS_ERROR,
 };
 
