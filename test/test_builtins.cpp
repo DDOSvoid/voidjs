@@ -277,3 +277,72 @@ array4;
     EXPECT_EQ(42, val6.GetInt());
   }
 }
+
+TEST(JSArray, Join) {
+  Parser parser(uR"(
+var elements = ['Fire', 'Air', 'Water'];
+
+// Fire,Air,Water
+var r1 = elements.join();
+
+// FireAirWater
+var r2 = elements.join('');
+
+// Fire-Air-Water
+var r3 = elements.join('-');
+
+r1 + r2 + r3;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsString());
+  EXPECT_EQ(u"Fire,Air,WaterFireAirWaterFire-Air-Water", comp.GetValue().GetString()->GetString());
+}
+
+TEST(JSArray, Pop) {
+  Parser parser(uR"(
+var plants = ['broccoli', 'cauliflower', 'cabbage', 'kale', 'tomato'];
+
+plants.pop();
+plants.pop();
+
+plants.join(',');
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsString());
+  EXPECT_EQ(u"broccoli,cauliflower,cabbage", comp.GetValue().GetString()->GetString());
+}
+
+TEST(JSArray, Push) {
+  Parser parser(uR"(
+var plants = ['broccoli', 'cauliflower', 'cabbage', 'kale', 'tomato'];
+
+plants.pop();
+plants.push('sunflower');
+
+plants.join(',');
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsString());
+  EXPECT_EQ(u"broccoli,cauliflower,cabbage,kale,sunflower", comp.GetValue().GetString()->GetString());
+}

@@ -88,6 +88,18 @@ String* ObjectFactory::NewStringFromTable(std::u16string_view source) {
   return string_table_->GetOrInsert(source);
 }
 
+String* ObjectFactory::GetEmptyString() {
+  return string_table_->GetOrInsert(u"");
+}
+
+String* ObjectFactory::GetLengthString() {
+  return string_table_->GetOrInsert(u"length");
+}
+
+String* ObjectFactory::GetIntString(std::int32_t i) {
+  return JSValue::NumberToString(vm_, i);
+}
+
 Object* ObjectFactory::NewObject(
   std::size_t extra_size, JSType type, ObjectClassType class_type,
   JSValue proto, bool extensible, bool callable, bool is_counstructor) {

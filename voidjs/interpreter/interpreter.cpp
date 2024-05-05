@@ -1654,7 +1654,7 @@ JSValue Interpreter::EvalElementList(const Expressions& exprs) {
       val = JSValue::Undefined();
     }
     Builtin::SetDataProperty(
-      vm_, array.GetHeapObject()->AsJSArray(), JSValue::NumberToString(vm_, idx), val, true, true, false);
+      vm_, array.GetHeapObject()->AsJSArray(), JSValue::NumberToString(vm_, idx), val, true, true, true);
   }
 
   return array;

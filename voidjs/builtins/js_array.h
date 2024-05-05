@@ -25,6 +25,9 @@ class JSArray : public types::Object {
   static JSValue ToString(RuntimeCallInfo* argv);
   static JSValue ToLocaleString(RuntimeCallInfo* argv);
   static JSValue Concat(RuntimeCallInfo* argv);
+  static JSValue Join(RuntimeCallInfo* argv);
+  static JSValue Pop(RuntimeCallInfo* argv);
+  static JSValue Push(RuntimeCallInfo* argv);
   
 };
 

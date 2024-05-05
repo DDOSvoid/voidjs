@@ -37,6 +37,10 @@ class ObjectFactory {
   
   types::String* NewString(std::u16string_view source);
   types::String* NewStringFromTable(std::u16string_view source);
+  types::String* GetEmptyString();
+  types::String* GetLengthString();
+  types::String* GetIntString(std::int32_t i);
+  
   types::Object* NewObject(
     std::size_t extra_size, JSType type, ObjectClassType class_type, JSValue proto,
     bool extensible, bool callable, bool is_counstructor);

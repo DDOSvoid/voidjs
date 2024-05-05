@@ -1,9 +1,11 @@
 #include "voidjs/builtins/js_array.h"
 
 #include "voidjs/builtins/js_object.h"
+#include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/lang_types/number.h"
+#include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/builtins/builtin.h"
 #include "voidjs/types/object_class_type.h"
@@ -15,13 +17,12 @@ namespace builtins {
 
 bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, const types::PropertyDescriptor& Desc, bool Throw) {
   auto factory = vm->GetObjectFactory();
-  auto length_str = factory->NewStringFromTable(u"length");
   
   // 1. Let oldLenDesc be the result of calling the [[GetOwnProperty]] internal method of
   //    A passing "length" as the argument. The result will never be undefined or
   ///   an accessor descriptor because Array objects are created with a length data property that
   //    cannot be deleted or reconfigured.
-  auto old_len_desc = Object::GetOwnProperty(vm, O, length_str);
+  auto old_len_desc = Object::GetOwnProperty(vm, O, factory->GetLengthString());
 
   // 2. Let oldLen be oldLenDesc.[[Value]].
   auto old_len = old_len_desc.GetValue().GetInt();
@@ -32,7 +33,7 @@ bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, cons
     if (!Desc.HasValue()) {
       // i. Return the result of calling the default [[DefineOwnProperty]] internal method (8.12.9)
       //    on A passing "length", Desc, and Throw as arguments.
-      return Object::DefineOwnPropertyDefault(vm, O, length_str, Desc, Throw);
+      return Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), Desc, Throw);
     }
     
     // b. Let newLenDesc be a copy of Desc.
@@ -53,7 +54,7 @@ bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, cons
     if (new_len >= old_len) {
       // a. Return the result of calling the default [[DefineOwnProperty]] internal method (8.12.9)
       ///   on A passing "length", newLenDesc, and Throw as arguments.
-      return Object::DefineOwnPropertyDefault(vm, O, length_str, new_len_desc, Throw);
+      return Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), new_len_desc, Throw);
     }
 
     // g. Reject if oldLenDesc.[[Writable]] is false.
@@ -84,7 +85,7 @@ bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, cons
 
     // j. Let succeeded be the result of calling the default [[DefineOwnProperty]] internal method (8.12.9)
     //    on A passing "length", newLenDesc, and Throw as arguments.
-    auto succeeded = Object::DefineOwnPropertyDefault(vm, O, length_str, new_len_desc, Throw);
+    auto succeeded = Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), new_len_desc, Throw);
     RETURN_VALUE_IF_HAS_EXCEPTION(vm, false);
 
     // k. If succeeded is false, return false..
@@ -113,7 +114,7 @@ bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, cons
         
         // 3. Call the default [[DefineOwnProperty]] internal method (8.12.9) on
         //    A passing "length", newLenDesc, and false as arguments.
-        Object::DefineOwnPropertyDefault(vm, O, length_str, new_len_desc, false);
+        Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), new_len_desc, false);
         
         // 4. Reject.
         if (Throw) {
@@ -131,7 +132,7 @@ bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, cons
       //    Property Descriptor{[[Writable]]: false}, and false as arguments. This call will always return true.
       types::PropertyDescriptor prop;
       prop.SetWritable(false);
-      Object::DefineOwnPropertyDefault(vm, O, length_str, prop, false);
+      Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), prop, false);
     }
 
     // n. Return true.
@@ -175,7 +176,7 @@ bool JSArray::DefineOwnProperty(VM* vm, types::Object* O, types::String* P, cons
       
       // ii .Call the default [[DefineOwnProperty]] internal method (8.12.9) on
       //     A passing "length", oldLenDesc, and false as arguments. This call will always return true.
-      Object::DefineOwnPropertyDefault(vm, O, length_str, old_len_desc, false);
+      Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), old_len_desc, false);
     }
 
     // f. Retrun true.
@@ -195,7 +196,6 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
   auto vm = argv->GetVM();
   auto args_num = argv->GetArgsNum();
   auto factory = vm->GetObjectFactory();
-  auto length_str = factory->NewStringFromTable(u"length");
   
   if (args_num == 1) {
     // The [[Prototype]] internal property of the newly constructed object is set to the original Array prototype object,
@@ -221,10 +221,10 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
         THROW_RANGE_ERROR_AND_RETURN_VALUE(
           vm, u"new Array(len) fails, becacuse len is not a uint32.", JSValue{});
       } else {
-        Builtin::SetDataProperty(vm, arr, length_str, JSValue{JSValue::ToUint32(vm, len)}, true, false, false);
+        Builtin::SetDataProperty(vm, arr, factory->GetLengthString(), JSValue{JSValue::ToUint32(vm, len)}, true, false, false);
       }
     } else {
-      Builtin::SetDataProperty(vm, arr, length_str, JSValue{1}, true, false, false);
+      Builtin::SetDataProperty(vm, arr, factory->GetLengthString(), JSValue{1}, true, false, false);
       Builtin::SetDataProperty(vm, arr, factory->NewStringFromTable(u"0"), len, true, true, true);
     }
 
@@ -248,10 +248,10 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
     auto arr = factory->NewObject(JSArray::SIZE, JSType::JS_ARRAY, ObjectClassType::ARRAY,
                                   JSValue{vm->GetArrayPrototype()}, true, false, false)->AsJSArray();
  
-    Builtin::SetDataProperty(vm, arr, length_str, JSValue{static_cast<int>(args_num)}, true, false, false);
+    Builtin::SetDataProperty(vm, arr, factory->GetLengthString(), JSValue{static_cast<int>(args_num)}, true, false, false);
 
     for (std::size_t idx = 0; idx < args_num; ++idx) {
-      Builtin::SetDataProperty(vm, arr, JSValue::NumberToString(vm, idx), argv->GetArg(idx), true, true, true);
+      Builtin::SetDataProperty(vm, arr, factory->GetIntString(idx), argv->GetArg(idx), true, true, true);
     }
 
     return JSValue{arr};
@@ -296,7 +296,6 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
   auto this_value = argv->GetThis();
   auto arg_num = argv->GetArgsNum();
   auto factory = vm->GetObjectFactory();
-  auto length_str = factory->NewStringFromTable(u"length");
   
   // 1. Let O be the result of calling ToObject passing the this value as the argument.
   auto O = JSValue::ToObject(vm, this_value);
@@ -341,7 +340,7 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
         
         if (exists) {
           auto sub_element = types::Object::Get(vm, arr, P);
-          DefineOwnProperty(vm, A.GetHeapObject()->AsJSArray(), JSValue::NumberToString(vm, n),
+          DefineOwnProperty(vm, A.GetHeapObject()->AsJSArray(), factory->GetIntString(n),
                             types::PropertyDescriptor{sub_element, true, true, true}, false);
         }
         
@@ -349,7 +348,7 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
         ++k;
       }
     } else {
-      DefineOwnProperty(vm, A.GetHeapObject()->AsJSArray(), JSValue::NumberToString(vm, n),
+      DefineOwnProperty(vm, A.GetHeapObject()->AsJSArray(), factory->GetIntString(n),
                         types::PropertyDescriptor{elem, true, true, true}, false);
       ++n;
     }
@@ -363,6 +362,156 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
 
   // 6. Return A.
   return A;
+}
+
+// Array.prototype.join(separator)
+// Defined in ECMAScript 5.1 Chapter 15.4.4.5
+JSValue JSArray::Join(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  auto this_value = argv->GetThis();
+  auto separator = argv->GetArg(0);
+  auto factory = vm->GetObjectFactory();
+
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  auto O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
+  auto len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  
+  // 3. Let len be ToUint32(lenVal).
+  auto len = JSValue::ToUint32(vm, len_val);
+  
+  // 4. If separator is undefined, let separator be the single-character String ",".
+  if (separator.IsUndefined()) {
+    separator = JSValue{factory->NewStringFromTable(u",")};
+  }
+  
+  // 5. Let sep be ToString(separator).
+  auto sep = JSValue::ToString(vm, separator);
+  
+  // 6. If len is zero, return the empty String.
+  if (len == 0) {
+    return JSValue{factory->NewStringFromTable(u"")};
+  }
+  
+  // 7. Let element0 be the result of calling the [[Get]] internal method of O with argument "0".
+  auto element0 = types::Object::Get(vm, O, factory->GetIntString(0));
+  
+  // 8. If element0 is undefined or null, let R be the empty String;
+  //    otherwise, Let R be ToString(element0).
+  auto R = element0.IsUndefined() || element0.IsNull() ?
+    factory->GetEmptyString() : JSValue::ToString(vm, element0);
+  
+  // 9. Let k be 1.
+  auto k = 1;
+  
+  // 10. Repeat, while k < len
+  while (k < len) {
+    // a. Let S be the String value produced by concatenating R and sep.
+    auto S = types::String::Concat(vm, R, sep);
+    
+    // b. Let element be the result of calling the [[Get]] internal method of O with argument ToString(k).
+    auto element = types::Object::Get(vm, O, factory->GetIntString(k));
+    
+    // c. If element is undefined or null, Let next be the empty String; otherwise, let next be ToString(element).
+    auto next = element.IsUndefined() || element.IsNull() ?
+      factory->GetEmptyString() : JSValue::ToString(vm, element);
+    
+    // d. Let R be a String value produced by concatenating S and next.
+    R = types::String::Concat(vm, S, next);
+    
+    // e. Increase k by 1.
+    ++k;
+  }
+  
+  // 11. Return R.
+  return JSValue{R};
+}
+
+// Array.prototype.pop()
+// Defined in ECMASCript 5.1 Chapter
+JSValue JSArray::Pop(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  auto this_value = argv->GetThis();
+  auto factory = vm->GetObjectFactory();
+  
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  auto O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
+  auto len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  
+  // 3. Let len be ToUint32(lenVal).
+  auto len = JSValue::ToUint32(vm, len_val);
+  
+  // 4. If len is zero,
+  if (len == 0) { 
+    // a. Call the [[Put]] internal method of O with arguments "length", 0, and true.
+    types::Object::Put(vm, O, factory->GetLengthString(), JSValue{0}, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    
+    // b. Return undefined.
+    return JSValue::Undefined();
+  }
+  // 5. Else, len > 0
+  else {
+    // a. Let indx be ToString(len–1).
+    auto index = factory->GetIntString(len - 1);
+    
+    // b. Let element be the result of calling the [[Get]] internal method of O with argument indx.
+    auto element = types::Object::Get(vm, O, index);
+    
+    // c. Call the [[Delete]] internal method of O with arguments indx and true.
+    types::Object::Delete(vm, O, index, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    
+    // d. Call the [[Put]] internal method of O with arguments "length", indx, and true.
+    types::Object::Put(vm, O, factory->GetLengthString(), JSValue{len - 1}, true);
+    
+    // e. Return element.
+    return element;
+  }
+}
+
+// Array.prototype.push([item1[,item2[,...]]])
+JSValue JSArray::Push(RuntimeCallInfo* argv) {
+  auto vm = argv->GetVM();
+  auto this_value = argv->GetThis();
+  auto factory = vm->GetObjectFactory();
+  
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  auto O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
+  auto len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  
+  // 3. Let n be ToUint32(lenVal).
+  auto n = JSValue::ToUint32(vm, len_val);
+  
+  // 4. Let items be an internal List whose elements are, in left to right order, the arguments that were passed to this function invocation.
+  // 5. Repeat, while items is not empty
+  auto args_num = argv->GetArgsNum();
+  for (std::size_t idx = 0; idx < args_num; ++idx) {
+    // a. Remove the first element from items and let E be the value of the element.
+    auto E = argv->GetArg(idx);
+    
+    // b. Call the [[Put]] internal method of O with arguments ToString(n), E, and true.
+    types::Object::Put(vm, O, factory->GetIntString(n), E, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    
+    // c. Increase n by 1.
+    ++n;
+  }
+  
+  // 6. Call the [[Put]] internal method of O with arguments "length", n, and true.
+  types::Object::Put(vm, O, factory->GetLengthString(), JSValue{n}, true);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 7. Return n.
+  return JSValue{n};
 }
 
 }  // namespace builtins

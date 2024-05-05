@@ -275,6 +275,12 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   // Set propreties for Array Prototype
   SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"concat"),
                       JSArray::Concat, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"join"),
+                      JSArray::Join, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"pop"),
+                      JSArray::Pop, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"push"),
+                      JSArray::Push, true, false, true);
 }
 
 void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,
