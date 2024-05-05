@@ -7,6 +7,8 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/lang_types/number.h"
+#include "voidjs/types/lang_types/object.h"
+#include "voidjs/builtins/js_string.h"
 #include "voidjs/interpreter/interpreter.h"
 
 using namespace voidjs;
@@ -198,6 +200,24 @@ TEST(JSValue, ToString) {
     auto str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"-4200", str->GetString());
+  }
+}
+
+TEST(JSValue, ToObject) {
+  Interpreter interpreter;
+  auto vm = interpreter.GetVM();
+  auto factory = vm->GetObjectFactory();
+  
+  {
+    auto val = JSValue{factory->NewStringFromTable(u"Hello")};
+    auto obj = JSValue::ToObject(vm, val);
+
+    ASSERT_TRUE(obj->IsJSString());
+    
+    auto str = obj->AsJSString();
+
+    ASSERT_TRUE(str->GetPrimitiveValue().IsString());
+    EXPECT_EQ(u"Hello", str->GetPrimitiveValue().GetString()->GetString());
   }
 }
 

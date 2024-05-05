@@ -13,6 +13,7 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/lang_types/number.h"
+#include "voidjs/builtins/js_string.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/interpreter/string_table.h"
 #include "voidjs/utils/helper.h"
@@ -113,7 +114,7 @@ JSValue JSValue::ToInteger(VM* vm, JSValue val) {
   //   return JSValue(ret);
   // }
 
-  return JSValue(utils::TruncateDouble(val.GetNumber()));
+  return JSValue{utils::TruncateDouble(ToNumber(vm, val).GetNumber())};
 }
 
 // ToInt32
@@ -254,6 +255,8 @@ types::String* JSValue::ToString(VM* vm, JSValue val) {
 // ToObject
 // Defined in ECMAScript 5.1 Chapter 9.9
 types::Object* JSValue::ToObject(VM* vm, JSValue val) {
+  auto factory = vm->GetObjectFactory();
+  
   if (val.IsUndefined() || val.IsNull()) {
     THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"ToObject fails when object is Undefined or Null", nullptr);
   }
@@ -267,7 +270,8 @@ types::Object* JSValue::ToObject(VM* vm, JSValue val) {
   }
   
   if (val.IsString()) {
-    // todo
+    return builtins::JSString::Construct(
+      factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{val})).GetHeapObject()->AsJSString();
   }
   
   if (val.IsObject()) {

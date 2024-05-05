@@ -28,6 +28,7 @@ class Builtin {
   static void Initialize(VM* vm);
   static void InitializeBuiltinObjects(VM* vm);
   static void InitializeArrayObjects(VM* vm);
+  static void InitializeStringObjects(VM* vm);
   static void InitializeErrorObjects(VM* vm);
 
   static builtins::JSFunction* InstantiatingFunctionDeclaration(

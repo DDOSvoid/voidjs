@@ -25,8 +25,8 @@ class String : public HeapObject {
   // char16_t[] data_;
   static constexpr std::size_t DATA_OFFSET = LENGTH_OFFSET + sizeof(std::size_t);
   char16_t* GetData() const { return utils::BitGet<char16_t*>(this, DATA_OFFSET); }
-  char16_t GetByIndex(std::size_t idx) const { return *(GetData() + idx); } 
-  void SetByIndex(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
+  char16_t Get(std::size_t idx) const { return *(GetData() + idx); } 
+  void Set(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
 
   
   bool Equal(std::u16string_view str) const { return GetString() == str; }

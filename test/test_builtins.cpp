@@ -346,3 +346,59 @@ plants.join(',');
   ASSERT_TRUE(comp.GetValue().IsString());
   EXPECT_EQ(u"broccoli,cauliflower,cabbage,kale,sunflower", comp.GetValue().GetString()->GetString());
 }
+
+TEST(JSString, CharAt) {
+  Parser parser(uR"(
+var sentence = 'The quick brown fox jumps over the lazy dog.';
+sentence.charAt(5);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsString());
+  EXPECT_EQ(u"u", comp.GetValue().GetString()->GetString());
+}
+
+TEST(JSString, Concat) {
+  Parser parser(uR"(
+var str1 = 'Hello';
+var str2 = 'World';
+
+str1.concat(', ', str2);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsString());
+  EXPECT_EQ(u"Hello, World", comp.GetValue().GetString()->GetString());
+}
+
+TEST(JSString, Indexof) {
+  Parser parser(uR"(
+var paragraph = "I think Ruth's dog is cuter than your dog!";
+
+var searchTerm = 'dog';
+
+paragraph.indexOf(searchTerm);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsInt());
+  EXPECT_EQ(15, comp.GetValue().GetInt());
+}
