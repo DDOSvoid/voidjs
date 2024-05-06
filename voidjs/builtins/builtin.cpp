@@ -362,6 +362,10 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
                       JSObject::IsExtensible, true, false, true);
 
   // Set properties for Array Constructor
+  SetDataProperty(vm, arr_ctor, factory->NewStringFromTable(u"prototype"),
+                  JSValue{arr_proto}, false, false, false);
+  SetFunctionProperty(vm, arr_ctor, factory->NewStringFromTable(u"isArray"),
+                      JSArray::IsArray, true, false, true);
   SetFunctionProperty(vm, arr_ctor, factory->NewStringFromTable(u"isArray"),
                       JSArray::IsArray, true, false, true);
   

@@ -172,6 +172,35 @@ add(1, 2);
   EXPECT_EQ(3, comp.GetValue().GetInt());
 }
 
+TEST(JSArray, prototype) {
+  Parser parser(uR"(
+Array.prototype.bubbleSort = function () {
+    for (var i = 0; i < this.length - 1; i++) {
+        for (var j = 0; j < this.length - 1 - i; j++) {
+            if (this[j] > this[j + 1]) {
+                var tmp = this[j];
+                this[j] = this[j + 1];
+                this[j + 1] = tmp;
+            }
+        }
+    }
+};
+var arr = [5, 4, 3, 2, 1];
+arr.bubbleSort();
+arr.join();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue().IsString());
+  EXPECT_EQ(u"5,4,3,2,1", comp.GetValue().GetString()->GetString());
+}
+
 TEST(JSArray, IsArray) {
   Parser parser(uR"(
 var count = 0;
@@ -439,3 +468,4 @@ num;
   ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSNumber());
   EXPECT_EQ(123, comp.GetValue().GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetInt());
 }
+

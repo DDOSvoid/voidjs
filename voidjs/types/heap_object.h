@@ -151,6 +151,11 @@ class HeapObject {
   bool IsJSNumber() const { return GetType() == JSType::JS_NUMBER; }
   bool IsJSError() const { return GetType() == JSType::JS_ERROR; }
 
+  template <typename T>
+  T* As() { return reinterpret_cast<T*>(this); }
+  template <typename T>
+  const T* As() const { return reinterpret_cast<const T*>(this); }
+
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
   types::Object* AsObject() { return reinterpret_cast<types::Object*>(this); }
