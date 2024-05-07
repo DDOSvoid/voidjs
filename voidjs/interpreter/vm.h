@@ -5,6 +5,7 @@
 
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/gc/js_handle.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -25,100 +26,130 @@ class VM {
   void PushExecutionContext(ExecutionContext* ctx) { execution_ctxs_.push_back(ctx); }
   void PopExecutionContext() { execution_ctxs_.pop_back(); }
   
-  PROPERTY_ACCESSORS(types::LexicalEnvironment*, GlobalEnv, global_env_)
-  PROPERTY_ACCESSORS(builtins::GlobalObject*, GlobalObject, global_obj_)
+  PROPERTY_ACCESSORS(JSHandle<types::LexicalEnvironment>, GlobalEnv, global_env_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::GlobalObject>, GlobalObject, global_obj_)
+  
   PROPERTY_ACCESSORS(ObjectFactory*, ObjectFactory, object_factory_)
   
-  PROPERTY_ACCESSORS(builtins::JSObject*, ObjectPrototype, object_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, ObjectConstructor, object_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSObject>, ObjectPrototype, object_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, ObjectConstructor, object_ctor_)
   
-  PROPERTY_ACCESSORS(builtins::JSFunction*, FunctionPrototype, function_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, FunctionConstructor, function_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, FunctionPrototype, function_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, FunctionConstructor, function_ctor_)
 
-  PROPERTY_ACCESSORS(builtins::JSArray*, ArrayPrototype, array_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, ArrayConstructor, array_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSArray>, ArrayPrototype, array_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, ArrayConstructor, array_ctor_)
   
-  PROPERTY_ACCESSORS(builtins::JSString*, StringPrototype, string_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, StringConstructor, string_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSString>, StringPrototype, string_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, StringConstructor, string_ctor_)
 
-  PROPERTY_ACCESSORS(builtins::JSBoolean*, BooleanPrototype, boolean_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, BooleanConstructor, boolean_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSBoolean>, BooleanPrototype, boolean_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, BooleanConstructor, boolean_ctor_)
   
-  PROPERTY_ACCESSORS(builtins::JSNumber*, NumberPrototype, number_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, NumberConstructor, number_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSNumber>, NumberPrototype, number_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, NumberConstructor, number_ctor_)
   
-  PROPERTY_ACCESSORS(builtins::JSError*, ErrorPrototype, error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, ErrorConstructor, error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, ErrorPrototype, error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, ErrorConstructor, error_ctor_)
   
-  PROPERTY_ACCESSORS(builtins::JSError*, EvalErrorPrototype, eval_error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, EvalErrorConstructor, eval_error_ctor_)
-  PROPERTY_ACCESSORS(builtins::JSError*, RangeErrorPrototype, range_error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, RangeErrorConstructor, range_error_ctor_)
-  PROPERTY_ACCESSORS(builtins::JSError*, ReferenceErrorPrototype, reference_error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, ReferenceErrorConstructor, reference_error_ctor_)
-  PROPERTY_ACCESSORS(builtins::JSError*, SyntaxErrorPrototype, syntax_error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, SyntaxErrorConstructor, syntax_error_ctor_)
-  PROPERTY_ACCESSORS(builtins::JSError*, TypeErrorPrototype, type_error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, TypeErrorConstructor, type_error_ctor_)
-  PROPERTY_ACCESSORS(builtins::JSError*, URIErrorPrototype, uri_error_proto_)
-  PROPERTY_ACCESSORS(builtins::JSFunction*, URIErrorConstructor, uri_error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, EvalErrorPrototype, eval_error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, EvalErrorConstructor, eval_error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, RangeErrorPrototype, range_error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, RangeErrorConstructor, range_error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, ReferenceErrorPrototype, reference_error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, ReferenceErrorConstructor, reference_error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, SyntaxErrorPrototype, syntax_error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, SyntaxErrorConstructor, syntax_error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, TypeErrorPrototype, type_error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, TypeErrorConstructor, type_error_ctor_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, URIErrorPrototype, uri_error_proto_)
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, URIErrorConstructor, uri_error_ctor_)
 
-  PROPERTY_ACCESSORS(builtins::JSError*, Exception, exception_)
-  bool HasException() const { return exception_; }
-  void ClearException() { exception_ = nullptr; }
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, Exception, exception_)
+  bool HasException() const { return !exception_.IsEmpty(); }
+  void ClearException() { exception_ = JSHandle<builtins::JSError>{}; }
+
+  JSValueType* ExpandHandleScopeBlock() {
+    if (handle_scope_current_block_index_ + 1 == handle_scope_blocks_.size()) {
+      auto block = new std::array<JSValueType, HANDLE_SCOPE_BLOCK_SIZE>{};
+      handle_scope_blocks_.push_back(*block);
+      handle_scope_current_block_pos_ = block->data();
+      handle_scope_current_block_end_ = block->data() + block->size();
+      ++handle_scope_current_block_index_;
+      return block->data();
+    } else {
+      auto block = &handle_scope_blocks_.back();
+      handle_scope_current_block_pos_ = block->data();
+      handle_scope_current_block_end_ = block->data() + block->size();
+      ++handle_scope_current_block_index_;
+      return block->data();
+    }
+  }
+
+ private:
+  friend class JSHandleScope;
 
  private:
   // standard builtin objects
-  builtins::JSObject* object_proto_;
-  builtins::JSFunction* object_ctor_;
+  JSHandle<builtins::JSObject> object_proto_;
+  JSHandle<builtins::JSFunction> object_ctor_;
   
-  builtins::JSFunction* function_proto_;
-  builtins::JSFunction* function_ctor_;
+  JSHandle<builtins::JSFunction> function_proto_;
+  JSHandle<builtins::JSFunction> function_ctor_;
 
-  builtins::JSArray* array_proto_;
-  builtins::JSFunction* array_ctor_;
+  JSHandle<builtins::JSArray> array_proto_;
+  JSHandle<builtins::JSFunction> array_ctor_;
 
-  builtins::JSString* string_proto_;
-  builtins::JSFunction* string_ctor_;
+  JSHandle<builtins::JSString> string_proto_;
+  JSHandle<builtins::JSFunction> string_ctor_;
 
-  builtins::JSBoolean* boolean_proto_;
-  builtins::JSFunction* boolean_ctor_;
+  JSHandle<builtins::JSBoolean> boolean_proto_;
+  JSHandle<builtins::JSFunction> boolean_ctor_;
 
-  builtins::JSNumber* number_proto_;
-  builtins::JSFunction* number_ctor_;
+  JSHandle<builtins::JSNumber> number_proto_;
+  JSHandle<builtins::JSFunction> number_ctor_;
   
-  builtins::JSError* error_proto_;
-  builtins::JSFunction* error_ctor_;
+  JSHandle<builtins::JSError> error_proto_;
+  JSHandle<builtins::JSFunction> error_ctor_;
   
-  builtins::JSError* eval_error_proto_;
-  builtins::JSFunction* eval_error_ctor_;
+  JSHandle<builtins::JSError> eval_error_proto_;
+  JSHandle<builtins::JSFunction> eval_error_ctor_;
 
-  builtins::JSError* range_error_proto_;
-  builtins::JSFunction* range_error_ctor_;
+  JSHandle<builtins::JSError> range_error_proto_;
+  JSHandle<builtins::JSFunction> range_error_ctor_;
 
-  builtins::JSError* reference_error_proto_;
-  builtins::JSFunction* reference_error_ctor_;
+  JSHandle<builtins::JSError> reference_error_proto_;
+  JSHandle<builtins::JSFunction> reference_error_ctor_;
   
-  builtins::JSError* syntax_error_proto_;
-  builtins::JSFunction* syntax_error_ctor_;
+  JSHandle<builtins::JSError> syntax_error_proto_;
+  JSHandle<builtins::JSFunction> syntax_error_ctor_;
 
-  builtins::JSError* type_error_proto_;
-  builtins::JSFunction* type_error_ctor_;
+  JSHandle<builtins::JSError> type_error_proto_;
+  JSHandle<builtins::JSFunction> type_error_ctor_;
 
-  builtins::JSError* uri_error_proto_;
-  builtins::JSFunction* uri_error_ctor_;
+  JSHandle<builtins::JSError> uri_error_proto_;
+  JSHandle<builtins::JSFunction> uri_error_ctor_;
 
   // 
-  builtins::GlobalObject* global_obj_;
-  types::LexicalEnvironment* global_env_;
+  JSHandle<builtins::GlobalObject> global_obj_;
+  JSHandle<types::LexicalEnvironment> global_env_;
   std::vector<ExecutionContext*> execution_ctxs_;
 
   //  
   ObjectFactory* object_factory_;
 
-  //
-  builtins::JSError* exception_ {nullptr};
+  
+  // handle scope
+  static constexpr std::size_t HANDLE_SCOPE_BLOCK_SIZE = 10 * 1024;
+  std::vector<std::array<JSValueType, HANDLE_SCOPE_BLOCK_SIZE>> handle_scope_blocks_;
+  JSValueType* handle_scope_current_block_pos_ {nullptr};
+  JSValueType* handle_scope_current_block_end_ {nullptr};
+  std::int32_t handle_scope_current_block_index_ {-1};
 
+  //
+  JSHandle<builtins::JSError> exception_;
+
+  // 
   Interpreter* interpreter_;
 };
 

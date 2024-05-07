@@ -2,6 +2,7 @@
 #define VOIDJS_TYPES_SPEC_TYPES_COMPLETION_H
 
 #include "voidjs/types/js_value.h"
+#include "voidjs/gc/js_handle.h"
 
 namespace voidjs {
 namespace types {
@@ -22,23 +23,23 @@ class Completion {
     : type_(type)
   {}
 
-  Completion(CompletionType type, JSValue value)
+  Completion(CompletionType type, JSHandle<JSValue> value)
     : type_(type), value_(value)
   {}
   
-  Completion(CompletionType type, JSValue value, const std::u16string_view target)
+  Completion(CompletionType type, JSHandle<JSValue> value, const std::u16string_view target)
     : type_(type), value_(value), target_(target)
   {}
 
   CompletionType GetType() const { return type_; }
-  JSValue GetValue() const { return value_; }
+  JSHandle<JSValue> GetValue() const { return value_; }
   std::u16string_view GetTarget() const { return target_; }
 
   bool IsAbruptCompletion() const { return type_ != CompletionType::NORMAL; }
   
  private:
   CompletionType type_ {CompletionType::NORMAL};
-  JSValue value_;
+  JSHandle<JSValue> value_;
   std::u16string_view target_; 
 };
 

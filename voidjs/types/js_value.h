@@ -16,13 +16,13 @@ namespace jsvalue {
 // True:        [56 bits 0] | 0000 0111
 // Undefined:   [56 bits 0] | 0000 0010
 // Null:        [56 bits 0] | 0000 0011
-// Empty:       [56 bits 0] | 0000 0101
+// Hole:       [56 bits 0] | 0000 0101
 // Exception:   [56 bits 0] | 0000 1000
 inline constexpr JSValueType VALUE_FALSE            = 0x0000'0000'0000'0006;
 inline constexpr JSValueType VALUE_TRUE             = 0x0000'0000'0000'0007;
 inline constexpr JSValueType VALUE_UNDEFINED        = 0x0000'0000'0000'0002;
 inline constexpr JSValueType VALUE_NULL             = 0x0000'0000'0000'0003;
-inline constexpr JSValueType VALUE_EMPTY            = 0x0000'0000'0000'0005;
+inline constexpr JSValueType VALUE_HOLE             = 0x0000'0000'0000'0005;
 inline constexpr JSValueType VALUE_EXCEPTION        = 0x0000'0000'0000'0008;
 
 // [0x0000] [48 bit direct pointer]
@@ -56,6 +56,8 @@ class Object;
 
 class HeapObject;
 class VM;
+template <typename T>
+class JSHandle;
 
 enum class PreferredType : std::uint8_t {
   NUMBER,
@@ -65,7 +67,7 @@ enum class PreferredType : std::uint8_t {
 class JSValue {
  public:
   JSValue()
-    : value_(jsvalue::VALUE_EMPTY)
+    : value_(jsvalue::VALUE_HOLE)
   {}
   
   explicit JSValue(JSValueType value)
@@ -109,7 +111,7 @@ class JSValue {
   static JSValue True() { return JSValue{jsvalue::VALUE_TRUE}; }
   static JSValue Undefined() { return JSValue{jsvalue::VALUE_UNDEFINED}; }
   static JSValue Null() { return JSValue{jsvalue::VALUE_NULL}; }
-  static JSValue Empty() { return JSValue{jsvalue::VALUE_EMPTY}; }
+  static JSValue Hole() { return JSValue{jsvalue::VALUE_HOLE}; }
   static JSValue Exception() { return JSValue{jsvalue::VALUE_EXCEPTION}; }
 
   // language types check
@@ -121,13 +123,13 @@ class JSValue {
   bool IsNumber() const { return IsInt() || IsDouble(); }
   bool IsString() const;
   bool IsPrimitive() const { return IsUndefined() || IsNull() || IsBoolean() || IsNumber() || IsString(); }
-  bool IsObject() const { return !IsPrimitive() && !IsEmpty(); }
+  bool IsObject() const { return !IsPrimitive() && !IsHole(); }
 
   // internal checks
   bool IsHeapObject() const { return (value_ & jsvalue::TAG_HEAP_OBJECT_MASK) == jsvalue::TAG_HEAP_OBJECT; }
   bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
   bool IsDouble() const { return !IsHeapObject() && !IsInt(); }
-  bool IsEmpty() const { return value_ == jsvalue::VALUE_EMPTY; }
+  bool IsHole() const { return value_ == jsvalue::VALUE_HOLE; }
   bool IsException() const { return value_ == jsvalue::VALUE_EXCEPTION; }
   bool IsPropertyName() const { return IsString() || IsNumber(); }
 
@@ -135,7 +137,7 @@ class JSValue {
   double GetNumber() const { return IsInt() ? GetInt() : GetDouble(); } 
   std::int32_t GetInt() const { return static_cast<std::int32_t>(value_ & (~jsvalue::TAG_INT_MASK)); }
   double GetDouble() const { return utils::BitCast<double>(value_ - jsvalue::DOUBLE_OFFSET); }
-  types::String* GetString() const; 
+  std::u16string_view GetString() const; 
 
   HeapObject* GetHeapObject() const { return reinterpret_cast<HeapObject*>(value_); }
 
@@ -143,23 +145,24 @@ class JSValue {
 
   // Type Conversion
   // Defined in ECMAScript 5.1 Chapter 9
-  static JSValue ToPrimitive(VM* vm, JSValue val, PreferredType type);
-  static bool ToBoolean(VM* vm, JSValue val);
-  static types::Number ToNumber(VM* vm, JSValue val); 
-  static JSValue ToInteger(VM* vm, JSValue val);
-  static std::int32_t ToInt32(VM* vm, JSValue val);
-  static std::uint32_t ToUint32(VM* vm, JSValue val);
-  static std::uint16_t ToUint16(VM* vm, JSValue val);
-  static types::String* ToString(VM* vm, JSValue val);
-  static types::Object* ToObject(VM* vm, JSValue val);
-  static double StringToNumber(VM* vm, types::String* str);
-  static types::String* NumberToString(VM* vm, double num);
+  static JSHandle<JSValue> ToPrimitive(VM* vm, JSHandle<JSValue> val, PreferredType type);
+  static bool ToBoolean(VM* vm, JSHandle<JSValue> val);
+  static types::Number ToNumber(VM* vm, JSHandle<JSValue> val); 
+  static types::Number ToInteger(VM* vm, JSHandle<JSValue> val);
+  static std::int32_t ToInt32(VM* vm, JSHandle<JSValue> val);
+  static std::uint32_t ToUint32(VM* vm, JSHandle<JSValue> val);
+  static std::uint16_t ToUint16(VM* vm, JSHandle<JSValue> val);
+  static JSHandle<types::String> ToString(VM* vm, JSHandle<JSValue> val);
+  static JSHandle<types::Object> ToObject(VM* vm, JSHandle<JSValue> val);
+  static double StringToNumber(VM* vm, JSHandle<types::String>str);
+  static JSHandle<types::String> NumberToString(VM* vm, double num);
 
   // Type Testing
   // Defined in ECMAScript 5.1 Chapter 9
-  static void CheckObjectCoercible(VM* vm, JSValue obj);
+  static void CheckObjectCoercible(VM* vm, JSHandle<JSValue> obj);
   bool IsCallable() const;
   static bool SameValue(JSValue x, JSValue y);
+  static bool SameValue(JSHandle<JSValue> x, JSHandle<JSValue> y);
 
  private:
   JSValueType value_ {};

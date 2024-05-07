@@ -13,15 +13,13 @@
 #include "voidjs/types/internal_types/binding.h"
 #include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/types/internal_types/hash_map.h"
-#include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_error.h"
+#include "voidjs/gc/js_handle.h"
+#include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
-
-using namespace types;
-using namespace builtins;
 
 std::byte* ObjectFactory::Allocate(std::size_t size) {
   return new std::byte[size];
@@ -40,74 +38,76 @@ std::byte* ObjectFactory::Allocate(std::size_t size) {
 // internal properties of the global object are implementation-dependent.
 // 
 // Properties of Global Object are initialized in Interpreter::InitializeBuiltinObjects()
-GlobalObject* ObjectFactory::NewGlobalObject() {
-  auto obj = NewHeapObject(Object::SIZE)->AsGlobalObject();
+JSHandle<builtins::GlobalObject> ObjectFactory::NewGlobalObject() {
+  auto obj = NewHeapObject(types::Object::SIZE).As<builtins::GlobalObject>();
   obj->SetType(JSType::GLOBAL_OBJECT);
   obj->SetClassType(ObjectClassType::GLOBAL_OBJECT);
-  obj->SetPropertyMap(NewPropertyMap());
+  obj->SetProperties(NewPropertyMap().As<JSValue>());
   obj->SetExtensible(true);
   obj->SetCallable(false);
   obj->SetIsConstructor(false);
-  obj->SetPrototype(JSValue::Null());
+  obj->SetPrototype(JSHandle<JSValue>{vm_, JSValue::Null()});
   return obj;
 }
 
-HeapObject* ObjectFactory::NewHeapObject(std::size_t size) {
+JSHandle<HeapObject> ObjectFactory::NewHeapObject(std::size_t size) {
   auto obj = reinterpret_cast<HeapObject*>(Allocate(HeapObject::SIZE + size));
   obj->SetMetaData(0);
-  return obj;
+  return JSHandle<HeapObject>(vm_, obj);
 }
 
-RuntimeCallInfo* ObjectFactory::NewRuntimeCallInfo(JSValue this_arg, const std::vector<JSValue>& args) {
+RuntimeCallInfo* ObjectFactory::NewRuntimeCallInfo(JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args) {
   auto len = args.size();
   auto call_info = reinterpret_cast<RuntimeCallInfo*>(
     Allocate(RuntimeCallInfo::SIZE + len * sizeof(JSValue)));
   call_info->SetVM(vm_);
   call_info->SetThis(this_arg);
   call_info->SetArgsNum(len);
-  std::copy(args.begin(), args.end(), call_info->GetArgs());
+  for (std::size_t idx = 0; idx < len; ++idx) {
+    call_info->SetArg(idx, args[idx]);
+  }
   return call_info;
 }
 
 // used to create builtin objects
-Object* ObjectFactory::NewEmptyObject(
+JSHandle<types::Object> ObjectFactory::NewEmptyObject(
   std::size_t extra_size, JSType type, ObjectClassType class_type, JSValue proto,
   bool extensible, bool callable, bool is_counstructor) {
 }
 
-String* ObjectFactory::NewString(std::u16string_view source) {
+JSHandle<types::String> ObjectFactory::NewString(std::u16string_view source) {
   auto len = source.size();
-  auto str = NewHeapObject(sizeof(std::size_t) + len * sizeof(char16_t))->AsString();
+  auto str = NewHeapObject(sizeof(std::size_t) + len * sizeof(char16_t)).As<types::String>();
   str->SetType(JSType::STRING);
   str->SetLength(len);
   std::copy(source.begin(), source.end(), str->GetData());
   return str;
 }
 
-String* ObjectFactory::NewStringFromTable(std::u16string_view source) {
-  return string_table_->GetOrInsert(source);
+JSHandle<types::String> ObjectFactory::GetStringFromTable(std::u16string_view str_view) {
+  return string_table_->GetOrInsert(str_view);
 }
 
-String* ObjectFactory::GetEmptyString() {
+JSHandle<types::String> ObjectFactory::GetEmptyString() {
   return string_table_->GetOrInsert(u"");
 }
 
-String* ObjectFactory::GetLengthString() {
+JSHandle<types::String> ObjectFactory::GetLengthString() {
   return string_table_->GetOrInsert(u"length");
 }
 
-String* ObjectFactory::GetIntString(std::int32_t i) {
+JSHandle<types::String> ObjectFactory::GetIntString(std::int32_t i) {
   return JSValue::NumberToString(vm_, i);
 }
 
-Object* ObjectFactory::NewObject(
+JSHandle<types::Object> ObjectFactory::NewObject(
   std::size_t extra_size, JSType type, ObjectClassType class_type,
-  JSValue proto, bool extensible, bool callable, bool is_counstructor) {
-  auto obj = NewHeapObject(Object::SIZE + extra_size)->AsObject();
+  JSHandle<JSValue> proto, bool extensible, bool callable, bool is_counstructor) {
+  auto obj = NewHeapObject(types::Object::SIZE + extra_size).As<types::Object>();
 
   obj->SetType(type);
   obj->SetClassType(class_type);
-  obj->SetPropertyMap(NewPropertyMap());
+  obj->SetProperties(NewPropertyMap().As<JSValue>());
   obj->SetPrototype(proto);
   obj->SetExtensible(extensible);
   obj->SetCallable(callable);
@@ -116,17 +116,17 @@ Object* ObjectFactory::NewObject(
   return obj;
 }
 
-Array* ObjectFactory::NewArray(std::size_t len) {
-  auto arr = NewHeapObject(sizeof(std::size_t) + len * sizeof(JSValue))->AsArray();
+JSHandle<types::Array> ObjectFactory::NewArray(std::size_t len) {
+  auto arr = NewHeapObject(sizeof(std::size_t) + len * sizeof(JSValue)).As<types::Array>();
   arr->SetType(JSType::ARRAY);
   arr->SetLength(len);
   std::fill_n(arr->GetData(), len, JSValue{});
   return arr;
 }
 
-DataPropertyDescriptor* ObjectFactory::NewDataPropertyDescriptor(
+JSHandle<types::DataPropertyDescriptor> ObjectFactory::NewDataPropertyDescriptor(
   const types::PropertyDescriptor &desc) {
-  auto prop = NewHeapObject(DataPropertyDescriptor::SIZE)->AsDataPropertyDescriptor();
+  auto prop = NewHeapObject(types::DataPropertyDescriptor::SIZE).As<types::DataPropertyDescriptor>();
   prop->SetType(JSType::DATA_PROPERTY_DESCRIPTOR);
   prop->SetValue(desc.GetValue());
   prop->SetWritable(desc.GetWritable());
@@ -135,9 +135,9 @@ DataPropertyDescriptor* ObjectFactory::NewDataPropertyDescriptor(
   return prop;
 }
 
-AccessorPropertyDescriptor* ObjectFactory::NewAccessorPropertyDescriptor(
-  const PropertyDescriptor &desc) {
-  auto prop = NewHeapObject(AccessorPropertyDescriptor::SIZE)->AsAccessorPropertyDescriptor();
+JSHandle<types::AccessorPropertyDescriptor> ObjectFactory::NewAccessorPropertyDescriptor(
+  const types::PropertyDescriptor &desc) {
+  auto prop = NewHeapObject(types::AccessorPropertyDescriptor::SIZE).As<types::AccessorPropertyDescriptor>();
   prop->SetType(JSType::ACCESSOR_PROPERTY_DESCRIPTOR);
   prop->SetGetter(desc.GetGetter());
   prop->SetSetter(desc.GetSetter());
@@ -146,23 +146,23 @@ AccessorPropertyDescriptor* ObjectFactory::NewAccessorPropertyDescriptor(
   return prop;
 }
 
-GenericPropertyDescriptor* ObjectFactory::NewGenericPropertyDescriptor(
+JSHandle<types::GenericPropertyDescriptor> ObjectFactory::NewGenericPropertyDescriptor(
   const types::PropertyDescriptor &desc) {
-  auto prop = NewHeapObject(GenericPropertyDescriptor::SIZE)->AsGenericPropertyDescriptor();
+  auto prop = NewHeapObject(types::GenericPropertyDescriptor::SIZE).As<types::GenericPropertyDescriptor>();
   prop->SetType(JSType::GENERIC_PROPERTY_DESCRIPTOR);
   prop->SetEnumerable(desc.GetEnumerable());
   prop->SetConfigurable(desc.GetConfigurable());
   return prop;
 }
 
-PropertyMap* ObjectFactory::NewPropertyMap() {
-  auto prop_map = NewHashMap(PropertyMap::DEFAULT_PROPERTY_NUMS)->AsPropertyMap();
+JSHandle<types::PropertyMap> ObjectFactory::NewPropertyMap() {
+  auto prop_map = NewHashMap(types::PropertyMap::DEFAULT_PROPERTY_NUMS).As<types::PropertyMap>();
   prop_map->SetType(JSType::PROPERTY_MAP);
   return prop_map;
 }
 
-Binding* ObjectFactory::NewBinding(JSValue value, bool _mutable, bool deletable) {
-  auto binding = NewHeapObject(Binding::SIZE)->AsBinding();
+JSHandle<types::Binding> ObjectFactory::NewBinding(JSHandle<JSValue> value, bool _mutable, bool deletable) {
+  auto binding = NewHeapObject(types::Binding::SIZE).As<types::Binding>();
   binding->SetType(JSType::BINDING);
   binding->SetMutable(_mutable);
   binding->SetDeletable(deletable);
@@ -170,8 +170,8 @@ Binding* ObjectFactory::NewBinding(JSValue value, bool _mutable, bool deletable)
   return binding;
 }
 
-InternalFunction* ObjectFactory::NewInternalFunction(InternalFunctionType func) {
-  auto internal_func = NewHeapObject(InternalFunction::SIZE)->AsInternalFunction();
+JSHandle<types::InternalFunction> ObjectFactory::NewInternalFunction(InternalFunctionType func) {
+  auto internal_func = NewHeapObject(types::InternalFunction::SIZE).As<types::InternalFunction>();
   internal_func->SetType(JSType::INTERNAL_FUNCTION);
   internal_func->SetFunction(func);
   internal_func->SetCallable(true);
@@ -179,84 +179,78 @@ InternalFunction* ObjectFactory::NewInternalFunction(InternalFunctionType func) 
 }
 
 
-HashMap* ObjectFactory::NewHashMap(std::uint32_t capacity) {
-  auto hashmap = NewArray(HashMap::HEADER_SIZE + HashMap::ENTRY_SIZE * capacity)->AsHashMap();
+JSHandle<types::HashMap> ObjectFactory::NewHashMap(std::uint32_t capacity) {
+  auto hashmap = NewArray(types::HashMap::HEADER_SIZE + types::HashMap::ENTRY_SIZE * capacity).As<types::HashMap>();
   hashmap->SetType(JSType::HASH_MAP);
   hashmap->SetBucketCapacity(capacity);
   hashmap->SetBucketSize(0);
   return hashmap;
 }
 
-EnvironmentRecord* ObjectFactory::NewEnvironmentRecord() {
-  auto env_rec = NewHeapObject(EnvironmentRecord::SIZE)->AsEnvironmentRecord();
-  env_rec->SetType(JSType::ENVIRONMENT_RECORD);
+JSHandle<types::DeclarativeEnvironmentRecord> ObjectFactory::NewDeclarativeEnvironmentRecord() {
+  auto env_rec = NewHeapObject(types::DeclarativeEnvironmentRecord::SIZE).As<types::DeclarativeEnvironmentRecord>();
+  env_rec->SetType(JSType::DECLARATIVE_ENVIRONMENT_RECORD);
+  env_rec->SetBindingMap(NewHashMap(types::HashMap::MIN_CAPACITY).As<JSValue>());
   return env_rec;
 }
 
-DeclarativeEnvironmentRecord* ObjectFactory::NewDeclarativeEnvironmentRecord() {
-  auto env_rec = NewEnvironmentRecord()->AsDeclarativeEnvironmentRecord();
-  env_rec->SetType(JSType::DECLARAVIE_ENVIRONMENT_RECORD);
-  env_rec->SetBindingMap(NewHashMap(HashMap::MIN_CAPACITY));
-  return env_rec;
-}
-
-ObjectEnvironmentRecord* ObjectFactory::NewObjectEnvironmentRecord(Object* obj) {
-  auto env_rec = NewEnvironmentRecord()->AsObjectEnvironmentRecord();
+JSHandle<types::ObjectEnvironmentRecord> ObjectFactory::NewObjectEnvironmentRecord(JSHandle<types::Object> obj) {
+  auto env_rec = NewHeapObject(types::ObjectEnvironmentRecord::SIZE).As<types::ObjectEnvironmentRecord>();
   env_rec->SetType((JSType::OBJECT_ENVIRONMENT_RECORD));
-  env_rec->SetObject(obj);
+  env_rec->SetObject(obj.As<JSValue>());
   env_rec->SetProvideThis(false);
   return env_rec;
 }
 
-LexicalEnvironment* ObjectFactory::NewLexicalEnvironment(LexicalEnvironment* outer, EnvironmentRecord* env_rec) {
-  auto env = NewHeapObject(LexicalEnvironment::SIZE)->AsLexicalEnvironment();
+JSHandle<types::LexicalEnvironment> ObjectFactory::NewLexicalEnvironment(
+  JSHandle<types::LexicalEnvironment> outer, JSHandle<types::EnvironmentRecord> env_rec) {
+  auto env = NewHeapObject(types::LexicalEnvironment::SIZE).As<types::LexicalEnvironment>();
   env->SetType(JSType::LEXICAL_ENVIRONMENT);
-  env->SetOuter(outer);
-  env->SetEnvRec(env_rec);
+  env->SetOuter(outer.As<JSValue>());
+  env->SetEnvRec(env_rec.As<JSValue>());
   return env;
 }
 
-JSError* ObjectFactory::NewNativeError(ErrorType type, String* msg) {
-  JSValue proto {JSValue::Null()};
+JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, JSHandle<types::String> msg) {
+  auto proto = JSHandle<builtins::JSError>{};
   switch (type) {
     case ErrorType::EVAL_ERROR: {
-      proto = JSValue{vm_->GetEvalErrorPrototype()};
+      proto = vm_->GetEvalErrorPrototype();
       break;
     }
     case ErrorType::RANGE_ERROR: {
-      proto = JSValue{vm_->GetRangeErrorPrototype()};
+      proto = vm_->GetRangeErrorPrototype();
       break;
     }
     case ErrorType::REFERENCE_ERROR: {
-      proto = JSValue{vm_->GetReferenceErrorPrototype()};
+      proto = vm_->GetReferenceErrorPrototype();
       break;
     }
     case ErrorType::SYNTAX_ERROR: {
-      proto = JSValue{vm_->GetSyntaxErrorPrototype()};
+      proto = vm_->GetSyntaxErrorPrototype();
       break;
     }
     case ErrorType::TYPE_ERROR: {
-      proto = JSValue{vm_->GetTypeErrorPrototype()};
+      proto = vm_->GetTypeErrorPrototype();
       break;
     }
     case ErrorType::URI_ERROR: {
-      proto = JSValue{vm_->GetURIErrorPrototype()};
+      proto = vm_->GetURIErrorPrototype();
       break;
     }
     default: {
-      proto = JSValue::Null();
       break;
     }
   }
 
-  auto error = NewObject(JSError::SIZE, JSType::JS_ERROR,
+  auto error = NewObject(builtins::JSError::SIZE, JSType::JS_ERROR,
                          ObjectClassType::ERROR,
-                         proto, true, false, false)->AsJSError();
+                         proto.As<JSValue>(), true, false, false).As<builtins::JSError>();
   return error;
 }
 
-JSError* ObjectFactory::NewNativeError(ErrorType type, std::u16string_view msg) {
-  return NewNativeError(type, NewStringFromTable(msg));
+JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, std::u16string_view msg) {
+  return NewNativeError(type, GetStringFromTable(msg));
 }
 
 }  // namespace voidjs

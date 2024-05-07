@@ -4,6 +4,7 @@
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/gc/js_handle.h"
 
 namespace voidjs {
 namespace types {
@@ -19,14 +20,14 @@ class Array : public HeapObject {
   static constexpr std::size_t DATA_OFFSET = LENGTH_OFFSET + sizeof(std::size_t);
   JSValue* GetData() const { return utils::BitGet<JSValue*>(this, DATA_OFFSET); }
   JSValue Get(std::size_t idx) const { return *(GetData() + idx); } 
-  void Set(std::size_t idx, JSValue val) { *(GetData() + idx) = val; }
+  void Set(std::size_t idx, JSValue value) { *(GetData() + idx) = value; }
+  void Set(std::size_t idx, JSHandle<JSValue> handle) { *(GetData() + idx) = handle.GetJSValue(); }
 
   // SIZE and END_OFFSET are valid only when Array is empty
   static constexpr std::size_t SIZE = sizeof(std::size_t);
   static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
 
-  
-  static Array* Append(VM* vm, Array* first, Array* second);
+  static JSHandle<Array> Append(VM* vm, JSHandle<Array> first, JSHandle<Array> second);
 };
 
 }  // namespace types

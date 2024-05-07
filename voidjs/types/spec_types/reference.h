@@ -12,18 +12,17 @@ namespace types {
 
 class Reference {
  public:
-  Reference(const std::variant<JSValue, EnvironmentRecord*>& base,
-            String* name, bool is_strict)
+  Reference(JSHandle<JSValue>base, JSHandle<String> name, bool is_strict)
     : base_(base), name_(name), is_strict_(is_strict)
   {}
   
   // GetBase
   // Returns the base value component of the reference V.
-  const std::variant<JSValue, EnvironmentRecord*>& GetBase() const { return base_; }
+  JSHandle<JSValue> GetBase() const { return base_; }
 
   // GetReferencedName
   // Returns the referenced name component of the reference V.
-  String* GetReferencedName() const { return name_; }
+  JSHandle<String> GetReferencedName() const { return name_; }
 
   // IsStrictReference
   // Returns the strict reference component of the reference V.
@@ -32,31 +31,25 @@ class Reference {
   // HasPrimitiveBase
   // Returns true if the base value is a Boolean, String, or Number.
   bool HasPrimitiveBase() const {
-    if (auto val = std::get_if<JSValue>(&base_); !val) {
-      return false;
-    } else {
-      return val->IsBoolean() || val->IsString() || val->IsNumber();
-    }
+    return base_->IsBoolean() || base_->IsString() || base_->IsNumber();
   }
 
   // IsPropertyReference
   // Returns true if either the base value is an object
   // or HasPrimitiveBase(V) is true; otherwise returns false.
   bool IsPropertyReference() const {
-    auto val = std::get_if<JSValue>(&base_);
-    return (val && val->IsObject()) || HasPrimitiveBase();
+    return base_->IsObject() && !base_->GetHeapObject()->IsEnvironmentRecord() || HasPrimitiveBase();
   }
 
   // IsUnresolvableReference
   // Returns true if the base value is undefined and false otherwise.
   bool IsUnresolvableReference() const {
-    auto val = std::get_if<JSValue>(&base_);
-    return val && val->IsUndefined();
+    return base_->IsUndefined();
   }
 
  private:
-  std::variant<JSValue, EnvironmentRecord*> base_;
-  String* name_;
+  JSHandle<JSValue> base_;
+  JSHandle<String> name_;
   bool is_strict_ {};
 };
 

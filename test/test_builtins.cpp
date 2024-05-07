@@ -22,8 +22,8 @@ o.foo;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(42, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(42, comp.GetValue()->GetInt());
 }
 
 TEST(JSObject, GetOwnPropertyDescriptor) {
@@ -44,8 +44,8 @@ desc.value;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(42, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(42, comp.GetValue()->GetInt());
 }
 
 TEST(JSObject, DefineProperty) {
@@ -68,8 +68,8 @@ object.value;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(42, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(42, comp.GetValue()->GetInt());
   }
   
   {
@@ -94,8 +94,8 @@ object.value;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(42, comp.GetValue().GetInt()); 
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(42, comp.GetValue()->GetInt()); 
   }
 }
 
@@ -121,8 +121,8 @@ try {
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"Successfully catch.", comp.GetValue().GetHeapObject()->AsString()->GetString()); 
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"Successfully catch.", comp.GetValue()->GetString()); 
 }
 
 TEST(JSObject, IsExtensible) {
@@ -151,8 +151,8 @@ mask;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(3, comp.GetValue().GetInt()); 
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(3, comp.GetValue()->GetInt()); 
 }
 
 TEST(JSFunction, Construct) {
@@ -168,8 +168,8 @@ add(1, 2);
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(3, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(3, comp.GetValue()->GetInt());
 }
 
 TEST(JSArray, prototype) {
@@ -197,8 +197,8 @@ arr.join();
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"5,4,3,2,1", comp.GetValue().GetString()->GetString());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"5,4,3,2,1", comp.GetValue()->GetString());
 }
 
 TEST(JSArray, IsArray) {
@@ -221,8 +221,8 @@ count += Array.isArray(new Array(13, 15));
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(4, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(4, comp.GetValue()->GetInt());
 }
 
 TEST(JSArray, Concat) {
@@ -243,29 +243,29 @@ array3;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSArray());
+    ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSArray());
 
-    auto array = comp.GetValue().GetHeapObject()->AsJSArray();
-    auto key0 = factory->NewStringFromTable(u"0");
-    auto key1 = factory->NewStringFromTable(u"1");
-    auto key3 = factory->NewStringFromTable(u"3");
-    auto key4 = factory->NewStringFromTable(u"4");
-    auto key_length = factory->NewStringFromTable(u"length");
+    auto array = comp.GetValue().As<builtins::JSArray>();
+    auto key0 = factory->GetStringFromTable(u"0");
+    auto key1 = factory->GetStringFromTable(u"1");
+    auto key3 = factory->GetStringFromTable(u"3");
+    auto key4 = factory->GetStringFromTable(u"4");
+    auto key_length = factory->GetStringFromTable(u"length");
     auto val0 = types::Object::Get(vm, array, key0);
     auto val1 = types::Object::Get(vm, array, key1);
     auto val3 = types::Object::Get(vm, array, key3);
     auto val4 = types::Object::Get(vm, array, key4);
     auto val_length = types::Object::Get(vm, array, key_length);
-    ASSERT_TRUE(val0.IsString());
-    ASSERT_TRUE(val1.IsString());
-    ASSERT_TRUE(val3.IsString());
-    ASSERT_TRUE(val4.IsString());
-    ASSERT_TRUE(val_length.IsInt());
-    EXPECT_EQ(u"a", val0.GetString()->GetString());
-    EXPECT_EQ(u"b", val1.GetString()->GetString());
-    EXPECT_EQ(u"d", val3.GetString()->GetString());
-    EXPECT_EQ(u"e", val4.GetString()->GetString());
-    EXPECT_EQ(6, val_length.GetInt());
+    ASSERT_TRUE(val0->IsString());
+    ASSERT_TRUE(val1->IsString());
+    ASSERT_TRUE(val3->IsString());
+    ASSERT_TRUE(val4->IsString());
+    ASSERT_TRUE(val_length->IsInt());
+    EXPECT_EQ(u"a", val0->GetString());
+    EXPECT_EQ(u"b", val1->GetString());
+    EXPECT_EQ(u"d", val3->GetString());
+    EXPECT_EQ(u"e", val4->GetString());
+    EXPECT_EQ(6, val_length->GetInt());
   }
 
   {
@@ -286,25 +286,25 @@ array4;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSArray());
+    ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSArray());
 
-    auto array = comp.GetValue().GetHeapObject()->AsJSArray();
-    auto key0 = factory->NewStringFromTable(u"0");
-    auto key1 = factory->NewStringFromTable(u"1");
-    auto key3 = factory->NewStringFromTable(u"3");
-    auto key6 = factory->NewStringFromTable(u"6");
+    auto array = comp.GetValue().As<builtins::JSArray>();
+    auto key0 = factory->GetStringFromTable(u"0");
+    auto key1 = factory->GetStringFromTable(u"1");
+    auto key3 = factory->GetStringFromTable(u"3");
+    auto key6 = factory->GetStringFromTable(u"6");
     auto val0 = types::Object::Get(vm, array, key0);
     auto val1 = types::Object::Get(vm, array, key1);
     auto val3 = types::Object::Get(vm, array, key3);
     auto val6 = types::Object::Get(vm, array, key6);
-    ASSERT_TRUE(val0.IsString());
-    ASSERT_TRUE(val1.IsString());
-    ASSERT_TRUE(val3.IsString());
-    ASSERT_TRUE(val6.IsInt());
-    EXPECT_EQ(u"a", val0.GetString()->GetString());
-    EXPECT_EQ(u"b", val1.GetString()->GetString());
-    EXPECT_EQ(u"d", val3.GetString()->GetString());
-    EXPECT_EQ(42, val6.GetInt());
+    ASSERT_TRUE(val0->IsString());
+    ASSERT_TRUE(val1->IsString());
+    ASSERT_TRUE(val3->IsString());
+    ASSERT_TRUE(val6->IsInt());
+    EXPECT_EQ(u"a", val0->GetString());
+    EXPECT_EQ(u"b", val1->GetString());
+    EXPECT_EQ(u"d", val3->GetString());
+    EXPECT_EQ(42, val6->GetInt());
   }
 }
 
@@ -331,8 +331,8 @@ r1 + r2 + r3;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"Fire,Air,WaterFireAirWaterFire-Air-Water", comp.GetValue().GetString()->GetString());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"Fire,Air,WaterFireAirWaterFire-Air-Water", comp.GetValue()->GetString());
 }
 
 TEST(JSArray, Pop) {
@@ -352,8 +352,8 @@ plants.join(',');
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"broccoli,cauliflower,cabbage", comp.GetValue().GetString()->GetString());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"broccoli,cauliflower,cabbage", comp.GetValue()->GetString());
 }
 
 TEST(JSArray, Push) {
@@ -373,8 +373,8 @@ plants.join(',');
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"broccoli,cauliflower,cabbage,kale,sunflower", comp.GetValue().GetString()->GetString());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"broccoli,cauliflower,cabbage,kale,sunflower", comp.GetValue()->GetString());
 }
 
 TEST(JSString, CharAt) {
@@ -390,8 +390,8 @@ sentence.charAt(5);
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"u", comp.GetValue().GetString()->GetString());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"u", comp.GetValue()->GetString());
 }
 
 TEST(JSString, Concat) {
@@ -409,8 +409,8 @@ str1.concat(', ', str2);
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsString());
-  EXPECT_EQ(u"Hello, World", comp.GetValue().GetString()->GetString());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"Hello, World", comp.GetValue()->GetString());
 }
 
 TEST(JSString, Indexof) {
@@ -429,8 +429,8 @@ paragraph.indexOf(searchTerm);
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(15, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(15, comp.GetValue()->GetInt());
 }
 
 TEST(JSBoolean, Construct) {
@@ -447,8 +447,8 @@ flag;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSBoolean());
-  EXPECT_EQ(false, comp.GetValue().GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetBoolean());
+  ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSBoolean());
+  EXPECT_EQ(false, comp.GetValue()->GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetBoolean());
 }
 
 TEST(JSNumber, Construct) {
@@ -465,7 +465,7 @@ num;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsObject() && comp.GetValue().GetHeapObject()->IsJSNumber());
-  EXPECT_EQ(123, comp.GetValue().GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSNumber());
+  EXPECT_EQ(123, comp.GetValue()->GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetInt());
 }
 

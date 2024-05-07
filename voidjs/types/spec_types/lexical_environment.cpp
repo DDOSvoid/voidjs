@@ -9,16 +9,16 @@
 namespace voidjs {
 namespace types {
 
-Reference LexicalEnvironment::GetIdentifierReference(VM* vm, LexicalEnvironment* lex, String* name, bool strict) {
+Reference LexicalEnvironment::GetIdentifierReference(VM* vm, JSHandle<LexicalEnvironment> lex, JSHandle<String> name, bool strict) {
   // 1. If lex is the value null, then
-  if (!lex) {
+  if (lex.IsEmpty()) {
     // a. Return a value of type Reference whose base value is undefined,
     //  whose referenced name is name, and whose strict mode flag is strict.
-    return Reference(JSValue::Undefined(), name, strict);
+    return Reference{JSHandle<JSValue>{vm, JSValue::Undefined()}, name, strict};
   }
 
   // 2. Let envRec be lex’s environment record.
-  auto env_rec = lex->GetEnvRec();
+  auto env_rec = JSHandle<EnvironmentRecord>{vm, lex->GetEnvRec()};
 
   // 3. Let exists be the result of calling the HasBinding(N) concrete method of envRec passing name as the argument N.
   auto exists = EnvironmentRecord::HasBinding(vm, env_rec, name);
@@ -27,19 +27,19 @@ Reference LexicalEnvironment::GetIdentifierReference(VM* vm, LexicalEnvironment*
   if (exists) {
     // a. Return a value of type Reference whose base value is envRec,
     //    whose referenced name is name, and whose strict mode flag is strict.
-    return Reference(env_rec, name, strict);
+    return Reference(env_rec.As<JSValue>(), name, strict);
   }
   // 5. Else
   else {
     // a. Let outer be the value of lex’s outer environment reference.
-    auto outer = lex->GetOuter();
+    auto outer = JSHandle<LexicalEnvironment>{vm, lex->GetOuter()};
     
     // b. Return the result of calling GetIdentifierReference passing outer, name, and strict as arguments.
     return GetIdentifierReference(vm, outer, name, strict);
   }
 }
 
-LexicalEnvironment* LexicalEnvironment::NewDeclarativeEnvironmentRecord(VM* vm, LexicalEnvironment* E) {
+JSHandle<LexicalEnvironment> LexicalEnvironment::NewDeclarativeEnvironmentRecord(VM* vm, JSHandle<LexicalEnvironment> E) {
   auto factory = vm->GetObjectFactory();
     
   // 1. Let env be a new Lexical Environment.
@@ -51,7 +51,7 @@ LexicalEnvironment* LexicalEnvironment::NewDeclarativeEnvironmentRecord(VM* vm, 
   return factory->NewLexicalEnvironment(E, env_rec);
 }
 
-LexicalEnvironment* LexicalEnvironment::NewObjectEnvironmentRecord(VM* vm, JSValue O, LexicalEnvironment* E) {
+JSHandle<LexicalEnvironment> LexicalEnvironment::NewObjectEnvironmentRecord(VM* vm, JSHandle<JSValue> O, JSHandle<LexicalEnvironment> E) {
   auto factory = vm->GetObjectFactory();
   
   // 1. Let env be a new Lexical Environment.
@@ -59,7 +59,7 @@ LexicalEnvironment* LexicalEnvironment::NewObjectEnvironmentRecord(VM* vm, JSVal
   // 3. Set env’s environment record to be envRec.
   // 4. Set the outer lexical environment reference of env to E.
   // 5. Return env.
-  auto env_rec = factory->NewObjectEnvironmentRecord(O.GetHeapObject()->AsObject());
+  auto env_rec = factory->NewObjectEnvironmentRecord(O.As<Object>());
   return factory->NewLexicalEnvironment(E, env_rec);
 }
 

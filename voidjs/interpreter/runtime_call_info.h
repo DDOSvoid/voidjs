@@ -2,6 +2,7 @@
 #define VOIDJS_INTERPRETER_RUNTIME_CALL_INFO
 
 #include "voidjs/types/js_value.h"
+#include "voidjs/gc/js_handle.h"
 #include "voidjs/utils/helper.h"
 
 namespace voidjs {
@@ -13,8 +14,9 @@ class RuntimeCallInfo {
   void SetVM(VM* vm) { *utils::BitGet<VM**>(this, VM_OFFSET) = vm; }
 
   static constexpr std::size_t THIS_OFFSET = VM_OFFSET + sizeof(std::uintptr_t);
-  JSValue GetThis() const { return *utils::BitGet<JSValue*>(this, THIS_OFFSET); }
-  void SetThis(JSValue val) { *utils::BitGet<JSValue*>(this, THIS_OFFSET) = val; }
+  JSHandle<JSValue> GetThis() const { return JSHandle<JSValue>{utils::BitGet<uintptr_t>(this, THIS_OFFSET)}; }
+  void SetThis(JSValue value) { *utils::BitGet<JSValue*>(this, THIS_OFFSET) = value; }
+  void SetThis(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, THIS_OFFSET) = handle.GetJSValue(); }
   
   static constexpr std::size_t ARGS_NUM_OFFSET = THIS_OFFSET + sizeof(JSValue);
   std::uint64_t GetArgsNum() const { return *utils::BitGet<std::uint64_t*>(this, ARGS_NUM_OFFSET); }
@@ -25,15 +27,17 @@ class RuntimeCallInfo {
 
   static constexpr std::size_t SIZE = sizeof(std::uintptr_t) + sizeof(JSValue) + sizeof(std::uint64_t);
 
-
-  JSValue GetArg(std::size_t idx) const {
-    return idx >= GetArgsNum() ?
-      JSValue::Undefined() : Get(idx); 
+  JSHandle<JSValue> GetArg(std::size_t idx) const {
+    if (idx >= GetArgsNum()) {
+      return JSHandle<JSValue>{GetVM(), JSValue::Undefined()};
+    } else {
+      return JSHandle<JSValue>{reinterpret_cast<std::uintptr_t>(GetArgs() + idx)};
+    }
   }
-  void SetArg(std::size_t idx, JSValue val) { Set(idx, val); }
+  void SetArg(std::size_t idx, JSValue value) { Set(idx, value); }
+  void SetArg(std::size_t idx, JSHandle<JSValue> handle) { Set(idx, handle.GetJSValue()); }
 
  private:
-  JSValue Get(std::size_t idx) const { return *(GetArgs() + idx); }
   void Set(std::size_t idx, JSValue val) { *(GetArgs() + idx) = val; }
 };
 

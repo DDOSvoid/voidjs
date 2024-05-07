@@ -19,12 +19,12 @@ class EnvironmentRecord : public HeapObject {
   // Abstract methods of EnvironmentRecord
   // Defined in ECMAScript 5.1 Chapter 10.2.1
   // Only used to forward to concrete method
-  static bool HasBinding(VM* vm, EnvironmentRecord* env, String* N);
-  static void CreateMutableBinding(VM* vm, EnvironmentRecord* env, String* N, bool D);
-  static void SetMutableBinding(VM* vm, EnvironmentRecord* env, String* N, JSValue V, bool S);
-  static JSValue GetBindingValue(VM* vm, EnvironmentRecord* env, String* N, bool S);
-  static bool DeleteBinding(VM* vm, EnvironmentRecord* env, String* N);
-  static JSValue ImplicitThisValue(VM* vm, EnvironmentRecord* env);
+  static bool HasBinding(VM* vm, JSHandle<EnvironmentRecord> env, JSHandle<String> N);
+  static void CreateMutableBinding(VM* vm, JSHandle<EnvironmentRecord> env, JSHandle<String> N, bool D);
+  static void SetMutableBinding(VM* vm, JSHandle<EnvironmentRecord> env, JSHandle<String> N, JSHandle<JSValue> V, bool S);
+  static JSHandle<JSValue> GetBindingValue(VM* vm, JSHandle<EnvironmentRecord> env, JSHandle<String> N, bool S);
+  static bool DeleteBinding(VM* vm, JSHandle<EnvironmentRecord> env, JSHandle<String> N);
+  static JSHandle<JSValue> ImplicitThisValue(VM* vm, JSHandle<EnvironmentRecord> env);
 
   static constexpr std::size_t SIZE = 0;
   static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
@@ -32,35 +32,38 @@ class EnvironmentRecord : public HeapObject {
 
 class DeclarativeEnvironmentRecord : public EnvironmentRecord {
  public:
-  static bool HasBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
-  static void CreateMutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, bool D);
-  static void SetMutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, JSValue V, bool S);
-  static JSValue GetBindingValue(VM* vm, DeclarativeEnvironmentRecord* env, String* N, bool S);
-  static bool DeleteBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
-  static JSValue ImplicitThisValue(VM* vm, DeclarativeEnvironmentRecord* env);
+  static bool HasBinding(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N);
+  static void CreateMutableBinding(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N, bool D);
+  static void SetMutableBinding(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N, JSHandle<JSValue> V, bool S);
+  static JSHandle<JSValue> GetBindingValue(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N, bool S);
+  static bool DeleteBinding(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N);
+  static JSHandle<JSValue> ImplicitThisValue(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env);
 
   // Additional methods of DeclarativeEnvironmentRecord
-  static void CreateImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N);
-  static void InitializeImmutableBinding(VM* vm, DeclarativeEnvironmentRecord* env, String* N, JSValue V);
+  static void CreateImmutableBinding(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N);
+  static void InitializeImmutableBinding(VM* vm, JSHandle<DeclarativeEnvironmentRecord> env, JSHandle<String> N, JSHandle<JSValue> V);
 
+  // BidningMap* 
   static constexpr std::size_t BINDING_MAP_OFFSET = EnvironmentRecord::END_OFFSET;
-  HashMap* GetBindingMap() const { return *utils::BitGet<HashMap**>(this, BINDING_MAP_OFFSET); }
-  void SetBindingMap(HashMap* map) { *utils::BitGet<HashMap**>(this, BINDING_MAP_OFFSET) = map; }
+  JSValue GetBindingMap() const { return *utils::BitGet<JSValue*>(this, BINDING_MAP_OFFSET); }
+  void SetBindingMap(JSValue value) { *utils::BitGet<JSValue*>(this, BINDING_MAP_OFFSET) = value; }
+  void SetBindingMap(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, BINDING_MAP_OFFSET) = handle.GetJSValue(); }
 };
 
 class ObjectEnvironmentRecord : public EnvironmentRecord {
  public:
-  static bool HasBinding(VM* vm, ObjectEnvironmentRecord* env, String* N);
-  static void CreateMutableBinding(VM* vm, ObjectEnvironmentRecord* env, String* N, bool D);
-  static void SetMutableBinding(VM* vm, ObjectEnvironmentRecord* env, String* N, JSValue V, bool S);
-  static JSValue GetBindingValue(VM* vm, ObjectEnvironmentRecord* env, String* N, bool S);
-  static bool DeleteBinding(VM* vm, ObjectEnvironmentRecord* env, String* N);
-  static JSValue ImplicitThisValue(VM* vm, ObjectEnvironmentRecord* env);
+  static bool HasBinding(VM* vm, JSHandle<ObjectEnvironmentRecord> env, JSHandle<String> N);
+  static void CreateMutableBinding(VM* vm, JSHandle<ObjectEnvironmentRecord> env, JSHandle<String> N, bool D);
+  static void SetMutableBinding(VM* vm, JSHandle<ObjectEnvironmentRecord> env, JSHandle<String> N, JSHandle<JSValue> V, bool S);
+  static JSHandle<JSValue> GetBindingValue(VM* vm, JSHandle<ObjectEnvironmentRecord> env, JSHandle<String> N, bool S);
+  static bool DeleteBinding(VM* vm, JSHandle<ObjectEnvironmentRecord> env, JSHandle<String> N);
+  static JSHandle<JSValue> ImplicitThisValue(VM* vm, JSHandle<ObjectEnvironmentRecord> env);
 
+  // Object*
   static constexpr std::size_t OBJECT_OFFSET = EnvironmentRecord::END_OFFSET;
-  Object* GetObject() const { return *utils::BitGet<Object**>(this, OBJECT_OFFSET); }
-  void SetObject(Object* obj) { *utils::BitGet<Object**>(this, OBJECT_OFFSET) = obj; }
-
+  JSValue GetObject() const { return *utils::BitGet<JSValue*>(this, OBJECT_OFFSET); }
+  void SetObject(JSValue value) { *utils::BitGet<JSValue*>(this, OBJECT_OFFSET) = value; }
+  void SetObject(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, OBJECT_OFFSET) = handle.GetJSValue(); }
 };
 
 }  // namespace types

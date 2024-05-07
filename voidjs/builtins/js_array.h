@@ -12,7 +12,8 @@ class JSArray : public types::Object {
   static constexpr std::size_t SIZE = 0;
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
 
-  static bool DefineOwnProperty(VM* vm, types::Object* O, types::String* P, const types::PropertyDescriptor& Desc, bool Throw);
+  static bool DefineOwnProperty(
+    VM* vm, JSHandle<types::Object> O, JSHandle<types::String> P, const types::PropertyDescriptor& Desc, bool Throw);
 
   // Internal method [[Construct]] and [[Call]] for Array Constructor
   static JSValue Call(RuntimeCallInfo* argv);

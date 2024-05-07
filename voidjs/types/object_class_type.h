@@ -6,6 +6,8 @@
 namespace voidjs {
 
 class VM;
+template <typename T>
+class JSHandle;
 
 namespace types {
 
@@ -32,7 +34,7 @@ enum class ObjectClassType : std::uint8_t {
   STRING,
 };
 
-inline types::String* ObjectClassTypeToString(VM* vm, ObjectClassType type); 
+inline JSHandle<types::String> ObjectClassTypeToString(VM* vm, ObjectClassType type); 
 
 }  // namespace voidjs 
 

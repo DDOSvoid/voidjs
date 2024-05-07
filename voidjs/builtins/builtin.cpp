@@ -21,6 +21,7 @@
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_number.h"
 #include "voidjs/builtins/js_error.h"
+#include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/macros.h"
 
@@ -38,10 +39,10 @@ void Builtin::Initialize(VM* vm) {
 }
 
 void Builtin::InitializeBuiltinObjects(VM* vm) {
-  auto factory = vm->GetObjectFactory();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // Initialize GlobalObject
-  auto global_obj = factory->NewGlobalObject();
+  JSHandle<GlobalObject> global_obj = factory->NewGlobalObject();
   vm->SetGlobalObject(global_obj);
 
   // Initialize Object Prototype
@@ -49,8 +50,9 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   // The value of the [[Prototype]] internal property of the Object prototype object is null,
   // the value of the [[Class]] internal property is "Object",
   // and the initial value of the [[Extensible]] internal property is true.
-  auto obj_proto = factory->NewObject(JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::OBJECT,
-                                      JSValue::Null(), true, false, false)->AsJSObject();
+  JSHandle<JSObject> obj_proto = factory->NewObject(
+    JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::OBJECT,
+    JSHandle<JSValue>{vm, JSValue::Null()}, true, false, false).As<JSObject>();
 
   // Initialzie Function Prototype
   // 
@@ -61,24 +63,27 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   // 
   // The Function prototype object does not have a valueOf property of its own;
   // however, it inherits the valueOf property from the Object prototype Object.
-  auto func_proto = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                       JSValue{obj_proto}, true, false, false)->AsJSFunction();
+  JSHandle<JSFunction> func_proto = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    obj_proto.As<JSValue>(), true, false, false).As<JSFunction>();
 
   // Initialize Object Constructor
   // The value of the [[Prototype]] internal property of the Object constructor is
   // the standard built-in Function prototype object.
   // Besides the internal properties and the length property (whose value is 1),
   // the Object constructor has the following properties:
-  auto obj_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                     JSValue{func_proto}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> obj_ctor = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    func_proto.As<JSValue>(), true, true, false).As<JSFunction>();
   
   // Initialize Function Constructor
   // The Function constructor is itself a Function object and its [[Class]] is "Function".
   // The value of the [[Prototype]] internal property of the Function constructor is
   // the standard built-in Function prototype object (15.3.4).
   // The value of the [[Extensible]] internal property of the Function constructor is true.
-  auto func_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                      JSValue{func_proto}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> func_ctor = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    func_proto.As<JSValue>(), true, true, false).As<JSFunction>();
 
   
   vm->SetObjectPrototype(obj_proto);
@@ -89,9 +94,7 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
 }
 
 void Builtin::InitializeArrayObjects(VM* vm) {
-  auto factory = vm->GetObjectFactory();
-  auto obj_proto = vm->GetObjectPrototype();
-  auto func_proto = vm->GetFunctionPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // Initialize Array Prototype
   // 
@@ -101,8 +104,9 @@ void Builtin::InitializeArrayObjects(VM* vm) {
   // The Array prototype object is itself an array; its [[Class]] is "Array",
   // and it has a length property (whose initial value is +0) and
   // the special [[DefineOwnProperty]] internal method described in 15.4.5.1.
-  auto arr_proto = factory->NewObject(JSArray::SIZE, JSType::JS_ARRAY, ObjectClassType::ARRAY,
-                                      JSValue{obj_proto}, true, false, false)->AsJSArray();
+  JSHandle<JSArray> arr_proto = factory->NewObject(
+    JSArray::SIZE, JSType::JS_ARRAY, ObjectClassType::ARRAY,
+    vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSArray>();
 
 
   // Initialize Array Constructor
@@ -111,17 +115,16 @@ void Builtin::InitializeArrayObjects(VM* vm) {
   // 
   // Besides the internal properties and the length property (whose value is 1),
   // the Array constructor has the following properties:
-  auto arr_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                     JSValue{func_proto}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> arr_ctor = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, false).As<JSFunction>();
   
   vm->SetArrayPrototype(arr_proto);
   vm->SetArrayConstructor(arr_ctor);
 }
 
 void Builtin::InitializeStringObjects(VM *vm) {
-  auto factory = vm->GetObjectFactory();
-  auto obj_proto = vm->GetObjectPrototype();
-  auto func_proto = vm->GetFunctionPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
 
   // Initialize String Prototype
   // 
@@ -130,22 +133,24 @@ void Builtin::InitializeStringObjects(VM *vm) {
   // 
   // The value of the [[Prototype]] internal property of the String prototype object is
   // the standard built-in Object prototype object (15.2.4).
-  auto str_proto = factory->NewObject(JSString::SIZE, JSType::JS_STRING, ObjectClassType::STRING,
-                                      JSValue{obj_proto}, true, false, false)->AsJSString();
+  JSHandle<JSString> str_proto = factory->NewObject(
+    JSString::SIZE, JSType::JS_STRING, ObjectClassType::STRING,
+    vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSString>();
 
   // Initialize String Constructor
   //
   // The value of the [[Prototype]] internal property of the String constructor is
   // the standard built-in Function prototype object (15.3.4).
-  auto str_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                     JSValue{func_proto}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> str_ctor = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, false).As<JSFunction>();
 
   vm->SetStringPrototype(str_proto);
   vm->SetStringConstructor(str_ctor);
 }
 
 void Builtin::InitializeBooleanObjects(VM* vm) {
-  auto factory = vm->GetObjectFactory();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // Initialize Boolean Prototype
   //
@@ -153,21 +158,23 @@ void Builtin::InitializeBooleanObjects(VM* vm) {
   // 
   // The value of the [[Prototype]] internal property of the Boolean prototype object is
   // the standard built-in Object prototype object (15.2.4).
-  auto bool_proto = factory->NewObject(JSBoolean::SIZE, JSType::JS_BOOLEAN, ObjectClassType::BOOLEAN,
-                                      JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSBoolean();
+  JSHandle<JSBoolean> bool_proto = factory->NewObject(
+    JSBoolean::SIZE, JSType::JS_BOOLEAN, ObjectClassType::BOOLEAN,
+    vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSBoolean>();
 
   // Initialize Boolean Constructor
   //
   // The value of the [[Prototype]] internal property of the Boolean constructor is the Function prototype object (15.3.4).
-  auto bool_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                     JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> bool_ctor = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, false).As<JSFunction>();
 
   vm->SetBooleanPrototype(bool_proto);
   vm->SetBooleanConstructor(bool_ctor);
 }
 
 void Builtin::InitializeNumberObjects(VM* vm) {
-  auto factory = vm->GetObjectFactory();
+  ObjectFactory* factory = vm->GetObjectFactory();
 
   // Initialize Number Prototype
   // 
@@ -179,35 +186,39 @@ void Builtin::InitializeNumberObjects(VM* vm) {
   // Unless explicitly stated otherwise, the methods of the Number prototype object defined below
   // are not generic and the this value passed to them must be either a Number value or
   // an Object for which the value of the [[Class]] internal property is "Number".
-  auto num_proto = factory->NewObject(JSNumber::SIZE, JSType::JS_NUMBER, ObjectClassType::NUMBER,
-                                      JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSNumber();
+  JSHandle<JSNumber> num_proto = factory->NewObject(
+    JSNumber::SIZE, JSType::JS_NUMBER, ObjectClassType::NUMBER,
+    vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSNumber>();
 
   // Initialize Number Constructor
   //
   // The value of the [[Prototype]] internal property of the Number constructor is
   // the Function prototype object (15.3.4).
-  auto num_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                                     JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> num_ctor = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, false).As<JSFunction>();
 
   vm->SetNumberPrototype(num_proto);
   vm->SetNumberConstructor(num_ctor);
 }
 
 void Builtin::InitializeErrorObjects(VM* vm) {
-  auto factory = vm->GetObjectFactory();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // Initialize Error Prototype
   // The Error prototype object is itself an Error object (its [[Class]] is "Error").
   // The value of the [[Prototype]] internal property of the Error prototype object is
   // the standard built-in Object prototype object (15.2.4).
-  auto error_proto = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR,
-                                        JSValue{vm->GetObjectPrototype()}, true, false, false)->AsJSError();
+  JSHandle<JSError> error_proto = factory->NewObject(
+    JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR,
+    vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSError>();
   
   // Initialize Error Constructor
   // The value of the [[Prototype]] internal property of the Error constructor is
   // the Function prototype object (15.3.4).
-  auto error_ctor = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::FUNCTION,
-                                       JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction();
+  JSHandle<JSFunction> error_ctor = factory->NewObject(
+    JSError::SIZE, JSType::JS_ERROR, ObjectClassType::FUNCTION,
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, false).As<JSFunction>();
 
   // Initialize Native Error Object, which includes
   // EvalError Prototype, EvalError Constructor, 
@@ -254,9 +265,9 @@ void Builtin::InitializeErrorObjects(VM* vm) {
 }
 
 
-builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
-  VM* vm, ast::AstNode* ast_node, types::LexicalEnvironment* scope, bool strict) {
-  auto factory = vm->GetObjectFactory();
+JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
+  VM* vm, ast::AstNode* ast_node, JSHandle<types::LexicalEnvironment> scope, bool strict) {
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // 1. Create a new native ECMAScript object and let F be that object.
   // 2. Set all the internal methods, except for [[Get]], of F as described in 8.12.
@@ -273,10 +284,11 @@ builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
   // 11. Set the [[FormalParameters]] internal property of F to names.
   // 12. Set the [[Code]] internal property of F to FunctionBody.
   // 13. Set the [[Extensible]] internal property of F to true.
-  auto F = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
-                              JSValue{vm->GetFunctionPrototype()}, true, true, true)->AsJSFunction();
+  JSHandle<JSFunction> F = factory->NewObject(
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, true).As<JSFunction>();
   F->SetCode(ast_node);
-  F->SetScope(scope);
+  F->SetScope(scope.As<JSValue>());
   
   // 14. Let len be the number of formal parameters specified in FormalParameterList.
   //     If no parameters are specified, let len be 0.
@@ -288,30 +300,30 @@ builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
       return ast_node->AsFunctionExpression()->GetParameters();
     }
   });
-  auto len = params.size();
+  std::size_t len = params.size();
   
   // 15. Call the [[DefineOwnProperty]] internal method of F with arguments "length",
   ///    Property Descriptor {[[Value]]: len, [[Writable]]: false, [[Enumerable]]: false,
   //     [[Configurable]]: false}, and false.
-  types::Object::DefineOwnProperty(vm, F, factory->NewStringFromTable(u"length"),
-                                   types::PropertyDescriptor{JSValue{len}, false, false, false}, false);
-  RETURN_VALUE_IF_HAS_EXCEPTION(vm, nullptr);
+  types::Object::DefineOwnProperty(vm, F, factory->GetStringFromTable(u"length"),
+                                   types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue{len}}, false, false, false}, false);
+  RETURN_HANDLE_IF_HAS_EXCEPTION(vm, JSFunction);
   
   // 16. Let proto be the result of creating a new object as would be constructed by the expression new Object()
   //     where Object is the standard built-in constructor with that name.
-  auto proto = JSObject::Construct(factory->NewRuntimeCallInfo(JSValue::Undefined(), std::vector<JSValue>{}));
+  auto proto = JSHandle<JSObject>{vm, JSObject::Construct(factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {}))};
   
   // 17. Call the [[DefineOwnProperty]] internal method of proto with arguments "constructor",
   ///    Property Descriptor {[[Value]]: F, { [[Writable]]: true, [[Enumerable]]: false,
   //     [[Configurable]]: true}, and false.
-  types::Object::DefineOwnProperty(vm, proto, factory->NewStringFromTable(u"constuctor"),
-                                   types::PropertyDescriptor{JSValue{F}, true, false, true}, false);
+  types::Object::DefineOwnProperty(vm, proto, factory->GetStringFromTable(u"constuctor"),
+                                   types::PropertyDescriptor{vm, F.As<JSValue>(), true, false, true}, false);
   
   // 18. Call the [[DefineOwnProperty]] internal method of F with arguments "prototype",
   //     Property Descriptor {[[Value]]: proto, { [[Writable]]: true, [[Enumerable]]: false,
   //     [[Configurable]]: false}, and false.
-  types::Object::DefineOwnProperty(vm, F, factory->NewStringFromTable(u"prototype"),
-                                   types::PropertyDescriptor{JSValue{proto}, true, false, false}, false);
+  types::Object::DefineOwnProperty(vm, F, factory->GetStringFromTable(u"prototype"),
+                                   types::PropertyDescriptor{vm, proto.As<JSValue>(), true, false, false}, false);
   
   // 19. If Strict is true, then
   if (strict) {
@@ -326,81 +338,81 @@ builtins::JSFunction* Builtin::InstantiatingFunctionDeclaration(
 }
 
 void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
-  auto global_obj = vm->GetGlobalObject();
-  auto factory = vm->GetObjectFactory();
-  auto obj_ctor = vm->GetObjectConstructor();
-  auto obj_proto = vm->GetObjectPrototype();
-  auto func_ctor = vm->GetFunctionConstructor();
-  auto arr_ctor = vm->GetArrayConstructor();
-  auto arr_proto = vm->GetArrayPrototype();
-  auto str_proto = vm->GetStringPrototype();
+  JSHandle<GlobalObject> global_obj = vm->GetGlobalObject();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  JSHandle<JSFunction> obj_ctor = vm->GetObjectConstructor();
+  JSHandle<JSObject> obj_proto = vm->GetObjectPrototype();
+  JSHandle<JSFunction> func_ctor = vm->GetFunctionConstructor();
+  JSHandle<JSFunction> arr_ctor = vm->GetArrayConstructor();
+  JSHandle<JSArray> arr_proto = vm->GetArrayPrototype();
+  JSHandle<JSString> str_proto = vm->GetStringPrototype();
 
   // Set properties for Global Object
-  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Object"),
-                  JSValue{obj_ctor}, true, false, true);
-  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Function"),
-                  JSValue{func_ctor}, true, false, true);
-  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Array"),
-                  JSValue{arr_ctor}, true, false, true);
-  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Boolean"),
-                  JSValue{vm->GetBooleanConstructor()}, true, false, true);
-  SetDataProperty(vm, global_obj, factory->NewStringFromTable(u"Number"),
-                  JSValue{vm->GetNumberConstructor()}, true, false, true);
+  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Object"),
+                  obj_ctor.As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Function"),
+                  func_ctor.As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Array"),
+                  arr_ctor.As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Boolean"),
+                  vm->GetBooleanConstructor().As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Number"),
+                  vm->GetNumberConstructor().As<JSValue>(), true, false, true);
 
   // Set propreties for Object Constructor
-  SetDataProperty(vm, obj_ctor, factory->NewString(u"length"), JSValue{1}, false, false, false);
-  SetDataProperty(vm, obj_ctor, factory->NewString(u"prototype"), JSValue{obj_proto}, false, false, false);
-  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"getPrototypeOf"),
+  SetDataProperty(vm, obj_ctor, factory->NewString(u"length"), JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);
+  SetDataProperty(vm, obj_ctor, factory->NewString(u"prototype"), obj_proto.As<JSValue>(), false, false, false);
+  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"getPrototypeOf"),
                       JSObject::GetPrototypeOf, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"getOwnPropertyDescriptor"),
+  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"getOwnPropertyDescriptor"),
                       JSObject::GetOwnPropretyDescriptor, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"defineProperty"),
+  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"defineProperty"),
                       JSObject::DefineProperty, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"preventExtensions"),
+  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"preventExtensions"),
                       JSObject::PreventExtensions, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->NewStringFromTable(u"isExtensible"),
+  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"isExtensible"),
                       JSObject::IsExtensible, true, false, true);
 
   // Set properties for Array Constructor
-  SetDataProperty(vm, arr_ctor, factory->NewStringFromTable(u"prototype"),
-                  JSValue{arr_proto}, false, false, false);
-  SetFunctionProperty(vm, arr_ctor, factory->NewStringFromTable(u"isArray"),
+  SetDataProperty(vm, arr_ctor, factory->GetStringFromTable(u"prototype"),
+                  arr_proto.As<JSValue>(), false, false, false);
+  SetFunctionProperty(vm, arr_ctor, factory->GetStringFromTable(u"isArray"),
                       JSArray::IsArray, true, false, true);
-  SetFunctionProperty(vm, arr_ctor, factory->NewStringFromTable(u"isArray"),
+  SetFunctionProperty(vm, arr_ctor, factory->GetStringFromTable(u"isArray"),
                       JSArray::IsArray, true, false, true);
   
   // Set propreties for Array Prototype
-  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"concat"),
+  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"concat"),
                       JSArray::Concat, true, false, true);
-  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"join"),
+  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"join"),
                       JSArray::Join, true, false, true);
-  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"pop"),
+  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"pop"),
                       JSArray::Pop, true, false, true);
-  SetFunctionProperty(vm, arr_proto, factory->NewStringFromTable(u"push"),
+  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"push"),
                       JSArray::Push, true, false, true);
 
   // Set propreties for String Prototype
-  SetFunctionProperty(vm, str_proto, factory->NewStringFromTable(u"charAt"),
+  SetFunctionProperty(vm, str_proto, factory->GetStringFromTable(u"charAt"),
                       JSString::CharAt, true, false, true);
-  SetFunctionProperty(vm, str_proto, factory->NewStringFromTable(u"concat"),
+  SetFunctionProperty(vm, str_proto, factory->GetStringFromTable(u"concat"),
                       JSString::Concat, true, false, true);
-  SetFunctionProperty(vm, str_proto, factory->NewStringFromTable(u"indexOf"),
+  SetFunctionProperty(vm, str_proto, factory->GetStringFromTable(u"indexOf"),
                       JSString::IndexOf, true, false, true);
 }
 
-void Builtin::SetDataProperty(VM* vm, types::Object* obj, types::String* prop_name, JSValue prop_val,
+void Builtin::SetDataProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, JSHandle<JSValue> prop_val,
                               bool writable, bool enumerable, bool configurable) {
-  auto prop_map = obj->GetPropertyMap();
+  auto prop_map = JSHandle<types::PropertyMap>{vm, obj->GetProperties()};
   
-  auto desc = types::PropertyDescriptor{prop_val, writable, enumerable, configurable};
+  types::PropertyDescriptor desc = types::PropertyDescriptor{vm, prop_val, writable, enumerable, configurable};
   
-  obj->SetPropertyMap(types::PropertyMap::SetProperty(vm, prop_map, prop_name, desc));
+  obj->SetProperties(types::PropertyMap::SetProperty(vm, prop_map, prop_name, desc).As<JSValue>());
 }
 
-void Builtin::SetFunctionProperty(VM* vm, types::Object* obj, types::String* prop_name, InternalFunctionType func,
+void Builtin::SetFunctionProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, InternalFunctionType func,
                                   bool writable, bool enumerable, bool configurable) {
   SetDataProperty(vm, obj, prop_name,
-                  JSValue{vm->GetObjectFactory()->NewInternalFunction(func)},
+                  vm->GetObjectFactory()->NewInternalFunction(func).As<JSValue>(),
                   writable, enumerable, configurable);
 }
 

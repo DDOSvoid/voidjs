@@ -22,17 +22,24 @@ TEST(JSValue, ToNumber) {
   
   auto nan = std::numeric_limits<double>::quiet_NaN();
   auto inf = std::numeric_limits<double>::infinity();
+
+  {
+    auto val = JSHandle<JSValue>{vm, JSValue{42}};
+    auto num = JSValue::ToNumber(vm, val);
+
+    ASSERT_TRUE(num.IsInt());
+    EXPECT_EQ(42, num.GetInt());
+  }
   
-  EXPECT_EQ(42, JSValue::ToNumber(vm, JSValue(42)).GetInt());
-  EXPECT_DOUBLE_EQ(0.01, JSValue::ToNumber(vm, JSValue(0.01)).GetDouble());
-  EXPECT_TRUE(std::isnan(JSValue::ToNumber(vm, JSValue(nan)).GetDouble()));
-  EXPECT_TRUE(std::isinf(JSValue::ToNumber(vm, JSValue(inf)).GetDouble()));
+  EXPECT_DOUBLE_EQ(0.01, JSValue::ToNumber(vm, JSHandle<JSValue>{vm, JSValue{0.01}}).GetDouble());
+  EXPECT_TRUE(std::isnan(JSValue::ToNumber(vm, JSHandle<JSValue>{vm, JSValue{nan}}).GetDouble()));
+  EXPECT_TRUE(std::isinf(JSValue::ToNumber(vm, JSHandle<JSValue>{vm, JSValue{inf}}).GetDouble()));
 
   { 
     auto source = uR"(
            42
  )";
-    auto val = JSValue(factory->NewString(source));
+    auto val = factory->GetStringFromTable(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
@@ -43,7 +50,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            42E-2
  )";
-    auto val = JSValue(factory->NewString(source));
+    auto val = factory->GetStringFromTable(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
@@ -55,7 +62,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            42E.-2
  )";
-    auto val = JSValue(factory->NewString(source));
+    auto val = factory->GetStringFromTable(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
@@ -66,7 +73,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            .142857E6
  )";
-    auto val = JSValue(factory->NewString(source));
+    auto val = factory->GetStringFromTable(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
@@ -77,7 +84,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
 23.142857E3
  )";
-    auto val = JSValue(factory->NewString(source));
+    auto val = factory->GetStringFromTable(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.GetDouble());
@@ -88,7 +95,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
 0xFAb4
  )";
-    auto val = JSValue(factory->NewString(source));
+    auto val = factory->GetStringFromTable(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
@@ -103,12 +110,12 @@ TEST(JSValue, ToInteger) {
   auto inf = 1.0 / 0.0;
 
   {
-    auto val = JSValue(inf);
+    auto val = JSHandle<JSValue>{vm, JSValue(inf)};
     EXPECT_DOUBLE_EQ(inf, JSValue::ToInteger(vm, val).GetDouble());
   }
 
   {
-    auto val = JSValue(-2.3);
+    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
     EXPECT_DOUBLE_EQ(-2, JSValue::ToInteger(vm, val).GetDouble());
   }
 }
@@ -118,12 +125,12 @@ TEST(JSValue, ToInt32) {
   auto vm = interpreter.GetVM();
   
   {
-    auto val = JSValue(std::pow(2, 32) + 3);
+    auto val = JSHandle<JSValue>{vm, JSValue(std::pow(2, 32) + 3)};
     EXPECT_EQ(3, JSValue::ToInt32(vm, val));
   }
 
   {
-    auto val = JSValue(-2.3);
+    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
     EXPECT_EQ(-2, JSValue::ToInt32(vm, val));
   }
 }
@@ -135,17 +142,17 @@ TEST(JSValue, ToUint32) {
   auto ui32_max = std::numeric_limits<std::uint32_t>::max();
 
   {
-    auto val = JSValue(1);
+    auto val = JSHandle<JSValue>{vm, JSValue(1)};
     EXPECT_EQ(1, JSValue::ToInt32(vm, val));
   }
   
   {
-    auto val = JSValue(std::pow(2, 32) + 3);
+    auto val = JSHandle<JSValue>{vm, JSValue(std::pow(2, 32) + 3)};
     EXPECT_EQ(3, JSValue::ToInt32(vm, val));
   }
 
   {
-    auto val = JSValue(-2.3);
+    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
     EXPECT_EQ(ui32_max - 1, JSValue::ToUint32(vm, val));
   }
 }
@@ -157,12 +164,12 @@ TEST(JSValue, ToUint16) {
   auto ui16_max = std::numeric_limits<std::uint16_t>::max();
   
   {
-    auto val = JSValue(std::pow(2, 16) + 3);
+    auto val = JSHandle<JSValue>{vm, JSValue(std::pow(2, 16) + 3)};
     EXPECT_EQ(3, JSValue::ToUint16(vm, val));
   }
 
   {
-    auto val = JSValue(-2.3);
+    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
     EXPECT_EQ(ui16_max - 1, JSValue::ToUint16(vm, val));
   }
 }
@@ -171,34 +178,34 @@ TEST(JSValue, ToString) {
   Interpreter interpreter;
   auto vm = interpreter.GetVM();
   
-  EXPECT_EQ(u"undefined", JSValue::ToString(vm, JSValue::Undefined())->GetString());
-  EXPECT_EQ(u"null", JSValue::ToString(vm, JSValue::Null())->GetString());
-  EXPECT_EQ(u"false", JSValue::ToString(vm, JSValue::False())->GetString());
-  EXPECT_EQ(u"true", JSValue::ToString(vm, JSValue::True())->GetString());
+  EXPECT_EQ(u"undefined", JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue::Undefined()})->GetString());
+  EXPECT_EQ(u"null", JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue::Null()})->GetString());
+  EXPECT_EQ(u"false", JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue::False()})->GetString());
+  EXPECT_EQ(u"true", JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue::True()})->GetString());
 
   { 
-    auto val = JSValue(42);
+    auto val = JSHandle<JSValue>{vm, JSValue(42)};
     auto str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"42", str->GetString());
   }
 
   { 
-    auto val = JSValue(1);
+    auto val = JSHandle<JSValue>{vm, JSValue(1)};
     auto str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"1", str->GetString());
   }
 
   { 
-    auto val = JSValue(0.142857);
+    auto val = JSHandle<JSValue>{vm, JSValue(0.142857)};
     auto str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"0.142857", str->GetString());
   }
 
   { 
-    auto val = JSValue(-4200);
+    auto val = JSHandle<JSValue>{vm, JSValue(-4200)};
     auto str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"-4200", str->GetString());
@@ -211,7 +218,7 @@ TEST(JSValue, ToObject) {
   auto factory = vm->GetObjectFactory();
 
   {
-    auto val = JSValue{false};
+    auto val = JSHandle<JSValue>{vm, JSValue{false}};
     auto obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSBoolean());
@@ -223,7 +230,7 @@ TEST(JSValue, ToObject) {
   }
 
   {
-    auto val = JSValue{42};
+    auto val = JSHandle<JSValue>{vm, JSValue{42}};
     auto obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSNumber());
@@ -235,7 +242,7 @@ TEST(JSValue, ToObject) {
   }
   
   {
-    auto val = JSValue{factory->NewStringFromTable(u"Hello")};
+    auto val = factory->GetStringFromTable(u"Hello").As<JSValue>();
     auto obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSString());
@@ -243,7 +250,7 @@ TEST(JSValue, ToObject) {
     auto str = obj->AsJSString();
 
     ASSERT_TRUE(str->GetPrimitiveValue().IsString());
-    EXPECT_EQ(u"Hello", str->GetPrimitiveValue().GetString()->GetString());
+    EXPECT_EQ(u"Hello", str->GetPrimitiveValue().GetHeapObject()->AsString()->GetString());
   }
 }
 

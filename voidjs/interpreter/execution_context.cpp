@@ -5,6 +5,7 @@
 #include "voidjs/ir/program.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
@@ -22,16 +23,16 @@ void ExecutionContext::EnterGlobalCode(VM* vm, ast::AstNode* ast_node) {
   vm->PushExecutionContext(global_ctx);
 
   // 2. Perform Declaration Binding Instantiation as described in 10.5 using the global code.
-  DeclarationBindingInstantiation(vm, ast_node, std::vector<JSValue>{});
+  DeclarationBindingInstantiation(vm, ast_node, {});
 }
 
 void ExecutionContext::EnterFunctionCode(
-  VM* vm, ast::AstNode* ast_node, builtins::JSFunction* F, JSValue this_arg, const std::vector<JSValue>& args) {
+  VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args) {
   // 1. If the function code is strict code, set the ThisBinding to thisArg.
   // 2. Else if thisArg is null or undefined, set the ThisBinding to the global object.
   // 3. Else if Type(thisArg) is not Object, set the ThisBinding to ToObject(thisArg).
   // 4. Else set the ThisBinding to thisArg.
-  types::Object* this_binding {nullptr};
+  JSHandle<types::Object> this_binding;
   auto strict = std::invoke([=]() {
     if (ast_node->IsFunctionDeclaration()) {
       return ast_node->AsFunctionDeclaration()->IsStrict();
@@ -41,17 +42,17 @@ void ExecutionContext::EnterFunctionCode(
     }
   });
   if (strict) {
-  } else if (this_arg.IsNull() || this_arg.IsUndefined()) {
+  } else if (this_arg->IsNull() || this_arg->IsUndefined()) {
     this_binding = vm->GetGlobalObject();
-  } else if (!this_arg.IsObject()) {
+  } else if (!this_arg->IsObject()) {
     this_binding = JSValue::ToObject(vm, this_arg);
     RETURN_VOID_IF_HAS_EXCEPTION(vm);
   } else {
-    this_binding = this_arg.GetHeapObject()->AsObject();
+    this_binding = this_arg.As<types::Object>();
   }
   
   // 5. Let localEnv be the result of calling NewDeclarativeEnvironment passing the value of the [[Scope]] internal property of F as the argument.
-  auto local_env = types::LexicalEnvironment::NewDeclarativeEnvironmentRecord(vm, F->GetScope());
+  auto local_env = types::LexicalEnvironment::NewDeclarativeEnvironmentRecord(vm, JSHandle<types::LexicalEnvironment>{vm, F->GetScope()});
   
   // 6. Set the LexicalEnvironment to localEnv.
   // 7. Set the VariableEnvironment to localEnv.
@@ -64,11 +65,11 @@ void ExecutionContext::EnterFunctionCode(
   DeclarationBindingInstantiation(vm, ast_node, args);
 }
 
-void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSValue>& args) {
+void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSHandle<JSValue>>& args) {
   auto factory = vm->GetObjectFactory();
   
   // 1. Let env be the environment record component of the running execution context’s VariableEnvironment.
-  auto env = vm->GetExecutionContext()->GetVariableEnvironment()->GetEnvRec();
+  auto env = JSHandle<types::EnvironmentRecord>{vm, vm->GetExecutionContext()->GetVariableEnvironment()->GetEnvRec()};
 
   // 2. If code is eval code, then let configurableBindings be true else let configurableBindings be false.
   // todo
@@ -90,9 +91,9 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
         return ast_node->AsFunctionExpression()->GetParameters();
       }
     });
-    std::vector<types::String*> names;
+    std::vector<JSHandle<types::String>> names;
     for (auto param : params) {
-      names.push_back(factory->NewStringFromTable(param->AsIdentifier()->GetName()));
+      names.push_back(factory->GetStringFromTable(param->AsIdentifier()->GetName()));
     }
     
     // b. Let argCount be the number of elements in args.
@@ -107,7 +108,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
       ++n;
       
       // ii. If n is greater than argCount, let v be undefined otherwise let v be the value of the n’th element of args.
-      JSValue v = n > arg_count ? JSValue::Undefined() : args[n - 1];
+      auto v = n > arg_count ? JSHandle<JSValue>{vm, JSValue::Undefined()} : args[n - 1];
       
       // iii. Let argAlreadyDeclared be the result of calling env’s HasBinding concrete method passing argName as the argument.
       auto arg_already_declared = types::EnvironmentRecord::HasBinding(vm, env, name);
@@ -138,7 +139,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
   for (auto func : func_decls) {
     // a. Let fn be the Identifier in FunctionDeclaration f.
     auto fn = func->GetName()->AsIdentifier()->GetName();
-    auto fn_str = factory->NewStringFromTable(fn);
+    auto fn_str = factory->GetStringFromTable(fn);
 
     // b. Let fo be the result of instantiating FunctionDeclaration f as described in Clause 13.
     auto fo = builtins::Builtin::InstantiatingFunctionDeclaration(
@@ -154,7 +155,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
       types::EnvironmentRecord::CreateMutableBinding(vm, env, fn_str, configurable_bindings);
     }
     // e. Else if env is the environment record component of the global environment then
-    else if (env == vm->GetGlobalEnv()->GetEnvRec()) {
+    else if (env.GetJSValue().GetRawData() == vm->GetGlobalEnv()->GetEnvRec().GetRawData()) {
       // i. Let go be the global object.
       auto go = vm->GetGlobalObject();
       
@@ -166,7 +167,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
         // 1. Call the [[DefineOwnProperty]] internal method of go, passing fn,
         //    Property Descriptor {[[Value]]: undefined, [[Writable]]: true, [[Enumerable]]: true ,
         //    [[Configurable]]: configurableBindings }, and true as arguments.
-        types::Object::DefineOwnProperty(vm, go, fn_str, types::PropertyDescriptor{JSValue::Undefined(), true, true, configurable_bindings}, true);
+        types::Object::DefineOwnProperty(vm, go, fn_str, types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue::Undefined()}, true, true, configurable_bindings}, true);
         RETURN_VOID_IF_HAS_EXCEPTION(vm);
       }
       // iv. Else if IsAccessorDescrptor(existingProp) or existingProp does not
@@ -179,7 +180,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
     }
 
     // f. Call env’s SetMutableBinding concrete method passing fn, fo, and strict as the arguments.
-    types::EnvironmentRecord::SetMutableBinding(vm, env, fn_str, JSValue{fo}, strict);
+    types::EnvironmentRecord::SetMutableBinding(vm, env, fn_str, fo.As<JSValue>(), strict);
   }
 
   // 6. Let argumentsAlreadyDeclared be the result of
@@ -216,7 +217,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
       types::EnvironmentRecord::CreateMutableBinding(vm, env, dn_str, configurable_bindings);
 
       // ii. Call env’s SetMutableBinding concrete method passing dn, undefined, and strict as the arguments.
-      types::EnvironmentRecord::SetMutableBinding(vm, env, dn_str, JSValue::Undefined(), strict);
+      types::EnvironmentRecord::SetMutableBinding(vm, env, dn_str, JSHandle<JSValue>{vm, JSValue::Undefined()}, strict);
     }
   }
 }

@@ -19,13 +19,11 @@ class JSFunction : public types::Object {
   ast::AstNode* GetCode() const { return *utils::BitGet<ast::AstNode**>(this, CODE_OFFSET); }
   void SetCode(ast::AstNode* ast_node) { *utils::BitGet<ast::AstNode**>(this, CODE_OFFSET) = ast_node; }
 
+  // LexicalEnvironment*
   static constexpr std::size_t SCOPE_OFFSET = CODE_OFFSET + sizeof(std::uintptr_t);
-  types::LexicalEnvironment* GetScope() const {
-    return *utils::BitGet<types::LexicalEnvironment**>(this, SCOPE_OFFSET);
-  }
-  void SetScope(types::LexicalEnvironment* env) {
-    *utils::BitGet<types::LexicalEnvironment**>(this, SCOPE_OFFSET) = env;
-  }
+  JSValue GetScope() const { return *utils::BitGet<JSValue*>(this, SCOPE_OFFSET); }
+  void SetScope(JSValue value) { *utils::BitGet<JSValue*>(this, SCOPE_OFFSET) = value; }
+  void SetScope(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, SCOPE_OFFSET) = handle.GetJSValue(); }
 
   static constexpr std::size_t SIZE = sizeof(std::uintptr_t) + sizeof(std::uintptr_t);
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;

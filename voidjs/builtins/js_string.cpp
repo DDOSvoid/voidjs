@@ -2,6 +2,7 @@
 
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/interpreter/runtime_call_info.h"
@@ -14,21 +15,23 @@ namespace builtins {
 // String([value])
 // Defined in ECMAScript 5.1 Chapter 15.5.1.1
 JSValue JSString::Call(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto factory = vm->GetObjectFactory();
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // Returns a String value (not a String object) computed by ToString(value).
   // If value is not supplied, the empty String "" is returned.
   auto ret = argv->GetArgsNum() == 0 ?
     factory->GetEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
 
-  return JSValue{ret};
+  return ret.GetJSValue();
 }
 
 // new String([value])
 JSValue JSString::Construct(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto factory = vm->GetObjectFactory();
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // The [[Prototype]] internal property of the newly constructed object is
   // set to the standard built-in String prototype object that is
@@ -41,10 +44,10 @@ JSValue JSString::Construct(RuntimeCallInfo* argv) {
   // The [[PrimitiveValue]] internal property of the newly constructed object is
   // set to ToString(value), or to the empty String if value is not supplied.
   auto str = factory->NewObject(JSString::SIZE, JSType::JS_STRING, ObjectClassType::STRING,
-                                JSValue{vm->GetStringPrototype()}, true, false, false)->AsJSString();
-  auto val = argv->GetArgsNum() == 0 ?
+                                vm->GetStringPrototype().As<JSValue>(), true, false, false)->AsJSString();
+  JSHandle<types::String> val = argv->GetArgsNum() == 0 ?
     factory->GetEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
-  str->SetPrimitiveValue(JSValue{val});
+  str->SetPrimitiveValue(val.As<JSValue>());
 
   return JSValue{str};
 }
@@ -53,10 +56,11 @@ JSValue JSString::Construct(RuntimeCallInfo* argv) {
 // String.prototype.charAt(pos)
 // Defined in ECMAScript 5.1 Chapter 15.5.4.4
 JSValue JSString::CharAt(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto this_value = argv->GetThis();
-  auto pos = argv->GetArg(0);
-  auto factory = vm->GetObjectFactory();
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> pos = argv->GetArg(0);
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // 1. Call CheckObjectCoercible passing the this value as its argument.
   JSValue::CheckObjectCoercible(vm, this_value);
@@ -73,7 +77,7 @@ JSValue JSString::CharAt(RuntimeCallInfo* argv) {
   
   // 5. If position < 0 or position ≥ size, return the empty String.
   if (position < 0 || position >= size) {
-    return JSValue{factory->GetEmptyString()};
+    return factory->GetEmptyString().GetJSValue();
   }
   auto idx = static_cast<int>(position);
   
@@ -81,7 +85,7 @@ JSValue JSString::CharAt(RuntimeCallInfo* argv) {
   //    namely the character at position position,
   //    where the first (leftmost) character in S is considered to be at position 0,
   //    the next one at position 1, and so on.
-  return JSValue{factory->NewStringFromTable(std::u16string_view{S->GetData() + idx, 1})};
+  return factory->GetStringFromTable(std::u16string_view{S->GetData() + idx, 1}).GetJSValue();
 }
 
 // String.prototype.concat([string1[,string2[,...]]]
@@ -113,7 +117,7 @@ JSValue JSString::Concat(RuntimeCallInfo* argv) {
   }
   
   // 6. Return R.
-  return JSValue{R};
+  return R.GetJSValue();
 }
 
 // String.prototype.indexOf(searchString, position)
@@ -134,7 +138,7 @@ JSValue JSString::IndexOf(RuntimeCallInfo* argv) {
   auto search_str = JSValue::ToString(vm, search_string);
   
   // 4. Let pos be ToInteger(position). (If position is undefined, this step produces the value 0).
-  auto pos = position.IsUndefined() ? JSValue{0} : JSValue::ToInteger(vm, position);
+  auto pos = position->IsUndefined() ? JSValue{0} : JSValue::ToInteger(vm, position);
   
   // 5. Let len be the number of characters in S.
   auto len = S->GetLength();

@@ -31,10 +31,11 @@ JSValue JSNumber::Construct(RuntimeCallInfo* argv) {
   // 
   // The [[Extensible]] internal property of the newly constructed object is set to true.
   auto num = factory->NewObject(JSNumber::SIZE, JSType::JS_NUMBER, ObjectClassType::NUMBER,
-                                JSValue{vm->GetNumberPrototype()}, true, false, false)->AsJSNumber();
-  auto val = argv->GetArgsNum() == 0 ?
-    JSValue{0} : JSValue{JSValue::ToNumber(vm, argv->GetArg(0))};
-  num->SetPrimitiveValue(JSValue{JSValue::ToNumber(vm, val)});
+                                vm->GetNumberPrototype().As<JSValue>(), true, false, false)->AsJSNumber();
+  auto val = JSHandle<JSValue>{vm,
+    argv->GetArgsNum() == 0 ?
+    JSValue{0} : JSValue{JSValue::ToNumber(vm, argv->GetArg(0))}};
+  num->SetPrimitiveValue(JSValue{JSValue::ToNumber(vm, val.As<JSValue>())});
 
   return JSValue{num};
 }

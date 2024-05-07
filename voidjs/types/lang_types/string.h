@@ -31,20 +31,21 @@ class String : public HeapObject {
   
   bool Equal(std::u16string_view str) const { return GetString() == str; }
   bool Equal(String* str) const { return Equal(str->GetString()); }
+  bool Equal(JSHandle<String> str) const { return Equal(str.GetObject()); }
 
-  static String* Concat(VM* vm, String* str1, String* str2) {
+  static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2) {
     std::u16string str;
     str += str1->GetString();
     str += str2->GetString();
-    return vm->GetObjectFactory()->NewStringFromTable(str);
+    return vm->GetObjectFactory()->GetStringFromTable(str);
   }
 
-  static String* Concat(VM* vm, String* str1, String* str2, String* str3) {
+  static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2, JSHandle<String> str3) {
     std::u16string str;
     str += str1->GetString();
     str += str2->GetString();
     str += str3->GetString();
-    return vm->GetObjectFactory()->NewStringFromTable(str);
+    return vm->GetObjectFactory()->GetStringFromTable(str);
   }
 
   // used for print 

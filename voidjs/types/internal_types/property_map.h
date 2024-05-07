@@ -9,6 +9,7 @@
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/hash_map.h"
+#include "voidjs/gc/js_handle.h"
 
 namespace voidjs {
 namespace types {
@@ -17,26 +18,26 @@ class PropertyMap : public HashMap {
  public:
   static constexpr std::uint32_t DEFAULT_PROPERTY_NUMS = 4;
   
-  JSValue GetProperty(VM* vm, String* key) {
+  JSHandle<JSValue> GetProperty(VM* vm, JSHandle<String> key) {
     return Find(vm, key);
   }
 
-  static PropertyMap* SetProperty(VM* vm, PropertyMap* prop_map, String* key, const PropertyDescriptor& desc) {
+  static JSHandle<PropertyMap> SetProperty(VM* vm, JSHandle<PropertyMap> prop_map, JSHandle<String> key, const PropertyDescriptor& desc) {
     auto factory = vm->GetObjectFactory();
     
-    JSValue prop;
+    JSHandle<JSValue> prop;
     if (desc.IsDataDescriptor()) {
-      prop = JSValue(factory->NewDataPropertyDescriptor(desc));
+      prop = factory->NewDataPropertyDescriptor(desc).As<JSValue>();
     } else if (desc.IsAccessorDescriptor()) {
-      prop = JSValue(factory->NewAccessorPropertyDescriptor(desc));
+      prop = factory->NewAccessorPropertyDescriptor(desc).As<JSValue>();
     } else {
-      prop = JSValue(factory->NewGenericPropertyDescriptor(desc));
+      prop = factory->NewGenericPropertyDescriptor(desc).As<JSValue>();
     }
 
-    return Insert(vm, prop_map, key, prop)->AsPropertyMap();
+    return Insert(vm, prop_map, key, prop).As<PropertyMap>();
   }
 
-  void DeleteProperty(VM* vm, String* key) {
+  void DeleteProperty(VM* vm, JSHandle<String> key) {
     Erase(vm, key);
   }
 

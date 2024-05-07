@@ -4,6 +4,7 @@
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/gc/js_handle.h"
 #include "voidjs/utils/helper.h"
 
 namespace voidjs {
@@ -17,19 +18,21 @@ namespace types {
 // that is neither a data property descriptor nor an accessor property descriptor.
 class PropertyDescriptor {
  public:
-  PropertyDescriptor() {}
+  explicit PropertyDescriptor(VM* vm)
+    : vm_(vm)
+  {}
   
-  explicit PropertyDescriptor(JSValue value)
-    : value_(value)
+  PropertyDescriptor(VM* vm, JSHandle<JSValue> value)
+    : vm_(vm), value_(value)
   {}
 
-  PropertyDescriptor(JSValue value, bool w, bool e, bool c)
-    : value_(value), writable_(w), enumerable_(e), configurable_(c),
+  PropertyDescriptor(VM* vm, JSHandle<JSValue> value, bool w, bool e, bool c)
+    : vm_(vm), value_(value), writable_(w), enumerable_(e), configurable_(c),
       has_writable_(true), has_enumerable_(true), has_configurable_(true)
   {}
 
-  PropertyDescriptor(JSValue getter, JSValue setter, bool e, bool c)
-    : getter_(getter), setter_(setter), enumerable_(e), configurable_(c),
+  PropertyDescriptor(VM* vm, JSHandle<JSValue> getter, JSHandle<JSValue> setter, bool e, bool c)
+    : vm_(vm), getter_(getter), setter_(setter), enumerable_(e), configurable_(c),
       has_enumerable_(true), has_configurable_(true)
   {}
 
@@ -55,16 +58,19 @@ class PropertyDescriptor {
   }
   
   bool HasValue() const { return !value_.IsEmpty(); }
-  JSValue GetValue() const { return value_.IsEmpty() ? JSValue::Undefined() : value_; }
-  void SetValue(JSValue value) { value_ = value; }
+  JSHandle<JSValue> GetValue() const { return HasValue() ? value_ : JSHandle<JSValue>{vm_, JSValue::Undefined()}; }
+  void SetValue(JSHandle<JSValue> value) { value_ = value; }
+  void SetValue(JSValue value) { value_ = JSHandle<JSValue>{vm_, value}; }
 
   bool HasGetter() const { return !getter_.IsEmpty(); }
-  JSValue GetGetter() const { return getter_.IsEmpty() ? JSValue::Undefined() : getter_; }
-  void SetGetter(JSValue value) { getter_ = value; }
+  JSHandle<JSValue> GetGetter() const { return HasGetter() ? getter_ : JSHandle<JSValue>{vm_, JSValue::Undefined()}; }
+  void SetGetter(JSHandle<JSValue> value) { getter_ = value; }
+  void SetGetter(JSValue value) { getter_ = JSHandle<JSValue>{vm_, value}; }
 
   bool HasSetter() const { return !setter_.IsEmpty(); }
-  JSValue GetSetter() const { return setter_.IsEmpty() ? JSValue::Undefined() : setter_; }
-  void SetSetter(JSValue value) { setter_ = value; }
+  JSHandle<JSValue> GetSetter() const { return HasSetter() ? setter_ : JSHandle<JSValue>{vm_, JSValue::Undefined()}; }
+  void SetSetter(JSHandle<JSValue> value) { setter_ = value; }
+  void SetSetter(JSValue value) { setter_ = JSHandle<JSValue>{vm_, value}; }
 
   // IsAccessorDescriptor
   // Defined in ECMAScript 5.1 Chatper 8.10.1
@@ -95,11 +101,11 @@ class PropertyDescriptor {
 
   // FromPropertyDescriptor
   // Defined in ECMAScript 5.1 Chapter 8.10.4
-  JSValue FromPropertyDescriptor(VM* vm) const;
+  JSHandle<JSValue> FromPropertyDescriptor() const;
 
   // ToPropertyDescriptor
   // Defind in ECMAScript 5.1 Chapter 8.10.5
-  static PropertyDescriptor ToPropertyDescriptor(VM* vm, JSValue obj);
+  static PropertyDescriptor ToPropertyDescriptor(VM* vm, JSHandle<JSValue> obj);
   
   bool IsEmpty() const {
     return
@@ -108,6 +114,8 @@ class PropertyDescriptor {
   };
 
  private:
+  VM* vm_                 {nullptr};
+  
   bool writable_         {false};
   bool enumerable_       {false};
   bool configurable_     {false};
@@ -115,9 +123,9 @@ class PropertyDescriptor {
   bool has_enumerable_   {false};
   bool has_configurable_ {false};
 
-  JSValue value_;
-  JSValue getter_;
-  JSValue setter_;
+  JSHandle<JSValue> value_;
+  JSHandle<JSValue> getter_;
+  JSHandle<JSValue> setter_;
 };
 
 class DataPropertyDescriptor : public HeapObject {
@@ -125,6 +133,7 @@ class DataPropertyDescriptor : public HeapObject {
   static constexpr std::size_t VALUE_OFFSET = HeapObject::END_OFFSET;
   JSValue GetValue() { return *utils::BitGet<JSValue*>(this, VALUE_OFFSET); }
   void SetValue(JSValue value) { *utils::BitGet<JSValue*>(this, VALUE_OFFSET) = value; }
+  void SetValue(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, VALUE_OFFSET) = handle.GetJSValue(); }
 
   static constexpr std::size_t SIZE = sizeof(JSValue);
   static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
@@ -135,10 +144,12 @@ class AccessorPropertyDescriptor : public HeapObject {
   static constexpr std::size_t GETTER_OFFSET = HeapObject::END_OFFSET;
   JSValue GetGetter() { return *utils::BitGet<JSValue*>(this, GETTER_OFFSET); }
   void SetGetter(JSValue value) { *utils::BitGet<JSValue*>(this, GETTER_OFFSET) = value; }
+  void SetGetter(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, GETTER_OFFSET) = handle.GetJSValue(); }
   
   static constexpr std::size_t SETTER_OFFSET = GETTER_OFFSET + sizeof(JSValue);
   JSValue GetSetter() { return *utils::BitGet<JSValue*>(this, SETTER_OFFSET); }
   void SetSetter(JSValue value) { *utils::BitGet<JSValue*>(this, SETTER_OFFSET) = value; }
+  void SetSetter(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, SETTER_OFFSET) = handle.GetJSValue(); }
 
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
   static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;

@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "voidjs/parser/parser.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/spec_types/completion.h"
@@ -42,8 +43,8 @@ TEST(Interpreter, EvalVariableStatement) {
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(44, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(44, comp.GetValue()->GetInt());
   }
 
   {
@@ -56,8 +57,8 @@ TEST(Interpreter, EvalVariableStatement) {
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(0, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(0, comp.GetValue()->GetInt());
   }
 
   {
@@ -70,8 +71,8 @@ TEST(Interpreter, EvalVariableStatement) {
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(50, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(50, comp.GetValue()->GetInt());
   }
 }
 
@@ -110,8 +111,8 @@ if (i - 42) {
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(2, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(2, comp.GetValue()->GetInt());
   }
 }
 
@@ -137,8 +138,8 @@ count;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(55, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(55, comp.GetValue()->GetInt());
   }
 }
 
@@ -162,8 +163,8 @@ i;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(0, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(0, comp.GetValue()->GetInt());
   }
 }
 
@@ -191,8 +192,8 @@ count;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(43, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(43, comp.GetValue()->GetInt());
   }
 }
 
@@ -219,8 +220,8 @@ j;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(6, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(6, comp.GetValue()->GetInt());
 }
 
 TEST(Interpreter, EvalBreakStatement) {
@@ -251,8 +252,8 @@ count;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(7, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(7, comp.GetValue()->GetInt());
   }
 }
 
@@ -274,8 +275,8 @@ with (O) {
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(42, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(42, comp.GetValue()->GetInt());
 }
 
 
@@ -308,8 +309,8 @@ price;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsNumber());
-    EXPECT_DOUBLE_EQ(0.59, comp.GetValue().GetNumber());
+    ASSERT_TRUE(comp.GetValue()->IsNumber());
+    EXPECT_DOUBLE_EQ(0.59, comp.GetValue()->GetNumber());
   }
 
 
@@ -334,8 +335,8 @@ switch (foo) {
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(0, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(0, comp.GetValue()->GetInt());
   }
 
   {
@@ -362,8 +363,8 @@ switch (Animal) {
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsString());
-    EXPECT_EQ(u"这类动物没有灭绝。", comp.GetValue().GetHeapObject()->AsString()->GetString());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"这类动物没有灭绝。", comp.GetValue()->GetString());
   }
 
   {
@@ -399,8 +400,8 @@ output;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsString());
-    EXPECT_EQ(u"输出：你的名字叫什么？", comp.GetValue().GetHeapObject()->AsString()->GetString());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"输出：你的名字叫什么？", comp.GetValue()->GetString());
   }
 }
 
@@ -426,8 +427,8 @@ val;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(1, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(1, comp.GetValue()->GetInt());
   }
 
   {
@@ -450,8 +451,8 @@ cnt;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(10, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(10, comp.GetValue()->GetInt());
   }
 }
 
@@ -473,8 +474,8 @@ i *= i;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(4, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(4, comp.GetValue()->GetInt());
   }
 
   {
@@ -493,8 +494,8 @@ error;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsString());
-    EXPECT_EQ(u"Error!", comp.GetValue().GetHeapObject()->AsString()->GetString());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"Error!", comp.GetValue()->GetString());
   }
 }
 
@@ -545,8 +546,8 @@ obj[1] + obj['value'] + obj.name;
 
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue().IsInt());
-  EXPECT_EQ(83, comp.GetValue().GetInt());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(83, comp.GetValue()->GetInt());
 }
 
 TEST(Interpreter, EvalNewExpression) {
@@ -563,7 +564,7 @@ obj;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsObject());
+    ASSERT_TRUE(comp.GetValue()->IsObject());
   }
 
   {
@@ -582,8 +583,8 @@ obj2["value"];
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(42, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(42, comp.GetValue()->GetInt());
   }
 }
 
@@ -605,8 +606,8 @@ foo(1, 2);
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(3, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(3, comp.GetValue()->GetInt());
   }
 
   {
@@ -625,8 +626,8 @@ foo(0, 10);
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(10, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(10, comp.GetValue()->GetInt());
   }
 
   {
@@ -647,8 +648,8 @@ fib(20);
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(6765, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(6765, comp.GetValue()->GetInt());
   }
 }
 
@@ -669,8 +670,8 @@ add(2 * 2, 1);
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(5, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(5, comp.GetValue()->GetInt());
   }
   
   {
@@ -692,8 +693,8 @@ foo(2);
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsInt());
-    EXPECT_EQ(44, comp.GetValue().GetInt());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(44, comp.GetValue()->GetInt());
   }
 }
 
@@ -712,8 +713,8 @@ i;
   
   auto comp = interpreter.Execute(prog);
   EXPECT_TRUE(comp.GetType() == types::CompletionType::NORMAL);
-  ASSERT_TRUE(comp.GetValue().IsDouble());
-  EXPECT_DOUBLE_EQ(14.2857, comp.GetValue().GetDouble());
+  ASSERT_TRUE(comp.GetValue()->IsDouble());
+  EXPECT_DOUBLE_EQ(14.2857, comp.GetValue()->GetDouble());
 }
 
 TEST(Interpreter, EvalUnaryExpression) {
@@ -726,8 +727,8 @@ TEST(Interpreter, EvalUnaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsInt());
-    EXPECT_EQ(-1, val.GetInt());
+    ASSERT_TRUE(val->IsInt());
+    EXPECT_EQ(-1, val->GetInt());
   }
 
   {
@@ -747,7 +748,7 @@ obj.value1;
   
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  EXPECT_TRUE(comp.GetValue().IsUndefined());
+  EXPECT_TRUE(comp.GetValue()->IsUndefined());
   }
 
   {
@@ -766,8 +767,8 @@ typeof(obj);
   
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsString());
-    EXPECT_EQ(u"object", comp.GetValue().GetHeapObject()->AsString()->GetString());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"object", comp.GetValue()->GetString());
   }
 }
 
@@ -781,8 +782,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsInt());
-    EXPECT_EQ(6, val.GetInt());
+    ASSERT_TRUE(val->IsInt());
+    EXPECT_EQ(6, val->GetInt());
   }
 
   {
@@ -794,8 +795,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsBoolean());
-    EXPECT_EQ(true, val.GetBoolean());
+    ASSERT_TRUE(val->IsBoolean());
+    EXPECT_EQ(true, val->GetBoolean());
   }
 
   {
@@ -807,8 +808,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsInt());
-    EXPECT_EQ(15, val.GetInt());
+    ASSERT_TRUE(val->IsInt());
+    EXPECT_EQ(15, val->GetInt());
   }
 
   {
@@ -820,8 +821,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsBoolean());
-    EXPECT_EQ(false, val.GetBoolean());
+    ASSERT_TRUE(val->IsBoolean());
+    EXPECT_EQ(false, val->GetBoolean());
   }
 
   {
@@ -835,8 +836,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsBoolean());
-    EXPECT_EQ(true, val.GetBoolean());
+    ASSERT_TRUE(val->IsBoolean());
+    EXPECT_EQ(true, val->GetBoolean());
   }
 
   {
@@ -848,8 +849,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsBoolean());
-    EXPECT_EQ(false, val.GetBoolean());
+    ASSERT_TRUE(val->IsBoolean());
+    EXPECT_EQ(false, val->GetBoolean());
   }
 
   {
@@ -861,8 +862,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsInt());
-    EXPECT_EQ(16376, val.GetInt());
+    ASSERT_TRUE(val->IsInt());
+    EXPECT_EQ(16376, val->GetInt());
   }
 
   {
@@ -874,8 +875,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsDouble());
-    EXPECT_DOUBLE_EQ(1.8, val.GetDouble());
+    ASSERT_TRUE(val->IsDouble());
+    EXPECT_DOUBLE_EQ(1.8, val->GetDouble());
   }
   
   {
@@ -887,8 +888,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsInt());
-    EXPECT_DOUBLE_EQ(50, val.GetInt());
+    ASSERT_TRUE(val->IsInt());
+    EXPECT_DOUBLE_EQ(50, val->GetInt());
   }
 
   {
@@ -902,8 +903,8 @@ TEST(Interpreter, EvalBinaryExpression) {
     ASSERT_TRUE(ast_node->IsBinaryExpression());
 
     auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
-    ASSERT_TRUE(val.IsDouble());
-    EXPECT_DOUBLE_EQ(4.5, val.GetDouble());
+    ASSERT_TRUE(val->IsDouble());
+    EXPECT_DOUBLE_EQ(4.5, val->GetDouble());
   }
 
   {
@@ -924,8 +925,8 @@ e + f;
 
     auto comp = interpreter.Execute(prog);
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-    ASSERT_TRUE(comp.GetValue().IsString());
-    EXPECT_EQ(u"Hello, World!", comp.GetValue().GetHeapObject()->AsString()->GetString());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"Hello, World!", comp.GetValue()->GetString());
   }
 }
 
@@ -945,7 +946,7 @@ TEST(Intepreter, EvalNumericLiteral) {
     ASSERT_TRUE(ast_node->IsNumericLiteral());
 
     auto num = interpreter.EvalNumericLiteral(ast_node->AsNumericLiteral());
-    EXPECT_EQ(0.07, num.GetDouble());
+    EXPECT_EQ(0.07, num->GetDouble());
   }
 
   {
@@ -957,7 +958,7 @@ TEST(Intepreter, EvalNumericLiteral) {
     ASSERT_TRUE(ast_node->IsNumericLiteral());
 
     auto num = interpreter.EvalNumericLiteral(ast_node->AsNumericLiteral());
-    EXPECT_EQ(42, num.GetInt());
+    EXPECT_EQ(42, num->GetInt());
   }
 }
 
@@ -971,9 +972,9 @@ TEST(Intepreter, EvalStringLiteral) {
     ASSERT_TRUE(ast_node->IsStringLiteral());
 
     auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
-    ASSERT_TRUE(str.IsString());
+    ASSERT_TRUE(str->IsString());
 
-    EXPECT_EQ(u"Hello, World!", str.GetHeapObject()->AsString()->GetString());
+    EXPECT_EQ(u"Hello, World!", str->GetString());
   }
 
   {
@@ -985,9 +986,9 @@ TEST(Intepreter, EvalStringLiteral) {
     ASSERT_TRUE(ast_node->IsStringLiteral());
 
     auto str = interpreter.EvalStringLiteral(ast_node->AsStringLiteral());
-    ASSERT_TRUE(str.IsString());
+    ASSERT_TRUE(str->IsString());
 
-    EXPECT_EQ(u"输出：你的名字叫什么？", str.GetHeapObject()->AsString()->GetString());
+    EXPECT_EQ(u"输出：你的名字叫什么？", str->GetString());
   }
 }
 
@@ -1002,8 +1003,8 @@ TEST(Interpreter, EvalObjectLiteral) {
     ASSERT_TRUE(ast_node->IsObjectLiteral());
 
     auto obj = interpreter.EvalObjectLiteral(ast_node->AsObjectLiteral());
-    ASSERT_TRUE(obj.IsObject());
-    EXPECT_TRUE(JSValue(vm->GetObjectPrototype()) == obj.GetHeapObject()->AsJSObject()->GetPrototype());
+    ASSERT_TRUE(obj->IsObject());
+    EXPECT_TRUE(vm->GetObjectPrototype().GetJSValue() == obj.As<types::Object>()->GetPrototype());
   }
 
   {
@@ -1023,16 +1024,16 @@ TEST(Interpreter, EvalObjectLiteral) {
     ASSERT_TRUE(ast_node->IsObjectLiteral());
 
     auto obj_val = interpreter.EvalObjectLiteral(ast_node->AsObjectLiteral());
-    ASSERT_TRUE(obj_val.IsObject());
-    ASSERT_TRUE(obj_val.GetHeapObject()->IsJSObject());
+    ASSERT_TRUE(obj_val->IsObject());
+    ASSERT_TRUE(obj_val->GetHeapObject()->IsJSObject());
 
-    auto obj = obj_val.GetHeapObject()->AsJSObject();
+    auto obj = obj_val.As<types::Object>();
 
     {
-      auto key = factory->NewStringFromTable(u"1");
+      auto key = factory->GetStringFromTable(u"1");
       auto prop = types::Object::GetProperty(vm, obj, key);
-      ASSERT_TRUE(prop.GetValue().IsInt());
-      EXPECT_EQ(42, prop.GetValue().GetInt());
+      ASSERT_TRUE(prop.GetValue()->IsInt());
+      EXPECT_EQ(42, prop.GetValue()->GetInt());
     }
   }
 }
@@ -1048,8 +1049,8 @@ TEST(Interpreter, EvalArrayLiteral) {
     ASSERT_TRUE(ast_node->IsArrayLiteral());
 
     auto array = interpreter.EvalArrayLiteral(ast_node->AsArrayLiteral());
-    ASSERT_TRUE(array.IsObject());
-    ASSERT_TRUE(array.GetHeapObject()->IsJSArray());
+    ASSERT_TRUE(array->IsObject());
+    ASSERT_TRUE(array->GetHeapObject()->IsJSArray());
   }
 
   {
@@ -1063,21 +1064,21 @@ TEST(Interpreter, EvalArrayLiteral) {
     ASSERT_TRUE(ast_node->IsArrayLiteral());
 
     auto array = interpreter.EvalArrayLiteral(ast_node->AsArrayLiteral());
-    ASSERT_TRUE(array.IsObject());
-    ASSERT_TRUE(array.GetHeapObject()->IsJSArray());
+    ASSERT_TRUE(array->IsObject());
+    ASSERT_TRUE(array->GetHeapObject()->IsJSArray());
 
     {
-      auto key = factory->NewStringFromTable(u"0");
-      auto prop = types::Object::GetOwnProperty(vm, array.GetHeapObject()->AsJSArray(), key);
-      ASSERT_TRUE(prop.GetValue().IsString());
-      EXPECT_EQ(u"Hello", prop.GetValue().GetHeapObject()->AsString()->GetString());
+      auto key = factory->GetStringFromTable(u"0");
+      auto prop = types::Object::GetOwnProperty(vm, array.As<builtins::JSArray>(), key);
+      ASSERT_TRUE(prop.GetValue()->IsString());
+      EXPECT_EQ(u"Hello", prop.GetValue()->GetString());
     }
 
     {
-      auto key = factory->NewStringFromTable(u"length");
-      auto prop = types::Object::GetOwnProperty(vm, array.GetHeapObject()->AsJSArray(), key);
-      ASSERT_TRUE(prop.GetValue().IsInt());
-      EXPECT_EQ(7, prop.GetValue().GetInt());
+      auto key = factory->GetStringFromTable(u"length");
+      auto prop = types::Object::GetOwnProperty(vm, array.As<builtins::JSArray>(), key);
+      ASSERT_TRUE(prop.GetValue()->IsInt());
+      EXPECT_EQ(7, prop.GetValue()->GetInt());
     }
   }
 }

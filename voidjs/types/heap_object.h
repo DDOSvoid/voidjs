@@ -138,8 +138,8 @@ class HeapObject {
   bool IsBindgin() const { return GetType() == JSType::BINDING; }
   bool IsInternalFunction() const { return GetType() == JSType::INTERNAL_FUNCTION; }
   bool IsHashMap() const { return GetType() == JSType::HASH_MAP; }
-  bool IsEnvironmentRecord() const { return GetType() == JSType::ENVIRONMENT_RECORD; }
-  bool IsDeclarativeEnvironmentRecord() const { return GetType() == JSType::DECLARAVIE_ENVIRONMENT_RECORD; }
+  bool IsEnvironmentRecord() const { return IsDeclarativeEnvironmentRecord() || IsObjectEnvironmentRecord(); }
+  bool IsDeclarativeEnvironmentRecord() const { return GetType() == JSType::DECLARATIVE_ENVIRONMENT_RECORD; }
   bool IsObjectEnvironmentRecord() const { return GetType() == JSType::OBJECT_ENVIRONMENT_RECORD; }
   bool IsLexicalEnvironment() const { return GetType() == JSType::LEXICAL_ENVIRONMENT; }
   bool IsGlobalObject() const { return GetType() == JSType::GLOBAL_OBJECT; }
@@ -150,11 +150,6 @@ class HeapObject {
   bool IsJSBoolean() const { return GetType() == JSType::JS_BOOLEAN; }
   bool IsJSNumber() const { return GetType() == JSType::JS_NUMBER; }
   bool IsJSError() const { return GetType() == JSType::JS_ERROR; }
-
-  template <typename T>
-  T* As() { return reinterpret_cast<T*>(this); }
-  template <typename T>
-  const T* As() const { return reinterpret_cast<const T*>(this); }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }

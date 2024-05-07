@@ -4,6 +4,7 @@
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/builtins/builtin.h"
+#include "voidjs/gc/js_handle.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -19,15 +20,16 @@ JSValue JSFunction::Call(RuntimeCallInfo* argv) {
 // Defined in ECMAScript 5.1 Chapter 15.3.2.1
 // todo
 JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto factory = vm->GetObjectFactory();
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // 1. Let argCount be the total number of arguments passed to this function invocation.
-  auto arg_count = argv->GetArgsNum();
+  std::size_t arg_count = argv->GetArgsNum();
   
   // 2. Let P be the empty String.
-  std::u16string P  {u""};
-  JSValue body {};
+  std::u16string P = u"";
+  JSHandle<JSValue> body{};
   
   // 3. If argCount = 0, let body be the empty String.
   if (arg_count == 0) {
@@ -39,7 +41,7 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   // 5. Else, argCount > 1
   else {
     // a. Let firstArg be the first argument.
-    auto first_arg = argv->GetArg(0);;
+    JSHandle<JSValue> first_arg = argv->GetArg(0);;
     
     // b. Let P be ToString(firstArg).
     P = JSValue::ToString(vm, first_arg)->GetString();
@@ -87,7 +89,7 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   // 11. Return a new Function object created as specified in 13.2 passing P as
   //     the FormalParameterList and body as the FunctionBody.
   //     Pass in the Global Environment as the Scope parameter and strict as the Strict flag.
-  return JSValue{Builtin::InstantiatingFunctionDeclaration(vm, func_expr, vm->GetGlobalEnv(), strict)};
+  return Builtin::InstantiatingFunctionDeclaration(vm, func_expr, vm->GetGlobalEnv(), strict).GetJSValue();
 }
 
 }  // namespace builtins

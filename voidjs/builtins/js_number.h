@@ -10,7 +10,8 @@ class JSNumber : public types::Object {
  public:
   static constexpr std::size_t PRIMITIVE_VALUE_OFFSET = types::Object::END_OFFSET;
   JSValue GetPrimitiveValue() const { return *utils::BitGet<JSValue*>(this, PRIMITIVE_VALUE_OFFSET); }
-  void SetPrimitiveValue(JSValue val) { *utils::BitGet<JSValue*>(this, PRIMITIVE_VALUE_OFFSET) = val; } 
+  void SetPrimitiveValue(JSValue value) { *utils::BitGet<JSValue*>(this, PRIMITIVE_VALUE_OFFSET) = value; } 
+  void SetPrimitiveValue(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, PRIMITIVE_VALUE_OFFSET) = handle.GetJSValue(); } 
   
   static constexpr std::size_t SIZE = sizeof(JSValue);
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;

@@ -3,6 +3,7 @@
 
 #include <limits>
 #include <type_traits>
+#include <iostream>
 
 #include "voidjs/types/js_value.h"
 

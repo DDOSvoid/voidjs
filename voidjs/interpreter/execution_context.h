@@ -14,9 +14,9 @@ class JSHandleScope;
 
 class ExecutionContext {
  public:
-  ExecutionContext(types::LexicalEnvironment* lex_env,
-                   types::LexicalEnvironment* var_env,
-                   types::Object* obj)
+  ExecutionContext(JSHandle<types::LexicalEnvironment> lex_env,
+                   JSHandle<types::LexicalEnvironment> var_env,
+                   JSHandle<types::Object> obj)
     : lexical_environment_(lex_env),
       variable_environment_(var_env),
       this_binding_(obj) {
@@ -42,45 +42,29 @@ class ExecutionContext {
   void EnterSwitch() { ++switch_depth_; }
   void ExitSwitch() { --switch_depth_;}
 
-  JSValueType* ExpandHandleScopeBlock() {
-    if (handle_scope_current_block_index_ + 1 == handle_scope_blocks_.size()) {
-      auto block = new std::array<JSValueType, HANDLE_SCOPE_BLOCK_SIZE>{};
-      handle_scope_blocks_.push_back(*block);
-      handle_scope_current_block_pos_ = block->data();
-      handle_scope_current_block_end_ = block->data() + block->size();
-      ++handle_scope_current_block_index_;
-      return block->data();
-    } else {
-      auto block = &handle_scope_blocks_.back();
-      handle_scope_current_block_pos_ = block->data();
-      handle_scope_current_block_end_ = block->data() + block->size();
-      ++handle_scope_current_block_index_;
-      return block->data();
-    }
-  }
   
-  types::LexicalEnvironment* GetLexicalEnvironment() const {
+  JSHandle<types::LexicalEnvironment> GetLexicalEnvironment() const {
     return lexical_environment_;
   }
-  void SetLexicalEnvironment(types::LexicalEnvironment* lexical_env) {
+  void SetLexicalEnvironment(JSHandle<types::LexicalEnvironment> lexical_env) {
     lexical_environment_ = lexical_env;
   }
   
-  types::LexicalEnvironment* GetVariableEnvironment() const {
+  JSHandle<types::LexicalEnvironment> GetVariableEnvironment() const {
     return variable_environment_;
   }
-  void SetVariabelEnvironment(types::LexicalEnvironment* variable_environment) {
+  void SetVariabelEnvironment(JSHandle<types::LexicalEnvironment> variable_environment) {
     variable_environment_ = variable_environment;
   }
 
-  types::Object* GetThisBinding() const { return this_binding_; }
-  void SetThisBinding(types::Object* this_binding) { this_binding_ = this_binding; }
+  JSHandle<types::Object> GetThisBinding() const { return this_binding_; }
+  void SetThisBinding(JSHandle<types::Object> this_binding) { this_binding_ = this_binding; }
 
   static void EnterGlobalCode(VM* vm, ast::AstNode* ast_node);
   static void EnterEvalCode(VM* vm);
   static void EnterFunctionCode(
-    VM* vm, ast::AstNode* ast_node, builtins::JSFunction* F, JSValue this_arg, const std::vector<JSValue>& args);
-  static void DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSValue>& args);
+    VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
+  static void DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSHandle<JSValue>>& args);
   
  private:
   // label set
@@ -93,19 +77,10 @@ class ExecutionContext {
   // switch 
   std::size_t switch_depth_ {0};
 
-  // handle scope
-  static constexpr std::size_t HANDLE_SCOPE_BLOCK_SIZE = 10 * 1024;
-  std::vector<std::array<JSValueType, HANDLE_SCOPE_BLOCK_SIZE>> handle_scope_blocks_;
-  JSValueType* handle_scope_current_block_pos_ {nullptr};
-  JSValueType* handle_scope_current_block_end_ {nullptr};
-  std::int32_t handle_scope_current_block_index_ {-1};
-
   // 
-  types::LexicalEnvironment* lexical_environment_ {nullptr};
-  types::LexicalEnvironment* variable_environment_ {nullptr};
-  types::Object* this_binding_ {nullptr};
-
-  friend JSHandleScope;
+  JSHandle<types::LexicalEnvironment> lexical_environment_;
+  JSHandle<types::LexicalEnvironment> variable_environment_;
+  JSHandle<types::Object> this_binding_;
 };
 
 }  // namespace voidjs

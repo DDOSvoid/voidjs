@@ -2,9 +2,10 @@
 #define VOIDJS_GC_JS_HANDLE_SCOPE_H
 
 #include "voidjs/types/js_value.h"
-#include "voidjs/interpreter/vm.h"
 
 namespace voidjs {
+
+class VM;
 
 class JSHandleScope {
  public:

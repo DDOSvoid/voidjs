@@ -11,17 +11,21 @@ namespace types {
 
 class LexicalEnvironment : public HeapObject {
  public:
+  // LexicalEnvironment*
   static constexpr std::size_t OUTER_OFFSET = HeapObject::END_OFFSET;
-  LexicalEnvironment* GetOuter() const { return *utils::BitGet<LexicalEnvironment**>(this, OUTER_OFFSET); }
-  void SetOuter(LexicalEnvironment* outer) { *utils::BitGet<LexicalEnvironment**>(this, OUTER_OFFSET) = outer; }
-  
+  JSValue GetOuter() const { return *utils::BitGet<JSValue*>(this, OUTER_OFFSET); }
+  void SetOuter(JSValue value) { *utils::BitGet<JSValue*>(this, OUTER_OFFSET) = value; }
+  void SetOuter(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, OUTER_OFFSET) = handle.GetJSValue(); }
+
+  // EnvironmentRecord*
   static constexpr std::size_t ENV_REC_OFFSET = OUTER_OFFSET + sizeof(std::uintptr_t);
-  EnvironmentRecord* GetEnvRec() const { return *utils::BitGet<EnvironmentRecord**>(this, ENV_REC_OFFSET); }
-  void SetEnvRec(EnvironmentRecord* env_rec) { *utils::BitGet<EnvironmentRecord**>(this, ENV_REC_OFFSET) = env_rec; }
+  JSValue GetEnvRec() const { return *utils::BitGet<JSValue*>(this, ENV_REC_OFFSET); }
+  void SetEnvRec(JSValue value) { *utils::BitGet<JSValue*>(this, ENV_REC_OFFSET) = value; }
+  void SetEnvRec(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, ENV_REC_OFFSET) = handle.GetJSValue(); }
   
-  static Reference GetIdentifierReference(VM* vm, LexicalEnvironment* lex, String* name, bool strict);
-  static LexicalEnvironment* NewDeclarativeEnvironmentRecord(VM* vm, LexicalEnvironment* E);
-  static LexicalEnvironment* NewObjectEnvironmentRecord(VM* vm, JSValue O, LexicalEnvironment* E);
+  static Reference GetIdentifierReference(VM* vm, JSHandle<LexicalEnvironment> lex, JSHandle<String> name, bool strict);
+  static JSHandle<LexicalEnvironment> NewDeclarativeEnvironmentRecord(VM* vm, JSHandle<LexicalEnvironment> E);
+  static JSHandle<LexicalEnvironment> NewObjectEnvironmentRecord(VM* vm, JSHandle<JSValue> O, JSHandle<LexicalEnvironment> E);
 
   static constexpr std::size_t SIZE = sizeof(std::uintptr_t) + sizeof(std::uintptr_t);
   static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;

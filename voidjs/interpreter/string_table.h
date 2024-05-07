@@ -13,22 +13,20 @@ class String;
 
 }  // namespace types
 
+class VM;
+template <typename T>
+class JSHandle;
+
 class StringTable {
  public:
-  types::String* GetOrInsert(std::u16string_view str_view) {
-    std::u16string source(str_view);
-    if (map_.find(source) == map_.end()) {
-      auto str = factory_->NewString(source);
-      map_.emplace(source, str);
-      return str;
-    } else {
-      return map_[source];
-    }
-  }
+  StringTable(VM* vm)
+    : vm_(vm) {}
+    
+  JSHandle<types::String> GetOrInsert(std::u16string_view str_view);
   
  private:
+  VM* vm_;
   std::map<std::u16string, types::String*> map_;
-  ObjectFactory* factory_;
 };
 
 }  // namespace voidjs

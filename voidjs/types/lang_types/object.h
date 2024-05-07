@@ -23,33 +23,33 @@ class String;
 class Object : public HeapObject {
  public:
   static constexpr std::size_t PROPERTIES_OFFSET = HeapObject::SIZE;
-  PropertyMap* GetPropertyMap() const { return *utils::BitGet<PropertyMap**>(this, PROPERTIES_OFFSET); }
-  void SetPropertyMap(PropertyMap* prop_map) { *utils::BitGet<PropertyMap**>(this, PROPERTIES_OFFSET) = prop_map; }
+  JSValue GetProperties() const { return *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET); }
+  void SetProperties(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, PROPERTIES_OFFSET) = handle.GetJSValue(); }
 
   static constexpr std::size_t PROTOTYPE_OFFSET = PROPERTIES_OFFSET + sizeof(JSValue);
   JSValue GetPrototype() const { return *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET); }
-  void SetPrototype(JSValue proto) { *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET) = proto; }
+  void SetPrototype(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, PROTOTYPE_OFFSET) = handle.GetJSValue(); }
 
   static constexpr std::size_t SIZE = sizeof(JSValue) + sizeof(JSValue);
   static constexpr std::size_t END_OFFSET = PROTOTYPE_OFFSET + sizeof(JSValue);
 
   // Internal function properties common to all objects
   // Defined in ECMAScript 5.1 Chapter 8.12
-  static PropertyDescriptor GetOwnProperty(VM* vm, Object* O, String* P);
-  static PropertyDescriptor GetProperty(VM* vm, Object* O, String* P);
-  static JSValue Get(VM* vm, Object* O, String* P);
-  static bool CanPut(VM* vm, Object* O, String* P);
-  static void Put(VM* vm, Object* O, String* P, JSValue V, bool Throw);
-  static bool HasProperty(VM* vm, Object* O, String* P);
-  static bool Delete(VM* vm, Object* O, String* P, bool Throw);
-  static JSValue DefaultValue(VM* vm, Object* O, PreferredType hint);
-  static bool DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw);
-  static bool DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw);
+  static PropertyDescriptor GetOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static PropertyDescriptor GetProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static JSHandle<JSValue> Get(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static bool CanPut(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static void Put(VM* vm, JSHandle<Object> O, JSHandle<String> P, JSHandle<JSValue> V, bool Throw);
+  static bool HasProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static bool Delete(VM* vm, JSHandle<Object> O, JSHandle<String> P, bool Throw);
+  static JSHandle<JSValue> DefaultValue(VM* vm, JSHandle<Object> O, PreferredType hint);
+  static bool DefineOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P, const PropertyDescriptor& Desc, bool Throw);
+  static bool DefineOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P, const PropertyDescriptor& Desc, bool Throw);
 
   // Internal function properties only defined for some objects
   // Methods defined below ponly used for forwarding
-  static JSValue Construct(Object* O, RuntimeCallInfo* argv);
-  static JSValue Call(Object* O, RuntimeCallInfo* argv);
+  static JSHandle<JSValue> Construct(JSHandle<Object> O, RuntimeCallInfo* argv);
+  static JSHandle<JSValue> Call(JSHandle<Object> O, RuntimeCallInfo* argv);
 
   static void GetAllEnumerableProps(Object* O);
 };

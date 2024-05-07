@@ -8,7 +8,7 @@
 namespace voidjs {
 namespace types {
 
-Array* Array::Append(VM* vm, Array* first, Array* second) {
+JSHandle<Array> Array::Append(VM* vm, JSHandle<Array> first, JSHandle<Array> second) {
   // assert(val.IsHeapObject() && val.GetHeapObject()->IsArray();
   auto first_len = first->GetLength();
   auto second_len = second->GetLength();

@@ -23,20 +23,20 @@ namespace types {
 
 // GetOwnProperty
 // Defind in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, String* P) {
-  auto props = O->GetPropertyMap();
+PropertyDescriptor Object::GetOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
+  auto props = O->GetProperties().GetHeapObject()->AsPropertyMap();
   
   // 1. If O doesn’t have an own property with name P, return undefined.
   auto prop = props->GetProperty(vm, P);
   if (prop.IsEmpty()) {
-    return PropertyDescriptor{};
+    return PropertyDescriptor{vm};
   }
 
   // 2. Let D be a newly created Property Descriptor with no fields.
-  PropertyDescriptor D;
+  PropertyDescriptor D{vm};
 
   // 3. Let X be O’s own property named P.
-  auto X = prop.GetHeapObject();
+  auto X = prop->GetHeapObject();
   
   // 4. If X is a data property, then
   if (X->IsDataPropertyDescriptor()) {
@@ -67,7 +67,7 @@ PropertyDescriptor Object::GetOwnProperty(VM* vm, Object* O, String* P) {
 
 // GetProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetProperty(VM* vm, Object* O, String* P) {
+PropertyDescriptor Object::GetProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   // 1. Let prop be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto prop = GetOwnProperty(vm, O, P);
 
@@ -81,22 +81,22 @@ PropertyDescriptor Object::GetProperty(VM* vm, Object* O, String* P) {
 
   // 4. If proto is null, return undefined.
   if (proto.IsNull()) {
-    return PropertyDescriptor{};
+    return PropertyDescriptor{vm};
   }
 
   // 5. Return the result of calling the [[GetProperty]] internal method of proto with argument P.
-  return GetProperty(vm, proto.GetHeapObject()->AsObject(), P);
+  return GetProperty(vm, JSHandle<Object>{vm, proto}, P);
 }
 
 // Get
 // Defined in ECMASCript 5.1 Chapter 8.12.3
-JSValue Object::Get(VM* vm, Object* O, String* P) {
+JSHandle<JSValue> Object::Get(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
   auto desc = GetProperty(vm, O, P);
 
   // 2. If desc is undefined, return undefined.
   if (desc.IsEmpty()) {
-    return JSValue::Undefined();
+    return JSHandle<JSValue>{vm, JSValue::Undefined()};
   }
 
   // 3. If IsDataDescriptor(desc) is true, return desc.[[Value]].
@@ -108,8 +108,8 @@ JSValue Object::Get(VM* vm, Object* O, String* P) {
   auto getter = desc.GetGetter();
 
   // 5. If getter is undefined, return undefined.
-  if (getter.IsUndefined()) {
-    return JSValue::Undefined();
+  if (getter->IsUndefined()) {
+    return JSHandle<JSValue>{vm, JSValue::Undefined()};
   }
 
   // 6. Return the result calling the [[Call]] internal method of getter providing O as the this value and providing no arguments.
@@ -118,7 +118,7 @@ JSValue Object::Get(VM* vm, Object* O, String* P) {
 
 // CanPut
 // Defined in ECMAScript 5.1 Chapter 8.12.4
-bool Object::CanPut(VM* vm, Object* O, String* P) {
+bool Object::CanPut(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   // 1. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with argument P.
   auto desc = GetOwnProperty(vm, O, P);
 
@@ -128,7 +128,7 @@ bool Object::CanPut(VM* vm, Object* O, String* P) {
     if (desc.IsAccessorDescriptor()) {
       // i. If desc.[[Set]] is undefined, then return false.
       // ii.Else return true.
-      return !desc.GetSetter().IsUndefined();
+      return !desc.GetSetter()->IsUndefined();
     }
     // b. Else, desc must be a DataDescriptor so return the value of desc.[[Writable]].
     else {
@@ -145,7 +145,7 @@ bool Object::CanPut(VM* vm, Object* O, String* P) {
   }
 
   // 5. Let inherited be the result of calling the [[GetProperty]] internal method of proto with property name P.
-  auto inherited = GetProperty(vm, proto.GetHeapObject()->AsObject(), P);
+  auto inherited = GetProperty(vm, JSHandle<Object>{vm, proto}, P);
 
   // 6. If inherited is undefined, return the value of the [[Extensible]] internal property of O.
   if (inherited.IsEmpty()) {
@@ -156,7 +156,7 @@ bool Object::CanPut(VM* vm, Object* O, String* P) {
   if (inherited.IsAccessorDescriptor()) {
     // a. If inherited.[[Set]] is undefined, then return false.
     // b. Return true;
-    return !inherited.GetSetter().IsUndefined();
+    return !inherited.GetSetter()->IsUndefined();
   }
   // 8. Else, inherited must be a DataDescriptor
   else {
@@ -172,7 +172,7 @@ bool Object::CanPut(VM* vm, Object* O, String* P) {
 
 // Put
 // Defined in ECMAScript 5.1 Chapter 8.12.5
-void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
+void Object::Put(VM* vm, JSHandle<Object> O, JSHandle<String> P, JSHandle<JSValue> V, bool Throw) {
   // 1. If the result of calling the [[CanPut]] internal method of O with argument P is false, then
   if (!CanPut(vm, O, P)) {
     // a. If Throw is true, then throw a TypeError exception.
@@ -191,7 +191,7 @@ void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
   // 3. If IsDataDescriptor(ownDesc) is true, then
   if (own_desc.IsDataDescriptor()) {
     // a. Let valueDesc be the Property Descriptor {[[Value]]: V}.
-    auto value_desc = PropertyDescriptor(V);
+    auto value_desc = PropertyDescriptor{vm, V};
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, valueDesc, and Throw as arguments.
     DefineOwnProperty(vm, O, P, value_desc, Throw);
@@ -217,7 +217,7 @@ void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
   else {
     // a. Let newDesc be the Property Descriptor
     //    {[[Value]]: V, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}.
-    auto new_desc = PropertyDescriptor(V, true, true, true);
+    auto new_desc = PropertyDescriptor{vm, V, true, true, true};
 
     // b. Call the [[DefineOwnProperty]] internal method of O passing P, newDesc, and Throw as arguments.
     DefineOwnProperty(vm, O, P, new_desc, Throw);
@@ -229,7 +229,7 @@ void Object::Put(VM* vm, Object* O, String* P, JSValue V, bool Throw) {
 
 // HasProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.6
-bool Object::HasProperty(VM* vm, Object* O, String* P) {
+bool Object::HasProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
   auto desc = GetProperty(vm, O, P);
 
@@ -240,7 +240,7 @@ bool Object::HasProperty(VM* vm, Object* O, String* P) {
 
 // Delete
 // Defined in ECMAScript 5.1 Chapter 8.12.7
-bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
+bool Object::Delete(VM* vm, JSHandle<Object> O, JSHandle<String> P, bool Throw) {
   // 1. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto desc = GetOwnProperty(vm, O, P);
 
@@ -252,7 +252,7 @@ bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
   // 3. If desc.[[Configurable]] is true, then
   if (desc.GetConfigurable()) {
     // a. Remove the own property with name P from O.
-    O->GetPropertyMap()->DeleteProperty(vm, P);
+    O->GetProperties().GetHeapObject()->AsPropertyMap()->DeleteProperty(vm, P);
 
     // b. Return true.
     return true;
@@ -269,86 +269,86 @@ bool Object::Delete(VM* vm, Object* O, String* P, bool Throw) {
 
 // DefaultValue
 // Defined in ECMAScript 5.1 Chapter 8.12.8
-JSValue Object::DefaultValue(VM* vm, Object* O, PreferredType hint) {
-  auto factory = vm->GetObjectFactory();
+JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType hint) {
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   if (hint == PreferredType::STRING) {
     // 1. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
-    auto to_string = Get(vm, O, vm->GetObjectFactory()->NewStringFromTable(u"toString"));
+    JSHandle<JSValue> to_string = Get(vm, O, factory->GetStringFromTable(u"toString"));
 
     // 2. If IsCallable(toString) is true then,
-    if (to_string.IsCallable()) {
+    if (to_string->IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      auto str = Call(to_string.GetHeapObject()->AsObject(),
-                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
+      JSHandle<JSValue> str = Call(to_string.As<Object>(),
+                                   factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
 
       // b. If str is a primitive value, return str.
-      if (str.IsPrimitive()) {
+      if (str->IsPrimitive()) {
         return str;
       }
     }
 
     // 3. Let valueOf be the result of calling the [[Get]] internal method of object O with argument "valueOf".
-    auto value_of = Object::Get(vm, O, factory->NewStringFromTable(u"valueOf"));
+    JSHandle<JSValue> value_of = Object::Get(vm, O, factory->GetStringFromTable(u"valueOf"));
 
     // 4. If IsCallable(valueOf) is true then,
-    if (value_of.IsCallable()) {
+    if (value_of->IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
-      auto val = Call(value_of.GetHeapObject()->AsObject(),
-                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
+      auto val = Call(value_of.As<Object>(),
+                      factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
       
       // b. If val is a primitive value, return val.
-      if (val.IsPrimitive()) {
+      if (val->IsPrimitive()) {
         return val;
       }
     }
 
     // 5. Throw a TypeError exception.
-    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Object.DefaultValue fails when toString and valueOf both fail", JSValue{});
+    THROW_TYPE_ERROR_AND_RETURN_HANDLE(vm, u"Object.DefaultValue fails when toString and valueOf both fail", JSValue);
   } else {
     // hint must be PreferredType::NUMBER
 
     // 1. Let valueOf be the result of calling the [[Get]] internal method of object O with argument "valueOf".
-    auto value_of = Object::Get(vm, O, factory->NewStringFromTable(u"valueOf"));
+    JSHandle<JSValue> value_of = Object::Get(vm, O, factory->GetStringFromTable(u"valueOf"));
 
     // 2. If IsCallable(valueOf) is true then,
-    if (value_of.IsCallable()) {
+    if (value_of->IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
-      auto val = Call(value_of.GetHeapObject()->AsObject(),
-                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
+      JSHandle<JSValue> val = Call(value_of.As<Object>(),
+                                   factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
       
       // b. If val is a primitive value, return val.
-      if (val.IsPrimitive()) {
+      if (val->IsPrimitive()) {
         return val;
       }
     }
 
     // 3. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
-    auto to_string = Get(vm, O, vm->GetObjectFactory()->NewStringFromTable(u"toString"));
+    JSHandle<JSValue> to_string = Get(vm, O, factory->GetStringFromTable(u"toString"));
 
     // 4. If IsCallable(toString) is true then,
-    if (to_string.IsCallable()) {
+    if (to_string->IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      auto str = Call(to_string.GetHeapObject()->AsObject(),
-                      factory->NewRuntimeCallInfo(JSValue{O}, std::vector<JSValue>{}));
+      auto str = Call(to_string.As<Object>(),
+                      factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
 
       // b. If str is a primitive value, return str.
-      if (str.IsPrimitive()) {
+      if (str->IsPrimitive()) {
         return str;
       }
     }
 
     // 5. Throw a TypeError exception.
-    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Object.DefaultValue fails when toString and valueOf both fail", JSValue{});
+    THROW_TYPE_ERROR_AND_RETURN_HANDLE(vm, u"Object.DefaultValue fails when toString and valueOf both fail", JSValue);
   }
 }
 
 // only used to forward
-bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw) {
+bool Object::DefineOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P, const PropertyDescriptor& Desc, bool Throw) {
   if (O->IsJSArray()) {
     return builtins::JSArray::DefineOwnProperty(vm, O, P, Desc, Throw);
   } else {
@@ -358,7 +358,7 @@ bool Object::DefineOwnProperty(VM* vm, Object* O, String* P, const PropertyDescr
 
 // DefineOwnProperty
 // Defined in ECMAScript 5.1 Chapter 8.12.9
-bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const PropertyDescriptor& Desc, bool Throw) {
+bool Object::DefineOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P, const PropertyDescriptor& Desc, bool Throw) {
   // 1. Let current be the result of calling the [[GetOwnProperty]] internal method of O with property name P.
   auto current = GetOwnProperty(vm, O, P);
 
@@ -383,9 +383,9 @@ bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const Proper
       //    whose [[Value]], [[Writable]], [[Enumerable]] and [[Configurable]] attribute values are described by Desc.
       //    If the value of an attribute field of Desc is absent,
       //    the attribute of the newly created property is set to its default value.
-      auto own_desc = PropertyDescriptor(Desc.GetValue(), Desc.GetWritable(), Desc.GetEnumerable(), Desc.GetConfigurable());
-      auto prop_map = O->GetPropertyMap();
-      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
+      auto own_desc = PropertyDescriptor{vm, Desc.GetValue(), Desc.GetWritable(), Desc.GetEnumerable(), Desc.GetConfigurable()};
+      auto prop_map = JSHandle<PropertyMap>{vm, O->GetProperties()};
+      O->SetProperties(PropertyMap::SetProperty(vm, prop_map, P, own_desc).As<JSValue>());
     }
     // b. Else, Desc must be an accessor Property Descriptor so,
     else {
@@ -393,9 +393,9 @@ bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const Proper
       //    whose [[Get]], [[Set]], [[Enumerable]] and [[Configurable]] attribute values are described by Desc.
       //    If the value of an attribute field of Desc is absent,
       //    the attribute of the newly created property is set to its default value.
-      auto own_desc = PropertyDescriptor(Desc.GetGetter(), Desc.GetSetter(), Desc.GetEnumerable(), Desc.GetConfigurable());
-      auto prop_map = O->GetPropertyMap();
-      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
+      auto own_desc = PropertyDescriptor{vm, Desc.GetGetter(), Desc.GetSetter(), Desc.GetEnumerable(), Desc.GetConfigurable()};
+      auto prop_map = JSHandle<PropertyMap>{vm, O->GetProperties()};
+      O->SetProperties(PropertyMap::SetProperty(vm, prop_map, P, own_desc).As<JSValue>());
     }
 
     // c. Return true
@@ -479,10 +479,11 @@ bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const Proper
       //    Preserve the existing values of the converted
       //    property’s [[Configurable]] and [[Enumerable]] attributes
       //    and set the rest of the property’s attributes to their default values.
-      auto own_desc = PropertyDescriptor(JSValue::Undefined(), JSValue::Undefined(),
-                                         current.GetEnumerable(), current.GetConfigurable());
-      auto prop_map = O->GetPropertyMap();
-      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
+      auto own_desc = PropertyDescriptor{
+        vm, JSHandle<JSValue>{vm, JSValue::Undefined()}, JSHandle<JSValue>{vm, JSValue::Undefined()},
+        current.GetEnumerable(), current.GetConfigurable()};
+      auto prop_map = JSHandle<PropertyMap>{vm, O->GetProperties()};
+      O->SetProperties(PropertyMap::SetProperty(vm, prop_map, P, own_desc).As<JSValue>());
     }
     // c. Else
     else {
@@ -490,10 +491,11 @@ bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const Proper
       //    Preserve the existing values of the converted
       //    property’s [[Configurable]] and [[Enumerable]] attributes
       //    and set the rest of the property’s attributes to their default values.
-      auto own_desc = PropertyDescriptor(JSValue::Undefined(), current.GetWritable(),
-                                         current.GetEnumerable(), current.GetConfigurable());
-      auto prop_map = O->GetPropertyMap();
-      O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, own_desc));
+      auto own_desc = PropertyDescriptor{
+        vm, JSHandle<JSValue>{vm, JSValue::Undefined()}, current.GetWritable(),
+        current.GetEnumerable(), current.GetConfigurable()};
+      auto prop_map = JSHandle<PropertyMap>{vm, O->GetProperties()};
+      O->SetProperties(PropertyMap::SetProperty(vm, prop_map, P, own_desc).As<JSValue>());
     }
   }
   // 10. Else, if IsDataDescriptor(current) and IsDataDescriptor(Desc) are both true, then
@@ -579,8 +581,8 @@ bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const Proper
     if (Desc.HasConfigurable()) {
       current.SetConfigurable(Desc.GetConfigurable());
     }
-    auto prop_map = O->GetPropertyMap();
-    O->SetPropertyMap(PropertyMap::SetProperty(vm, prop_map, P, current));
+    auto prop_map = JSHandle<PropertyMap>{vm, O->GetProperties()};
+    O->SetProperties(PropertyMap::SetProperty(vm, prop_map, P, current).As<JSValue>());
   }
 
   // 13. Return true.
@@ -589,57 +591,61 @@ bool Object::DefineOwnPropertyDefault(VM* vm, Object* O, String* P, const Proper
 
 // Construct
 // Only used for forwarding to concrete [[Construct]]
-JSValue Object::Construct(Object* O, RuntimeCallInfo* argv) {
+JSHandle<JSValue> Object::Construct(JSHandle<Object> O, RuntimeCallInfo* argv) {
   auto vm = argv->GetVM();
   
-  if (O == vm->GetObjectConstructor()) {
-    return JSValue{builtins::JSObject::Construct(argv)};
+  if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSObject::Construct(argv)};
   }
 
-  if (O == vm->GetFunctionConstructor()) {
-    return JSValue{builtins::JSFunction::Construct(argv)};
+  if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSFunction::Construct(argv)};
   }
 
-  if (O == vm->GetArrayConstructor()) {
-    return JSValue{builtins::JSArray::Construct(argv)};
+  if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSArray::Construct(argv)};
   }
 
-  if (O == vm->GetBooleanConstructor()) {
-    return JSValue{builtins::JSBoolean::Construct(argv)};
+  if (O.GetJSValue() == vm->GetBooleanConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSBoolean::Construct(argv)};
   }
 
-  if (O == vm->GetNumberConstructor()) {
-    return JSValue{builtins::JSNumber::Construct(argv)};
+  if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSNumber::Construct(argv)};
   }
 }
 
 // Call
 // Only used for forwarding to concrete [[Call]]
-JSValue Object::Call(Object* O, RuntimeCallInfo* argv) {
+JSHandle<JSValue> Object::Call(JSHandle<Object> O, RuntimeCallInfo* argv) {
   auto vm = argv->GetVM();
   
-  if (O == vm->GetObjectConstructor()) {
-    return builtins::JSObject::Call(argv);
+  if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSObject::Call(argv)};
   }
 
-  if (O == vm->GetFunctionConstructor()) {
-    return builtins::JSFunction::Call(argv);
+  if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSFunction::Call(argv)};
   }
 
-  if (O == vm->GetArrayConstructor()) {
-    return builtins::JSArray::Call(argv);
+  if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
+    return JSHandle<JSValue>{vm, builtins::JSArray::Call(argv)};
   }
 
   if (O->IsJSFunction()) {
-    auto this_value {argv->GetThis()};
-    std::vector<JSValue> args {argv->GetArgs(), argv->GetArgs() + argv->GetArgsNum()};
-  
-    auto F = O->AsJSFunction();
+    JSHandle<JSValue> this_value = argv->GetThis();
+    std::vector<JSHandle<JSValue>> args;
+    args.resize(argv->GetArgsNum());
+    for (std::size_t idx = 0; idx < argv->GetArgsNum(); ++idx) {
+      args[idx] = argv->GetArg(idx);
+    }
+    
+    auto F = O.As<builtins::JSFunction>();
     // 1. Let funcCtx be the result of establishing a new execution context for function code
     //    using the value of F's [[FormalParameters]] internal property,
     //    the passed arguments List args, and the this value as described in 10.4.3.
     ExecutionContext::EnterFunctionCode(vm, F->GetCode(), F, this_value, args);
-    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    RETURN_HANDLE_IF_HAS_EXCEPTION(vm, JSValue);
     
     // 2. Let result be the result of evaluating the FunctionBody that is the value of F's [[Code]] internal property.
     //    If F does not have a [[Code]] internal property or if its value is an empty FunctionBody,
@@ -659,7 +665,7 @@ JSValue Object::Call(Object* O, RuntimeCallInfo* argv) {
     vm->PopExecutionContext();
     
     // 4. If result.type is throw then throw result.value.
-    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    RETURN_HANDLE_IF_HAS_EXCEPTION(vm, JSValue);
     
     // 5. If result.type is return then return result.value.
     if (result.GetType() == CompletionType::RETURN) {
@@ -667,13 +673,13 @@ JSValue Object::Call(Object* O, RuntimeCallInfo* argv) {
     }
     // 6. Otherwise result.type must be normal. Return undefined.
     else {
-      return JSValue::Undefined();
+      return JSHandle<JSValue>{vm, JSValue::Undefined()};
     }
   }
 
   if (O->IsInternalFunction()) {
     auto func = O->AsInternalFunction()->GetFunction();
-    return func(argv);
+    return JSHandle<JSValue>{vm, func(argv)};
   }
 }
 

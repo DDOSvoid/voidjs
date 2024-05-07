@@ -10,11 +10,13 @@
   }
 
 #define INITIALIZE_NATIVE_ERROR(name)                                   \
-  auto name##_proto = factory->NewObject(JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR, \
-                                         JSValue{error_proto}, true, false, false)->AsJSError(); \
+  JSHandle<JSError> name##_proto = factory->NewObject(                  \
+    JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR,            \
+    error_proto.As<JSValue>(), true, false, false).As<JSError>();       \
                                                                         \
-  auto name##_ctor = factory->NewObject(JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION, \
-                                        JSValue{vm->GetFunctionPrototype()}, true, true, false)->AsJSFunction(); \
+  JSHandle<JSFunction> name##_ctor = factory->NewObject(                \
+    JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,   \
+    vm->GetFunctionPrototype().As<JSValue>(), true, true, false).As<JSFunction>(); \
 
 #define THROW_ERROR_AND_RETURN_VOID(vm, type, message)      \
   do {                                                      \
@@ -56,17 +58,26 @@
 #define THROW_REFERENCE_ERROR_AND_RETURN_VALUE(vm, message, value)      \
   THROW_ERROR_AND_RETURN_VALUE(vm, ErrorType::REFERENCE_ERROR, message, value)
 
+#define THROW_REFERENCE_ERROR_AND_RETURN_HANDLE(vm, message, type)      \
+  THROW_ERROR_AND_RETURN_VALUE(vm, ErrorType::REFERENCE_ERROR, message, JSHandle<type>{})
+
 #define THROW_SYNTAX_ERROR_AND_RETURN_VOID(vm, message)               \
   THROW_ERROR_AND_RETURN_VOID(vm, ErrorType::SYNTAX_ERROR, message)
 
 #define THROW_SYNTAX_ERROR_AND_RETURN_VALUE(vm, message, value)           \
   THROW_ERROR_AND_RETURN_VALUE(vm, ErrorType::SYNTAX_ERROR, message, value)
 
+#define THROW_SYNTAX_ERROR_AND_RETURN_HANDLE(vm, message, type)           \
+  THROW_ERROR_AND_RETURN_VALUE(vm, ErrorType::SYNTAX_ERROR, message, JSHandle<type>{})
+
 #define THROW_TYPE_ERROR_AND_RETURN_VOID(vm, message)               \
   THROW_ERROR_AND_RETURN_VOID(vm, ErrorType::TYPE_ERROR, message)
 
 #define THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, message, value)           \
   THROW_ERROR_AND_RETURN_VALUE(vm, ErrorType::TYPE_ERROR, message, value)
+
+#define THROW_TYPE_ERROR_AND_RETURN_HANDLE(vm, message, type)           \
+  THROW_ERROR_AND_RETURN_VALUE(vm, ErrorType::TYPE_ERROR, message, JSHandle<type>{})
 
 #define THROW_URI_ERROR_AND_RETURN_VOID(vm, message)               \
   THROW_ERROR_AND_RETURN_VOID(vm, ErrorType::URI_ERROR, message)
@@ -89,10 +100,17 @@
     }                                               \
   } while (0)                                       \
 
+#define RETURN_HANDLE_IF_HAS_EXCEPTION(vm, type)    \
+  do {                                              \
+    if ((vm)->HasException()) {                     \
+      return JSHandle<type>{};                      \
+    }                                               \
+  } while (0)                                       \
+
 #define RETURN_COMPLETION_IF_HAS_EXCEPTION(vm)                          \
   do {                                                                  \
     if ((vm)->HasException()) {                                         \
-      return Completion{CompletionType::THROW, JSValue{(vm)->GetException()}}; \
+      return Completion{CompletionType::THROW, (vm)->GetException().As<JSValue>()}; \
     }                                                                   \
   } while (0)                                                           \
 
@@ -100,7 +118,7 @@
   do {                                                                  \
     if ((vm)->HasException()) {                                         \
       (vm)->GetExecutionContext()->ExitIteration();                     \
-      return Completion{CompletionType::THROW, JSValue{(vm)->GetException()}}; \
+      return Completion{CompletionType::THROW, (vm)->GetException().As<JSValue>()}; \
     }                                                                   \
   } while (0)                                                           \
 
@@ -108,7 +126,7 @@
   do {                                                                  \
     if ((vm)->HasException()) {                                         \
       (vm)->GetExecutionContext()->ExitSwitch();                        \
-      return Completion{CompletionType::THROW, JSValue{(vm)->GetException()}}; \
+      return Completion{CompletionType::THROW, (vm)->GetException().As<JSValue>()}; \
     }                                                                   \
   } while (0)                                                           \
     

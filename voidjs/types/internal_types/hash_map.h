@@ -14,7 +14,7 @@ class HashMap : public Array {
  public:
   static constexpr std::uint32_t BUCKET_SIZE_INDEX = 0;
   std::int32_t GetBucketSize() const { return Get(BUCKET_SIZE_INDEX).GetInt(); }
-  void SetBucketSize(std::int32_t size) { Set(BUCKET_SIZE_INDEX, JSValue(size)); }
+  void SetBucketSize(std::int32_t size) { Set(BUCKET_SIZE_INDEX, JSValue{size}); }
   void IncreaseBucketSize() { SetBucketSize(GetBucketSize() + 1); }
   void DecreaseBucketSize() { SetBucketSize(GetBucketSize() - 1); }
   
@@ -29,21 +29,8 @@ class HashMap : public Array {
   static constexpr std::uint32_t ENTRY_SIZE        = 2;
   static constexpr std::uint32_t ENTRY_KEY_INDEX   = 0;
   static constexpr std::uint32_t ENTRY_VALUE_INEDX = 1;
-  JSValue GetKey(std::uint32_t entry) const {
-    return Get(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_KEY_INDEX);
-  }
-  void SetKey(std::uint32_t entry, JSValue key) {
-    Set(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_KEY_INDEX, key);
-  }
-  JSValue GetValue(std::uint32_t entry) const {
-    return Get(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_VALUE_INEDX);
-  }
-  void SetValue(std::uint32_t entry, JSValue value) {
-    Set(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_VALUE_INEDX, value);
-  }
-  
 
-  static HashMap* Insert(VM* vm, HashMap* hashmap, String* key, JSValue value) {
+  static JSHandle<HashMap> Insert(VM* vm, JSHandle<HashMap> hashmap, JSHandle<String> key, JSHandle<JSValue> value) {
     auto new_hashmap = std::invoke([=]() {
       if (!hashmap->IsFull()) {
         return hashmap;
@@ -53,52 +40,51 @@ class HashMap : public Array {
       return new_hashmap;
     });
     
-    auto entry = new_hashmap->FindEntry(key);
+    auto entry = new_hashmap->FindEntry(key.GetObject());
 
-    if (new_hashmap->GetKey(entry).IsEmpty()) {
-      new_hashmap->AddEntry(entry, key, value);
+    if (new_hashmap->GetKey(entry).IsHole()) {
+      new_hashmap->AddEntry(entry, key.GetObject(), value.GetJSValue());
     } else {
-      new_hashmap->SetValue(entry, value);
+      new_hashmap->SetValue(entry, value.GetJSValue());
     }
 
     return new_hashmap;
   }
 
-  void Erase(VM* vm, String* key) {
-    auto entry = FindEntry(key);
+  void Erase(VM* vm, JSHandle<String> key) {
+    auto entry = FindEntry(key.GetObject());
 
-    if (!GetKey(entry).IsEmpty()) {
+    if (!GetKey(entry).IsHole()) {
       DeleteEntry(entry);
     }
   }
 
-  JSValue Find(VM* vm, String* key) const {
-    auto entry = FindEntry(key);
+  JSHandle<JSValue> Find(VM* vm, JSHandle<String> key) const {
+    auto entry = FindEntry(key.GetObject());
 
-    if (!GetKey(entry).IsEmpty()) {
-      return GetValue(entry);
+    if (!GetKey(entry).IsHole()) {
+      return JSHandle<JSValue>{vm, GetValue(entry)};
     } else {
       return {};
     }
   }
 
- private:
-  static HashMap* Reserve(VM* vm, HashMap* hashmap, std::uint32_t capacity) {
+  static JSHandle<HashMap> Reserve(VM* vm, JSHandle<HashMap> hashmap, std::uint32_t capacity) {
     if (capacity <= hashmap->GetBucketCapacity()) {
       return hashmap;
     }
 
     auto new_hashmap = vm->GetObjectFactory()->NewHashMap(capacity);
-    Rehash(new_hashmap, hashmap);
+    Rehash(vm, new_hashmap, hashmap);
     
     return new_hashmap;
   }
 
-  static void Rehash(HashMap* new_hashmap, HashMap* old_hashmap) {
+  static void Rehash(VM* vm, JSHandle<HashMap> new_hashmap, JSHandle<HashMap> old_hashmap) {
     auto old_capacity = old_hashmap->GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < old_capacity; ++idx) {
       auto key = old_hashmap->GetKey(idx);
-      if (key.IsEmpty()) {
+      if (key.IsHole()) {
         continue;
       }
 
@@ -107,12 +93,13 @@ class HashMap : public Array {
       new_hashmap->AddEntry(entry, key.GetHeapObject()->AsString(), value);
     }
   }
-  
+
+ private:
   std::uint32_t FindEntry(String* key) const {
     auto hash = Hash{}(key->GetString());
     for (std::uint32_t entry = GetFirstPosition(hash), cnt = 0; ; entry = GetNextPosition(entry, ++cnt)) {
       auto key_val = GetKey(entry);
-      if (key_val.IsEmpty()) {
+      if (key_val.IsHole()) {
         return entry;
       }
       // Else key must be String*
@@ -132,9 +119,22 @@ class HashMap : public Array {
   std::uint32_t GetNextPosition(std::uint32_t last_pos, std::uint32_t cnt) const {
     return (last_pos + cnt * (cnt + 1) / 2) & GetBucketCapacity() - 1;
   }
+  
+  JSValue GetKey(std::uint32_t entry) const {
+    return Get(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_KEY_INDEX);
+  }
+  void SetKey(std::uint32_t entry, JSValue key) {
+    Set(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_KEY_INDEX, key);
+  }
+  JSValue GetValue(std::uint32_t entry) const {
+    return Get(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_VALUE_INEDX);
+  }
+  void SetValue(std::uint32_t entry, JSValue value) {
+    Set(HEADER_SIZE + entry * ENTRY_SIZE + ENTRY_VALUE_INEDX, value);
+  }
 
   void AddEntry(std::uint32_t entry, String* key, JSValue value) {
-    SetKey(entry, JSValue(key));
+    SetKey(entry, JSValue{key});
     SetValue(entry, value);
     IncreaseBucketSize();
   }

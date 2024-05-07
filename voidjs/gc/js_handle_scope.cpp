@@ -8,31 +8,25 @@ namespace voidjs {
 
 JSHandleScope::JSHandleScope(VM* vm)
   : vm_(vm) {
-  auto context = vm->GetExecutionContext();
-  
-  prev_pos_ = context->handle_scope_current_block_pos_;
-  prev_end_ = context->handle_scope_current_block_end_;
-  prev_index_ = context->handle_scope_current_block_index_;
+  prev_pos_ = vm_->handle_scope_current_block_pos_;
+  prev_end_ = vm_->handle_scope_current_block_end_;
+  prev_index_ = vm_->handle_scope_current_block_index_;
 }
 
 JSHandleScope::~JSHandleScope() {
-  auto context = vm_->GetExecutionContext();
-
-  context->handle_scope_current_block_pos_ = prev_pos_;
-  context->handle_scope_current_block_end_ = prev_end_;
-  context->handle_scope_current_block_index_ = prev_index_;
+  vm_->handle_scope_current_block_pos_ = prev_pos_;
+  vm_->handle_scope_current_block_end_ = prev_end_;
+  vm_->handle_scope_current_block_index_ = prev_index_;
 }
 
 std::uintptr_t JSHandleScope::NewHandle(VM* vm, JSValueType value) {
-  auto context = vm->GetExecutionContext();
-  
-  auto addr = context->handle_scope_current_block_pos_;
-  if (addr == context->handle_scope_current_block_end_) {
-    addr = context->ExpandHandleScopeBlock();
+  auto addr = vm->handle_scope_current_block_pos_;
+  if (addr == vm->handle_scope_current_block_end_) {
+    addr = vm->ExpandHandleScopeBlock();
   }
 
   *addr = value;
-  context->handle_scope_current_block_pos_ = addr + 1; 
+  vm->handle_scope_current_block_pos_ = addr + 1; 
   return reinterpret_cast<std::uintptr_t>(addr);
 }
 

@@ -20,9 +20,10 @@ JSValue JSBoolean::Call(RuntimeCallInfo* argv) {
 // new Boolean(value)
 // Defined in ECMAScript 5.1 Chapter 15.6.2.1
 JSValue JSBoolean::Construct(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto value = argv->GetArg(0);
-  auto factory = vm->GetObjectFactory();
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> value = argv->GetArg(0);
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // The [[Prototype]] internal property of the newly constructed object is set to the original Boolean prototype object,
   // the one that is the initial value of Boolean.prototype (15.6.3.1).
@@ -33,7 +34,7 @@ JSValue JSBoolean::Construct(RuntimeCallInfo* argv) {
   //
   // The [[Extensible]] internal property of the newly constructed object is set to true.
   auto boolean = factory->NewObject(JSBoolean::SIZE, JSType::JS_BOOLEAN, ObjectClassType::BOOLEAN,
-                                    JSValue{vm->GetBooleanPrototype()}, true, false, false)->AsJSBoolean();
+                                    vm->GetBooleanPrototype().As<JSValue>(), true, false, false)->AsJSBoolean();
   boolean->SetPrimitiveValue(JSValue{JSValue::ToBoolean(vm, value)});
 
   return JSValue{boolean};

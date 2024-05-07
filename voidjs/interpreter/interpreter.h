@@ -55,57 +55,57 @@ class Interpreter {
   
   void EvalFunctionDeclaration(ast::AstNode* ast_node);
 
-  std::variant<JSValue, types::Reference> EvalExpression(ast::Expression* expr);
-  std::variant<JSValue, types::Reference> EvalSequenceExpression(ast::SequenceExpression* seq_aexpr);
-  std::variant<JSValue, types::Reference> EvalAssignmentExpression(ast::AssignmentExpression* assign_expr);
-  std::variant<JSValue, types::Reference> EvalConditionalExpression(ast::ConditionalExpression* cond_expre);
-  std::variant<JSValue, types::Reference> EvalBinaryExpression(ast::BinaryExpression* binary_expr);
-  std::variant<JSValue, types::Reference> EvalUnaryExpression(ast::UnaryExpression* unary_expr);
-  std::variant<JSValue, types::Reference> EvalPostfixExpression(ast::PostfixExpression* post_expr);
-  std::variant<JSValue, types::Reference> EvalMemberExpression(ast::MemberExpression* mem_expr);
-  std::variant<JSValue, types::Reference> EvalNewExpression(ast::NewExpression* new_expr);
-  std::variant<JSValue, types::Reference> EvalCallExpression(ast::CallExpression* call_expr);
-  JSValue EvalFunctionExpression(ast::FunctionExpression* func_expr);
-  JSValue EvalObjectLiteral(ast::ObjectLiteral* object);
-  JSValue EvalArrayLiteral(ast::ArrayLiteral* array);
-  JSValue EvalNullLiteral(ast::NullLiteral* nul);
-  JSValue EvalBooleanLiteral(ast::BooleanLiteral* boolean);
-  JSValue EvalNumericLiteral(ast::NumericLiteral* num);
-  JSValue EvalStringLiteral(ast::StringLiteral* str);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalExpression(ast::Expression* expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalSequenceExpression(ast::SequenceExpression* seq_aexpr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalAssignmentExpression(ast::AssignmentExpression* assign_expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalConditionalExpression(ast::ConditionalExpression* cond_expre);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalBinaryExpression(ast::BinaryExpression* binary_expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalUnaryExpression(ast::UnaryExpression* unary_expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalPostfixExpression(ast::PostfixExpression* post_expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalMemberExpression(ast::MemberExpression* mem_expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalNewExpression(ast::NewExpression* new_expr);
+  std::variant<JSHandle<JSValue>, types::Reference> EvalCallExpression(ast::CallExpression* call_expr);
+  JSHandle<JSValue> EvalFunctionExpression(ast::FunctionExpression* func_expr);
+  JSHandle<JSValue> EvalObjectLiteral(ast::ObjectLiteral* object);
+  JSHandle<JSValue> EvalArrayLiteral(ast::ArrayLiteral* array);
+  JSHandle<JSValue> EvalNullLiteral(ast::NullLiteral* nul);
+  JSHandle<JSValue> EvalBooleanLiteral(ast::BooleanLiteral* boolean);
+  JSHandle<JSValue> EvalNumericLiteral(ast::NumericLiteral* num);
+  JSHandle<JSValue> EvalStringLiteral(ast::StringLiteral* str);
   types::Reference EvalIdentifier(ast::Identifier* ident);
 
   types::Completion EvalSourceElements(const ast::Statements& stmts);
   types::Completion EvalStatementList(const ast::Statements& stmts);
   void EvalVariableDeclarationList(const ast::VariableDeclarations& decls);
-  JSValue EvalVariableDeclaration(ast::VariableDeclaration* decl);
-  JSValue EvalPropertyNameAndValueList(const ast::Properties& props);
-  std::pair<types::String*, types::PropertyDescriptor> EvalPropertyAssignment(ast::Property* prop);
-  std::vector<JSValue> EvalArgumentList(const ast::Expressions& exprs);
-  types::Completion EvalCaseBlock(const ast::CaseClauses& cases, JSValue input);
-  types::Completion EvalCatch(ast::Expression* catch_name, ast::Statement* catch_block, JSValue C);
-  JSValue EvalElementList(const ast::Expressions& exprs);
+  JSHandle<JSValue> EvalVariableDeclaration(ast::VariableDeclaration* decl);
+  JSHandle<JSValue> EvalPropertyNameAndValueList(const ast::Properties& props);
+  std::pair<JSHandle<types::String>, types::PropertyDescriptor> EvalPropertyAssignment(ast::Property* prop);
+  std::vector<JSHandle<JSValue>> EvalArgumentList(const ast::Expressions& exprs);
+  types::Completion EvalCaseBlock(const ast::CaseClauses& cases, JSHandle<JSValue> input);
+  types::Completion EvalCatch(ast::Expression* catch_name, ast::Statement* catch_block, JSHandle<JSValue> C);
+  JSHandle<JSValue> EvalElementList(const ast::Expressions& exprs);
   
-  JSValue ApplyCompoundAssignment(TokenType op, JSValue lval, JSValue rval);
-  JSValue ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyBitwiseOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyEqualityOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyRelationalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyShiftOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyAdditiveOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyMultiplicativeOperator(TokenType op, ast::Expression* left, ast::Expression* right);
-  JSValue ApplyUnaryOperator(TokenType op, ast::Expression* expr);
-  JSValue ApplyPostfixOperator(TokenType op, ast::Expression* expr);
+  JSHandle<JSValue> ApplyCompoundAssignment(TokenType op, JSHandle<JSValue> lval, JSHandle<JSValue> rval);
+  JSHandle<JSValue> ApplyLogicalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyBitwiseOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyEqualityOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyRelationalOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyShiftOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyAdditiveOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyMultiplicativeOperator(TokenType op, ast::Expression* left, ast::Expression* right);
+  JSHandle<JSValue> ApplyUnaryOperator(TokenType op, ast::Expression* expr);
+  JSHandle<JSValue> ApplyPostfixOperator(TokenType op, ast::Expression* expr);
 
-  types::Reference IdentifierResolution(types::String* ident);
-  bool AbstractEqualityComparison(JSValue x, JSValue y);
-  bool StrictEqualityComparison(JSValue x, JSValue y);
-  JSValue AbstractRelationalComparison(JSValue x, JSValue y, bool left_first);
-  JSValue CreateFunctionObjects();
+  types::Reference IdentifierResolution(JSHandle<types::String> ident);
+  bool AbstractEqualityComparison(JSHandle<JSValue> x, JSHandle<JSValue> y);
+  bool StrictEqualityComparison(JSHandle<JSValue> x, JSHandle<JSValue> y);
+  JSHandle<JSValue> AbstractRelationalComparison(JSHandle<JSValue> x, JSHandle<JSValue> y, bool left_first);
+  JSHandle<JSValue> CreateFunctionObjects();
   
-  JSValue GetValue(const std::variant<JSValue, types::Reference>& V);
-  JSValue GetUsedByGetValue(JSValue base, types::String* P);
-  void PutValue(const std::variant<JSValue, types::Reference>& V, JSValue W);
-  void PutUsedByPutValue(JSValue base, types::String* P, JSValue W, bool Throw);
+  JSHandle<JSValue> GetValue(const std::variant<JSHandle<JSValue>, types::Reference>& V);
+  JSHandle<JSValue> GetUsedByGetValue(JSHandle<JSValue> base, JSHandle<types::String> P);
+  void PutValue(const std::variant<JSHandle<JSValue>, types::Reference>& V, JSHandle<JSValue> W);
+  void PutUsedByPutValue(JSHandle<JSValue> base, JSHandle<types::String> P, JSHandle<JSValue> W, bool Throw);
 
   VM* GetVM() const { return vm_; }
 
