@@ -1,15 +1,18 @@
 #include "voidjs/builtins/js_array.h"
 
 #include "voidjs/builtins/js_object.h"
+#include "voidjs/gc/js_handle_scope.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
-#include "voidjs/builtins/builtin.h"
 #include "voidjs/types/object_class_type.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
+#include "voidjs/builtins/builtin.h"
+#include "voidjs/builtins/js_function.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -143,7 +146,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
            JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue{P_num}})->Equal(P) &&
            P_num != (1ull << 32) - 1) {
     // a. Let index be ToUint32(P).
-    auto index = P_num;
+    std::int32_t index = P_num;
     
     // b. Reject if index ≥ oldLen and oldLenDesc.[[Writable]] is false.
     if (index >= old_len && !old_len_desc.GetWritable()) {
@@ -157,7 +160,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
     
     // c. Let succeeded be the result of calling the default [[DefineOwnProperty]] internal method (8.12.9) on
     //    A passing P, Desc, and false as arguments.
-    auto succeeded = Object::DefineOwnPropertyDefault(vm, O, P, Desc, false);
+    bool succeeded = Object::DefineOwnPropertyDefault(vm, O, P, Desc, false);
     
     // d. Reject if succeeded is false.
     if (!succeeded) {
@@ -301,15 +304,17 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
   ObjectFactory* factory = vm->GetObjectFactory();
   
   // 1. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToObject(vm, this_value);
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 2. Let A be a new array created as if by the expression new Array() where
   //    Array is the standard built-in constructor with that name.
-  JSHandle<JSArray> A = JSHandle<JSArray>{vm, Construct(factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {}))};
+  JSHandle<JSArray> A = types::Object::Construct(
+    vm, vm->GetArrayConstructor(),
+    vm->GetGlobalConstants()->HandledUndefined(), {}).As<JSArray>();
   
   // 3. Let n be 0.
-  auto n = 0;
+  std::int32_t n = 0;
   // 4. Let items be an internal List whose first element is O and whose subsequent elements are,
   //    in left to right order, the arguments that were passed to this function invocation.
   // 5. Repeat, while items is not empty
@@ -337,7 +342,7 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
       std::int32_t len = types::Object::Get(vm, arr, factory->GetStringFromTable(u"length"))->GetInt();
       
       while (k < len) {
-        auto P = JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue{k}});
+        JSHandle<types::String> P = JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue{k}});
         
         auto exists = types::Object::HasProperty(vm, arr, P);
         
@@ -392,35 +397,35 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
   }
   
   // 5. Let sep be ToString(separator).
-  auto sep = JSValue::ToString(vm, separator);
+  JSHandle<types::String> sep = JSValue::ToString(vm, separator);
   
   // 6. If len is zero, return the empty String.
   if (len == 0) {
-    return factory->GetStringFromTable(u"").GetJSValue();
+    return JSValue{vm->GetGlobalConstants()->EmptyString()};
   }
   
   // 7. Let element0 be the result of calling the [[Get]] internal method of O with argument "0".
-  auto element0 = types::Object::Get(vm, O, factory->GetIntString(0));
+  JSHandle<JSValue> element0 = types::Object::Get(vm, O, factory->GetIntString(0));
   
   // 8. If element0 is undefined or null, let R be the empty String;
   //    otherwise, Let R be ToString(element0).
-  auto R = element0->IsUndefined() || element0->IsNull() ?
+  JSHandle<types::String> R = element0->IsUndefined() || element0->IsNull() ?
     factory->GetEmptyString() : JSValue::ToString(vm, element0);
   
   // 9. Let k be 1.
-  auto k = 1;
+  std::int32_t k = 1;
   
   // 10. Repeat, while k < len
   while (k < len) {
     // a. Let S be the String value produced by concatenating R and sep.
-    auto S = types::String::Concat(vm, R, sep);
+    JSHandle<types::String> S = types::String::Concat(vm, R, sep);
     
     // b. Let element be the result of calling the [[Get]] internal method of O with argument ToString(k).
-    auto element = types::Object::Get(vm, O, factory->GetIntString(k));
+    JSHandle<JSValue> element = types::Object::Get(vm, O, factory->GetIntString(k));
     
     // c. If element is undefined or null, Let next be the empty String; otherwise, let next be ToString(element).
-    auto next = element->IsUndefined() || element->IsNull() ?
-      factory->GetEmptyString() : JSValue::ToString(vm, element);
+    JSHandle<types::String> next = element->IsUndefined() || element->IsNull() ?
+      vm->GetGlobalConstants()->HandledEmptyString() : JSValue::ToString(vm, element);
     
     // d. Let R be a String value produced by concatenating S and next.
     R = types::String::Concat(vm, S, next);
@@ -449,7 +454,7 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
   JSHandle<JSValue> len_val = types::Object::Get(vm, O, factory->GetLengthString());
   
   // 3. Let len be ToUint32(lenVal).
-  auto len = JSValue::ToUint32(vm, len_val);
+  std::int32_t len = JSValue::ToUint32(vm, len_val);
   
   // 4. If len is zero,
   if (len == 0) { 
@@ -463,10 +468,10 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
   // 5. Else, len > 0
   else {
     // a. Let indx be ToString(len–1).
-    auto index = factory->GetIntString(len - 1);
+    JSHandle<types::String> index = factory->GetIntString(len - 1);
     
     // b. Let element be the result of calling the [[Get]] internal method of O with argument indx.
-    auto element = types::Object::Get(vm, O, index);
+    JSHandle<JSValue> element = types::Object::Get(vm, O, index);
     
     // c. Call the [[Delete]] internal method of O with arguments indx and true.
     types::Object::Delete(vm, O, index, true);
@@ -482,26 +487,27 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
 
 // Array.prototype.push([item1[,item2[,...]]])
 JSValue JSArray::Push(RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
-  auto this_value = argv->GetThis();
-  auto factory = vm->GetObjectFactory();
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
   // 1. Let O be the result of calling ToObject passing the this value as the argument.
-  auto O = JSValue::ToObject(vm, this_value);
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
-  auto len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, factory->GetLengthString());
   
   // 3. Let n be ToUint32(lenVal).
-  auto n = JSValue::ToUint32(vm, len_val);
+  std::int32_t n = JSValue::ToUint32(vm, len_val);
   
   // 4. Let items be an internal List whose elements are, in left to right order, the arguments that were passed to this function invocation.
   // 5. Repeat, while items is not empty
-  auto args_num = argv->GetArgsNum();
+  std::size_t args_num = argv->GetArgsNum();
   for (std::size_t idx = 0; idx < args_num; ++idx) {
     // a. Remove the first element from items and let E be the value of the element.
-    auto E = argv->GetArg(idx);
+    JSHandle<JSValue> E = argv->GetArg(idx);
     
     // b. Call the [[Put]] internal method of O with arguments ToString(n), E, and true.
     types::Object::Put(vm, O, factory->GetIntString(n), E, true);

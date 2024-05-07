@@ -29,7 +29,7 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   
   // 2. Let P be the empty String.
   std::u16string P = u"";
-  JSHandle<JSValue> body{};
+  JSHandle<JSValue> body;
   
   // 3. If argCount = 0, let body be the empty String.
   if (arg_count == 0) {
@@ -52,7 +52,7 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
     // d. Repeat, while k < argCount
     while (k < arg_count) {
       // i. Let nextArg be the k’th argument.
-      auto next_arg = argv->GetArg(k - 1);
+      JSHandle<JSValue> next_arg = argv->GetArg(k - 1);
       
       // ii. Let P be the result of concatenating the previous value of P, the String "," (a comma), and ToString(nextArg).
       P += std::u16string{u","} + std::u16string{JSValue::ToString(vm, next_arg)->GetString()};
@@ -80,7 +80,7 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   }
   
   // 9. If body is strict mode code (see 10.1.1) then let strict be true, else let strict be false.
-  auto strict = false;
+  bool strict = false;
   
   // 10. If strict is true, throw any exceptions specified in 13.1 that apply.
   if (strict) {

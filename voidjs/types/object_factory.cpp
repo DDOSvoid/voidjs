@@ -56,19 +56,6 @@ JSHandle<HeapObject> ObjectFactory::NewHeapObject(std::size_t size) {
   return JSHandle<HeapObject>(vm_, obj);
 }
 
-RuntimeCallInfo* ObjectFactory::NewRuntimeCallInfo(JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args) {
-  auto len = args.size();
-  auto call_info = reinterpret_cast<RuntimeCallInfo*>(
-    Allocate(RuntimeCallInfo::SIZE + len * sizeof(JSValue)));
-  call_info->SetVM(vm_);
-  call_info->SetThis(this_arg);
-  call_info->SetArgsNum(len);
-  for (std::size_t idx = 0; idx < len; ++idx) {
-    call_info->SetArg(idx, args[idx]);
-  }
-  return call_info;
-}
-
 // used to create builtin objects
 JSHandle<types::Object> ObjectFactory::NewEmptyObject(
   std::size_t extra_size, JSType type, ObjectClassType class_type, JSValue proto,

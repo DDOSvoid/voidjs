@@ -13,12 +13,14 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/lang_types/number.h"
+#include "voidjs/builtins/js_function.h"
 #include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_number.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/vm.h"
 #include "voidjs/interpreter/string_table.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/helper.h"
 #include "voidjs/utils/macros.h"
 
@@ -258,31 +260,23 @@ JSHandle<types::String> JSValue::ToString(VM* vm, JSHandle<JSValue> val) {
 // ToObject
 // Defined in ECMAScript 5.1 Chapter 9.9
 JSHandle<types::Object> JSValue::ToObject(VM* vm, JSHandle<JSValue> val) {
-  auto factory = vm->GetObjectFactory();
-  
   if (val->IsUndefined() || val->IsNull()) {
     THROW_TYPE_ERROR_AND_RETURN_HANDLE(vm, u"ToObject fails when object is Undefined or Null", types::Object);
   }
   
   if (val->IsBoolean()) {
-    return
-      JSHandle<builtins::JSBoolean>{vm,
-      builtins::JSBoolean::Construct(
-        factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {val})).GetHeapObject()->AsJSBoolean()};
+    return types::Object::Construct(vm, vm->GetBooleanConstructor(),
+                                    vm->GetGlobalConstants()->HandledUndefined(), {val}).As<types::Object>();
   }
   
   if (val->IsNumber()) {
-    return
-      JSHandle<builtins::JSNumber>{vm,
-      builtins::JSNumber::Construct(
-        factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {val})).GetHeapObject()->AsJSNumber()};
+    return types::Object::Construct(vm, vm->GetNumberConstructor(),
+                                    vm->GetGlobalConstants()->HandledUndefined(), {val}).As<types::Object>();
   }
   
   if (val->IsString()) {
-    return
-      JSHandle<builtins::JSString>{vm,
-      builtins::JSString::Construct(
-        factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {val})).GetHeapObject()->AsJSString()};
+    return types::Object::Construct(vm, vm->GetStringConstructor(),
+                                    vm->GetGlobalConstants()->HandledUndefined(), {val}).As<types::Object>();
   }
   
   if (val->IsObject()) {

@@ -25,9 +25,10 @@ class GlobalConstants {
   DECLARE_GET_METHOD_FOR_JSVALUE(Undefined, 0)
   DECLARE_GET_METHOD_FOR_JSVALUE(Null, 1)
   DECLARE_GET_METHOD_FOR_JSVALUE(False, 2)
-  DECLARE_GET_METHOD_FOR_JSVALUE(True, 2)
+  DECLARE_GET_METHOD_FOR_JSVALUE(True, 3)
   
-  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(LengthString, types::String, index)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(EmptyString, types::String, 4)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(LengthString, types::String, 5)
   
  private:
   static constexpr std::size_t GLOBAL_CONSTANTS_NUM = 10;

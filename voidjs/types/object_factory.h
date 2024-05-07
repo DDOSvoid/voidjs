@@ -5,11 +5,11 @@
 #include <cstdint>
 
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/gc/js_handle.h"
-#include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
 
@@ -28,8 +28,6 @@ class ObjectFactory {
   JSHandle<builtins::GlobalObject> NewGlobalObject();
   
   JSHandle<HeapObject> NewHeapObject(std::size_t size);
-
-  RuntimeCallInfo* NewRuntimeCallInfo(JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
 
   // used to create builtin objects
   JSHandle<types::Object> NewEmptyObject(

@@ -4,9 +4,11 @@
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
-#include "voidjs/interpreter/vm.h"
+#include "voidjs/builtins/js_function.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/gc/js_handle_scope.h"
+#include "voidjs/interpreter/vm.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -14,7 +16,7 @@ namespace builtins {
 
 // new Object ( [ value ] )
 // Defined in ECMAScript 5.1 Chapter 15.2.2.1
-JSObject* JSObject::Construct(RuntimeCallInfo* argv) {
+JSValue JSObject::Construct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   JSHandle<JSValue> value = argv->GetArg(0);
@@ -26,7 +28,7 @@ JSObject* JSObject::Construct(RuntimeCallInfo* argv) {
     if (value->IsObject()) {
       // i. If the value is a native ECMAScript object, do not create a new object but simply return value.
       if (value->GetHeapObject()->IsJSObject()) {
-        return value->GetHeapObject()->AsJSObject();
+        return value.GetJSValue();
       }
       
       // ii. If the value is a host object, then actions are taken and
@@ -38,7 +40,7 @@ JSObject* JSObject::Construct(RuntimeCallInfo* argv) {
     // c. If Type(value) is Boolean, return ToObject(value).
     // d. If Type(value) is Number, return ToObject(value).
     if (value->IsString() || value->IsBoolean() || value->IsNumber()) {
-      return JSValue::ToObject(vm, value)->AsJSObject();
+      return JSValue::ToObject(vm, value).GetJSValue();
     }
   }
 
@@ -49,11 +51,11 @@ JSObject* JSObject::Construct(RuntimeCallInfo* argv) {
   // 5 .Set the [[Class]] internal property of obj to "Object".
   // 6. Set the [[Extensible]] internal property of obj to true.
   // 7. Set the all the internal methods of obj as specified in 8.12
-  JSObject* obj = factory->NewObject(JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::OBJECT,
-                                     vm->GetObjectPrototype().As<JSValue>(), true, false, false)->AsJSObject();
+  JSHandle<JSObject> obj = factory->NewObject(JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::OBJECT,
+                                             vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSObject>();
   
   // 8. Return obj.
-  return obj;
+  return obj.GetJSValue();
 }
 
 // Object([value])
@@ -143,8 +145,9 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   
   // 2. Let obj be the result of creating a new object as if
   //    by the expression new Object() where Object is the standard built-in constructor with that name
-  auto obj = JSObject::Construct(
-    factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {}));
+  JSHandle<JSObject> obj = types::Object::Construct(
+    vm, vm->GetObjectConstructor(), 
+    vm->GetGlobalConstants()->HandledUndefined(), {}).As<JSObject>();
   
   // 3. Set the [[Prototype]] internal property of obj to O.
   obj->SetPrototype(O);
@@ -155,7 +158,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   
   
   // 5. Return obj.
-  return JSValue{obj};
+  return obj.GetJSValue();
 }
 
 // Object.defineProperty(O, P, Attributes)

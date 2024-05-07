@@ -11,6 +11,7 @@
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/builtins/js_array.h"
+#include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_number.h"
 #include "voidjs/interpreter/runtime_call_info.h"
@@ -280,8 +281,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     if (to_string->IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      JSHandle<JSValue> str = Call(to_string.As<Object>(),
-                                   factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
+      JSHandle<JSValue> str = Call(vm, to_string.As<Object>(), O.As<JSValue>(), {});
 
       // b. If str is a primitive value, return str.
       if (str->IsPrimitive()) {
@@ -296,8 +296,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     if (value_of->IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
-      auto val = Call(value_of.As<Object>(),
-                      factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
+      auto val = Call(vm, value_of.As<Object>(), O.As<JSValue>(), {});
       
       // b. If val is a primitive value, return val.
       if (val->IsPrimitive()) {
@@ -317,8 +316,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     if (value_of->IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
-      JSHandle<JSValue> val = Call(value_of.As<Object>(),
-                                   factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
+      JSHandle<JSValue> val = Call(vm, value_of.As<Object>(), O.As<JSValue>(), {});
       
       // b. If val is a primitive value, return val.
       if (val->IsPrimitive()) {
@@ -333,8 +331,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     if (to_string->IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
-      auto str = Call(to_string.As<Object>(),
-                      factory->NewRuntimeCallInfo(O.As<JSValue>(), {}));
+      auto str = Call(vm, to_string.As<Object>(), O.As<JSValue>(), {});
 
       // b. If str is a primitive value, return str.
       if (str->IsPrimitive()) {
@@ -591,60 +588,65 @@ bool Object::DefineOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSHandle<Strin
 
 // Construct
 // Only used for forwarding to concrete [[Construct]]
-JSHandle<JSValue> Object::Construct(JSHandle<Object> O, RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
+JSHandle<JSValue> Object::Construct(VM* vm, JSHandle<Object> O, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args) {
+  RuntimeCallInfo* info = RuntimeCallInfo::New(vm, this_arg, args);
+
+  JSValue ret;
   
   if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSObject::Construct(argv)};
+    ret = builtins::JSObject::Construct(info);
   }
 
   if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSFunction::Construct(argv)};
+    ret = builtins::JSFunction::Construct(info);
   }
 
   if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSArray::Construct(argv)};
+    ret = builtins::JSArray::Construct(info);
+  }
+  
+  if (O.GetJSValue() == vm->GetStringConstructor().GetJSValue()) {
+    ret = builtins::JSString::Construct(info);
   }
 
   if (O.GetJSValue() == vm->GetBooleanConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSBoolean::Construct(argv)};
+    ret = builtins::JSBoolean::Construct(info);
   }
 
   if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSNumber::Construct(argv)};
+    ret = builtins::JSNumber::Construct(info);
   }
+
+  RuntimeCallInfo::Delete(info);
+
+  return JSHandle<JSValue>{vm, ret};
 }
 
 // Call
 // Only used for forwarding to concrete [[Call]]
-JSHandle<JSValue> Object::Call(JSHandle<Object> O, RuntimeCallInfo* argv) {
-  auto vm = argv->GetVM();
+JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args) {
+  RuntimeCallInfo* info = RuntimeCallInfo::New(vm, this_arg, args);
+
+  JSValue ret;
   
   if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSObject::Call(argv)};
+    ret = builtins::JSObject::Call(info);
   }
 
   if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSFunction::Call(argv)};
+    ret = builtins::JSFunction::Call(info);
   }
 
   if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
-    return JSHandle<JSValue>{vm, builtins::JSArray::Call(argv)};
+    ret = builtins::JSArray::Call(info);
   }
 
   if (O->IsJSFunction()) {
-    JSHandle<JSValue> this_value = argv->GetThis();
-    std::vector<JSHandle<JSValue>> args;
-    args.resize(argv->GetArgsNum());
-    for (std::size_t idx = 0; idx < argv->GetArgsNum(); ++idx) {
-      args[idx] = argv->GetArg(idx);
-    }
-    
     auto F = O.As<builtins::JSFunction>();
     // 1. Let funcCtx be the result of establishing a new execution context for function code
     //    using the value of F's [[FormalParameters]] internal property,
     //    the passed arguments List args, and the this value as described in 10.4.3.
-    ExecutionContext::EnterFunctionCode(vm, F->GetCode(), F, this_value, args);
+    ExecutionContext::EnterFunctionCode(vm, F->GetCode(), F, this_arg, args);
     RETURN_HANDLE_IF_HAS_EXCEPTION(vm, JSValue);
     
     // 2. Let result be the result of evaluating the FunctionBody that is the value of F's [[Code]] internal property.
@@ -679,8 +681,12 @@ JSHandle<JSValue> Object::Call(JSHandle<Object> O, RuntimeCallInfo* argv) {
 
   if (O->IsInternalFunction()) {
     auto func = O->AsInternalFunction()->GetFunction();
-    return JSHandle<JSValue>{vm, func(argv)};
+    ret = func(info);
   }
+
+  RuntimeCallInfo::Delete(info);
+
+  return JSHandle<JSValue>{vm, ret};
 }
 
 }  // namespace types

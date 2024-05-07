@@ -1105,8 +1105,8 @@ std::variant<JSHandle<JSValue>, types::Reference> Interpreter::EvalNewExpression
   // 5. If constructor does not implement the [[Construct]] internal method, throw a TypeError exception.
   // 6. Return the result of calling the [[Construct]] internal method on constructor,
   //    providing the list argList as the argument values.
-  return Object::Construct(
-    ctor.As<Object>(), factory->NewRuntimeCallInfo(vm_->GetGlobalConstants()->HandledUndefined(), arg_list));
+  return Object::Construct(vm_, ctor.As<Object>(),
+                           vm_->GetGlobalConstants()->HandledUndefined(), arg_list);
 }
 
 // EvalCallExpression
@@ -1161,8 +1161,7 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalCallExpression(CallE
   
   // 8. Return the result of calling the [[Call]] internal method on func,
   //    providing thisValue as the this value and providing the list argList as the argument values.
-  return Object::Call(func.As<Object>(),
-                      vm_->GetObjectFactory()->NewRuntimeCallInfo(this_value, arg_list));
+  return Object::Call(vm_, func.As<Object>(), this_value, arg_list);
 }
 
 // EvalFunctionExpression
@@ -1410,8 +1409,8 @@ JSHandle<JSValue> Interpreter::EvalObjectLiteral(ObjectLiteral* object) {
   // 1. Return a new object created as if by the expression
   //    new Object() where Object is the standard built-in constructor with that name.
   if (props.empty()) {
-    return Object::Construct(vm_->GetObjectConstructor(),
-                             factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm_, JSValue::Undefined()}, {}));
+    return Object::Construct(vm_, vm_->GetObjectConstructor(),
+                             vm_->GetGlobalConstants()->HandledUndefined(), {});
   }
 
   // ObjectLiteral : { PropertyNameAndValueList }
@@ -1573,8 +1572,8 @@ JSHandle<JSValue> Interpreter::EvalPropertyNameAndValueList(const ast::Propertie
 
   // 1. Let obj be the result of evaluating PropertyNameAndValueList.
   auto obj = Object::Construct(
-    vm_->GetObjectConstructor(),
-    factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm_, JSValue::Undefined()}, {}));
+    vm_, vm_->GetObjectConstructor(),
+    vm_->GetGlobalConstants()->HandledUndefined(), {});
 
   for (auto prop : props) {
     // 2. Let propId be the result of evaluating PropertyAssignment.
@@ -1684,9 +1683,8 @@ JSHandle<JSValue> Interpreter::EvalElementList(const Expressions& exprs) {
   auto len = exprs.size();
 
   auto array = Object::Construct(
-    vm_->GetArrayConstructor(), 
-    factory->NewRuntimeCallInfo(
-      JSHandle<JSValue>{vm_, JSValue::Undefined()}, {JSHandle<JSValue>{vm_, JSValue{static_cast<int>(len)}}}));
+    vm_, vm_->GetArrayConstructor(), 
+    vm_->GetGlobalConstants()->HandledUndefined(), {JSHandle<JSValue>{vm_, JSValue{static_cast<int>(len)}}});
 
   for (std::size_t idx = 0; idx < len; ++idx ) {
     auto expr = exprs[idx];

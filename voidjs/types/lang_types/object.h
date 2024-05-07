@@ -48,8 +48,8 @@ class Object : public HeapObject {
 
   // Internal function properties only defined for some objects
   // Methods defined below ponly used for forwarding
-  static JSHandle<JSValue> Construct(JSHandle<Object> O, RuntimeCallInfo* argv);
-  static JSHandle<JSValue> Call(JSHandle<Object> O, RuntimeCallInfo* argv);
+  static JSHandle<JSValue> Construct(VM* vm, JSHandle<Object> O, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
+  static JSHandle<JSValue> Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
 
   static void GetAllEnumerableProps(Object* O);
 };

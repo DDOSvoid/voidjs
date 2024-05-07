@@ -16,7 +16,7 @@ class JSObject : public types::Object {
   static_assert(SIZE == 0);
 
   // Internal method [[Construct]] and [[Call]] for Object Constructor
-  static JSObject* Construct(RuntimeCallInfo*);
+  static JSValue Construct(RuntimeCallInfo*);
   static JSValue Call(RuntimeCallInfo*);
 
   // Function properties of the Object Constructor

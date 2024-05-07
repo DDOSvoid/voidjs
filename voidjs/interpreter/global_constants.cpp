@@ -28,7 +28,8 @@ DEFINE_GET_METHOD_FOR_JSVALUE(Null, 1)
 DEFINE_GET_METHOD_FOR_JSVALUE(False, 2)
 DEFINE_GET_METHOD_FOR_JSVALUE(True, 3)
 
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(LengthString, String, types::String, 4)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(EmptyString, String, types::String, 4)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(LengthString, String, types::String, 5)
 
 #define SET_CONSTANT(name, value, index)         \
   constants_[index] = value       \

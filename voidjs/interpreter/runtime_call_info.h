@@ -37,6 +37,23 @@ class RuntimeCallInfo {
   void SetArg(std::size_t idx, JSValue value) { Set(idx, value); }
   void SetArg(std::size_t idx, JSHandle<JSValue> handle) { Set(idx, handle.GetJSValue()); }
 
+  static RuntimeCallInfo* New(VM* vm, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args) {
+    std::size_t len = args.size();
+    RuntimeCallInfo* info =
+      reinterpret_cast<RuntimeCallInfo*>(new std::byte[RuntimeCallInfo::SIZE + len * sizeof(JSValue)]);
+    info->SetVM(vm);
+    info->SetThis(this_arg);
+    info->SetArgsNum(len);
+    for (std::size_t idx = 0; idx < len; ++idx) {
+      info->SetArg(idx, args[idx]);
+    }
+    return info;
+  }
+
+  static void Delete(RuntimeCallInfo* info) {
+    delete[] reinterpret_cast<std::byte*>(info);
+  }
+
  private:
   void Set(std::size_t idx, JSValue val) { *(GetArgs() + idx) = val; }
 };

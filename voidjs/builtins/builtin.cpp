@@ -23,6 +23,7 @@
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/vm.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -311,7 +312,9 @@ JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   
   // 16. Let proto be the result of creating a new object as would be constructed by the expression new Object()
   //     where Object is the standard built-in constructor with that name.
-  auto proto = JSHandle<JSObject>{vm, JSObject::Construct(factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm, JSValue::Undefined()}, {}))};
+  JSHandle<JSObject> proto = types::Object::Construct(
+    vm, vm->GetObjectConstructor(),
+    vm->GetGlobalConstants()->HandledUndefined(), {}).As<JSObject>();
   
   // 17. Call the [[DefineOwnProperty]] internal method of proto with arguments "constructor",
   ///    Property Descriptor {[[Value]]: F, { [[Writable]]: true, [[Enumerable]]: false,

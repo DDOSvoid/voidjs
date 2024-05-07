@@ -4,6 +4,8 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/builtins/js_object.h"
+#include "voidjs/builtins/js_function.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -12,7 +14,7 @@ namespace types {
 // FromPropertyDescriptor
 // Defined in ECMAScript 5.1 Chapter 8.10.4
 JSHandle<JSValue> PropertyDescriptor::FromPropertyDescriptor() const {
-  auto factory = vm_->GetObjectFactory();
+  ObjectFactory* factory = vm_->GetObjectFactory();
   
   // 1. If Desc is undefined, then return undefined.
     if (IsEmpty()) {
@@ -21,8 +23,9 @@ JSHandle<JSValue> PropertyDescriptor::FromPropertyDescriptor() const {
     
     // 2. Let obj be the result of creating a new object as if
     //    by the expression new Object() where Object is the standard built-in constructor with that name.
-    auto obj = JSHandle<Object>{vm_, builtins::JSObject::Construct(
-        factory->NewRuntimeCallInfo(JSHandle<JSValue>{vm_, JSValue::Undefined()}, {}))};
+    JSHandle<types::Object> obj =
+      types::Object::Construct(vm_, vm_->GetObjectConstructor(),
+                               vm_->GetGlobalConstants()->HandledUndefined(), {}).As<types::Object>();
     
     // 3. If IsDataDescriptor(Desc) is true, then
     if (IsDataDescriptor()) {
