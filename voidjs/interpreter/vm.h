@@ -13,6 +13,7 @@ namespace voidjs {
 class StringTable;
 class ObjectFactory;
 class Interpreter;
+class GlobalConstants;
 
 class VM {
  public:
@@ -30,6 +31,8 @@ class VM {
   PROPERTY_ACCESSORS(JSHandle<builtins::GlobalObject>, GlobalObject, global_obj_)
   
   PROPERTY_ACCESSORS(ObjectFactory*, ObjectFactory, object_factory_)
+
+  PROPERTY_ACCESSORS(GlobalConstants*, GlobalConstants, global_constants_)
   
   PROPERTY_ACCESSORS(JSHandle<builtins::JSObject>, ObjectPrototype, object_proto_)
   PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, ObjectConstructor, object_ctor_)
@@ -138,6 +141,8 @@ class VM {
   //  
   ObjectFactory* object_factory_;
 
+  //
+  GlobalConstants* global_constants_;
   
   // handle scope
   static constexpr std::size_t HANDLE_SCOPE_BLOCK_SIZE = 10 * 1024;

@@ -34,6 +34,9 @@ class Completion {
   CompletionType GetType() const { return type_; }
   JSHandle<JSValue> GetValue() const { return value_; }
   std::u16string_view GetTarget() const { return target_; }
+  
+  // only used in EvalStatement
+  void SetValue(VM* vm, JSValue value) { value_ = JSHandle<JSValue>{vm, value}; }
 
   bool IsAbruptCompletion() const { return type_ != CompletionType::NORMAL; }
   

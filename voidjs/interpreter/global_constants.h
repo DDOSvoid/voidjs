@@ -17,6 +17,11 @@
 namespace voidjs {
 class GlobalConstants {
  public:
+  GlobalConstants(VM* vm)
+    : vm_(vm) { Initialize(); }
+
+  void Initialize();
+  
   DECLARE_GET_METHOD_FOR_JSVALUE(Undefined, 0)
   DECLARE_GET_METHOD_FOR_JSVALUE(Null, 1)
   DECLARE_GET_METHOD_FOR_JSVALUE(False, 2)
@@ -27,6 +32,7 @@ class GlobalConstants {
  private:
   static constexpr std::size_t GLOBAL_CONSTANTS_NUM = 10;
   JSValue constants_[GLOBAL_CONSTANTS_NUM];
+  VM* vm_;
 };
 
 #undef DECLARE_GET_METHOD

@@ -7,6 +7,7 @@
 #include <functional>
 #include <utility>
 
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/literal.h"
@@ -35,6 +36,7 @@
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/interpreter/string_table.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -46,10 +48,11 @@ using namespace builtins;
 void Interpreter::Initialize() {
   vm_ = new VM{this};
 
-  auto string_table = new StringTable{vm_};
-  auto object_factory = new ObjectFactory{vm_, string_table};
-
+  auto object_factory = new ObjectFactory{vm_, new StringTable{vm_}};
   vm_->SetObjectFactory(object_factory);
+
+  auto global_constant = new GlobalConstants{vm_};
+  vm_->SetGlobalConstants(global_constant);
 
   // Initialize builtin objects and set it for vm
   Builtin::Initialize(vm_);
@@ -97,62 +100,97 @@ Completion Interpreter::EvalProgram(AstNode *ast_node) {
 // Eval Statement
 // Defined in ECMAScript 5.1 Chapter 12
 Completion Interpreter::EvalStatement(Statement* stmt) {
-  switch (stmt->GetType()) {
-    case AstNodeType::BLOCK_STATEMENT: {
-      return EvalBlockStatement(stmt->AsBlockStatement());
+  Completion ret;
+  JSValue value;
+  
+  {
+    JSHandleScope handel_scope{vm_};
+    
+    switch (stmt->GetType()) {
+      case AstNodeType::BLOCK_STATEMENT: {
+        ret = EvalBlockStatement(stmt->AsBlockStatement());
+        break;
+      }
+      case AstNodeType::EXPRESSION_STATEMENT: {
+        ret = EvalExpressionStatement(stmt->AsExpressionStatement());
+        break;
+      }
+      case AstNodeType::VARIABLE_STATEMENT: {
+        ret = EvalVariableStatement(stmt->AsVariableStatement());
+        break;
+      }
+      case AstNodeType::EMPTY_STATEMENT: {
+        ret = EvalEmptyStatement(stmt->AsEmptyStatement());
+        break;
+      }
+      case AstNodeType::IF_STATEMENT: {
+        ret = EvalIfStatement(stmt->AsIfStatement());
+        break;
+      }
+      case AstNodeType::DO_WHILE_STATEMENT: {
+        ret = EvalDoWhileStatement(stmt->AsDoWhileStatement());
+        break;
+      }
+      case AstNodeType::WHILE_STATEMENT: {
+        ret = EvalWhileStatement(stmt->AsWhileStatement());
+        break;
+      }
+      case AstNodeType::FOR_STATEMENT: {
+        ret = EvalForStatement(stmt->AsForStatement());
+        break;
+      }
+      case AstNodeType::FOR_IN_STATEMENT: {
+        ret = EvalForInStatement(stmt->AsForInStatement());
+        break;
+      }
+      case AstNodeType::CONTINUE_STATEMENT: {
+        ret = EvalContinueStatement(stmt->AsContinueStatement());
+        break;
+      }
+      case AstNodeType::BREAK_STATEMENT: {
+        ret = EvalBreakStatement(stmt->AsBreakStatement());
+        break;
+      }
+      case AstNodeType::RETURN_STATEMENT: {
+        ret = EvalRetrunStatement(stmt->AsReturnStatement());
+        break;
+      }
+      case AstNodeType::WITH_STATEMENT: {
+        ret = EvalWithStatement(stmt->AsWithStatement());
+        break;
+      }
+      case AstNodeType::SWITCH_STATEMENT: {
+        ret = EvalSwitchStatement(stmt->AsSwitchStatement());
+        break;
+      }
+      case AstNodeType::LABELLED_STATEMENT: {
+        ret = EvalLabelledStatement(stmt->AsLabelledStatement());
+        break;
+      }
+      case AstNodeType::THROW_STATEMENT: {
+        ret = EvalThrowStatement(stmt->AsThrowStatement());
+        break;
+      }
+      case AstNodeType::TRY_STATEMENT: {
+        ret = EvalTryStatement(stmt->AsTryStatement());
+        break;
+      }
+      default: {
+        ret = Completion{};
+        break;
+      }
     }
-    case AstNodeType::EXPRESSION_STATEMENT: {
-      return EvalExpressionStatement(stmt->AsExpressionStatement());
-    }
-    case AstNodeType::VARIABLE_STATEMENT: {
-      return EvalVariableStatement(stmt->AsVariableStatement());
-    }
-    case AstNodeType::EMPTY_STATEMENT: {
-      return EvalEmptyStatement(stmt->AsEmptyStatement());
-    }
-    case AstNodeType::IF_STATEMENT: {
-      return EvalIfStatement(stmt->AsIfStatement());
-    }
-    case AstNodeType::DO_WHILE_STATEMENT: {
-      return EvalDoWhileStatement(stmt->AsDoWhileStatement());
-    }
-    case AstNodeType::WHILE_STATEMENT: {
-      return EvalWhileStatement(stmt->AsWhileStatement());
-    }
-    case AstNodeType::FOR_STATEMENT: {
-      return EvalForStatement(stmt->AsForStatement());
-    }
-    case AstNodeType::FOR_IN_STATEMENT: {
-      return EvalForInStatement(stmt->AsForInStatement());
-    }
-    case AstNodeType::CONTINUE_STATEMENT: {
-      return EvalContinueStatement(stmt->AsContinueStatement());
-    }
-    case AstNodeType::BREAK_STATEMENT: {
-      return EvalBreakStatement(stmt->AsBreakStatement());
-    }
-    case AstNodeType::RETURN_STATEMENT: {
-      return EvalRetrunStatement(stmt->AsReturnStatement());
-    }
-    case AstNodeType::WITH_STATEMENT: {
-      return EvalWithStatement(stmt->AsWithStatement());
-    }
-    case AstNodeType::SWITCH_STATEMENT: {
-      return EvalSwitchStatement(stmt->AsSwitchStatement());
-    }
-    case AstNodeType::LABELLED_STATEMENT: {
-      return EvalLabelledStatement(stmt->AsLabelledStatement());
-    }
-    case AstNodeType::THROW_STATEMENT: {
-      return EvalThrowStatement(stmt->AsThrowStatement());
-    }
-    case AstNodeType::TRY_STATEMENT: {
-      return EvalTryStatement(stmt->AsTryStatement());
-    }
-    default: {
-      return Completion();
+    
+    if (!ret.GetValue().IsEmpty()) {
+      value = ret.GetValue().GetJSValue();
     }
   }
+  
+  if (!value.IsHole()) {
+    ret.SetValue(vm_, value);
+  }
+  
+  return ret;
 }
 
 // Eval BlockStatement
@@ -527,7 +565,7 @@ Completion Interpreter::EvalRetrunStatement(ReturnStatement* return_stmt) {
 
   // 1. If the Expression is not present, return (return, undefined, empty).
   if (!return_stmt->GetExpression()) {
-    return Completion{CompletionType::RETURN, JSHandle<JSValue>{vm_, JSValue::Undefined()}};
+    return Completion{CompletionType::RETURN, vm_->GetGlobalConstants()->HandledUndefined()};
   }
   
   // 2. Let exprRef be the result of evaluating Expression.
@@ -1040,6 +1078,8 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalMemberExpression(Mem
 // EvalNewExpression
 // Defined in ECMAScript 5.1 Chapter 11.2.2
 std::variant<JSHandle<JSValue>, types::Reference> Interpreter::EvalNewExpression(ast::NewExpression* new_expr) {
+  auto factory = vm_->GetObjectFactory();
+  
   // NewExpression : new NewExpression
   // MemberExpression : new MemberExpression Arguments
 
@@ -1065,7 +1105,8 @@ std::variant<JSHandle<JSValue>, types::Reference> Interpreter::EvalNewExpression
   // 5. If constructor does not implement the [[Construct]] internal method, throw a TypeError exception.
   // 6. Return the result of calling the [[Construct]] internal method on constructor,
   //    providing the list argList as the argument values.
-  return Object::Construct( ctor.As<Object>(), vm_->GetObjectFactory()->NewRuntimeCallInfo(JSHandle<JSValue>{vm_, JSValue::Undefined()}, arg_list));
+  return Object::Construct(
+    ctor.As<Object>(), factory->NewRuntimeCallInfo(vm_->GetGlobalConstants()->HandledUndefined(), arg_list));
 }
 
 // EvalCallExpression
@@ -1115,7 +1156,7 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalCallExpression(CallE
   // 7. Else, Type(ref) is not Reference.
   else {
     // a. Let thisValue be undefined.
-    this_value = JSHandle<JSValue>{vm_, JSValue::Undefined()};
+    this_value = vm_->GetGlobalConstants()->HandledUndefined();
   }
   
   // 8. Return the result of calling the [[Call]] internal method on func,
@@ -1883,19 +1924,23 @@ JSHandle<JSValue> Interpreter::ApplyRelationalOperator(TokenType op, Expression*
     RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
     
     // 5. Let r be the result of performing abstract relational comparison lval op rval. (see 11.8.5)
+    JSHandle<JSValue> true_handle = vm_->GetGlobalConstants()->HandledTrue();
+    JSHandle<JSValue> false_handle = vm_->GetGlobalConstants()->HandledFalse();
     if (op == TokenType::LESS_THAN) {
       auto r = AbstractRelationalComparison(lval, rval, true);
-      return r->IsUndefined() ? JSHandle<JSValue>{vm_, JSValue::False()} : r;
+      return r->IsUndefined() ? false_handle : r;
     } else if (op == TokenType::GREATER_THAN) {
       auto r = AbstractRelationalComparison(rval, lval, false);
-      return r->IsUndefined() ? JSHandle<JSValue>{vm_, JSValue::False()} : r;
+      return r->IsUndefined() ? false_handle : r;
     } else if (op == TokenType::LESS_EQUAL) {
       auto r = AbstractRelationalComparison(rval, lval, false);
-      return r->IsTrue() || r->IsUndefined() ? JSHandle<JSValue>{vm_, JSValue::False()} : JSHandle<JSValue>{vm_, JSValue::True()};
+      return r->IsTrue() || r->IsUndefined() ?
+        false_handle : true_handle;
     } else {
       // op must be TokenType::GREAT_EQUAL
       auto r = AbstractRelationalComparison(lval, rval, true);
-      return r->IsTrue() || r->IsUndefined() ? JSHandle<JSValue>{vm_, JSValue::False()} : JSHandle<JSValue>{vm_, JSValue::True()};
+      return r->IsTrue() || r->IsUndefined() ?
+        false_handle : true_handle;
     }
   } else if (op == TokenType::KEYWORD_INSTANCEOF) {
     // 1. Let lref be the result of evaluating RelationalExpression.
@@ -2129,7 +2174,7 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       // 1. Let ref be the result of evaluating UnaryExpression.
       // 2. If Type(ref) is not Reference, return true.
       if (!std::get_if<Reference>(&ref)) {
-        return JSHandle<JSValue>{vm_, JSValue::True()};
+        return vm_->GetGlobalConstants()->HandledTrue();
       }
       auto pref = std::get<Reference>(ref);
       
@@ -2141,7 +2186,7 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
         }
         // b. Else, return true.
         else {
-          return JSHandle<JSValue>{vm_, JSValue::True()};
+          return vm_->GetGlobalConstants()->HandledTrue();
         }
       }
       
@@ -2166,7 +2211,8 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
         
         // c. Return the result of calling the DeleteBinding concrete method of bindings,
         //    providing GetReferencedName(ref) as the argument.
-        return JSHandle<JSValue>{vm_, JSValue{EnvironmentRecord::DeleteBinding(vm_, bindings, pref.GetReferencedName())}};
+        return EnvironmentRecord::DeleteBinding(vm_, bindings, pref.GetReferencedName()) ?
+          vm_->GetGlobalConstants()->HandledTrue() : vm_->GetGlobalConstants()->HandledFalse();
       }
     }
     case TokenType::KEYWORD_VOID: {
@@ -2175,7 +2221,7 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
 
       // 2. Return undefined
-      return JSHandle<JSValue>{vm_, JSValue::Undefined()};
+      return vm_->GetGlobalConstants()->HandledUndefined();
     }
     case TokenType::KEYWORD_TYPEOF: {
       // 1. If Type(val) is Reference, then
@@ -2575,14 +2621,14 @@ JSHandle<JSValue> Interpreter::AbstractRelationalComparison(JSHandle<JSValue> x,
     // c. If nx is NaN, return undefined.
     // d. If ny is NaN, return undefined.
     if (std::isnan(nx.GetNumber()) || std::isnan(ny.GetNumber())) {
-      return JSHandle<JSValue>{vm_, JSValue::Undefined()};
+      return vm_->GetGlobalConstants()->HandledUndefined();
     }
     
     // e. If nx and ny are the same Number value, return false.
     // f. If nx is +0 and ny is −0, return false.
     // g. If nx is −0 and ny is +0, return false.
     if (nx.GetNumber() == ny.GetNumber()) {
-      return JSHandle<JSValue>{vm_, JSValue::False()};
+      return vm_->GetGlobalConstants()->HandledFalse();
     }
     
     // h. If nx is +∞, return false.
@@ -2590,22 +2636,23 @@ JSHandle<JSValue> Interpreter::AbstractRelationalComparison(JSHandle<JSValue> x,
     // j. If ny is −∞, return false.
     // k. If nx is −∞, return true.
     if (std::isinf(nx.GetNumber()) && !std::signbit(nx.GetNumber())) {
-      return JSHandle<JSValue>{vm_, JSValue::False()};
+      return vm_->GetGlobalConstants()->HandledFalse();
     }
     if (std::isinf(ny.GetNumber()) && !std::signbit(ny.GetNumber())) {
-      return JSHandle<JSValue>{vm_, JSValue::True()};
+      return vm_->GetGlobalConstants()->HandledTrue();
     }
     if (std::isinf(ny.GetNumber()) && std::signbit(ny.GetNumber())) {
-      return JSHandle<JSValue>{vm_, JSValue::False()};
+      return vm_->GetGlobalConstants()->HandledFalse();
     }
     if (std::isinf(nx.GetNumber()) && std::signbit(nx.GetNumber())) {
-      return JSHandle<JSValue>{vm_, JSValue::True()};
+      return vm_->GetGlobalConstants()->HandledTrue();
     }
     
     // l. If the mathematical value of nx is less than the mathematical value of ny
     //    note that these mathematical values are both finite and not both zero
     //    return true. Otherwise, return false.
-    return nx.GetNumber() < ny.GetNumber() ? JSHandle<JSValue>{vm_, JSValue::True()} : JSHandle<JSValue>{vm_, JSValue::False()};
+    return nx.GetNumber() < ny.GetNumber() ?
+      vm_->GetGlobalConstants()->HandledTrue() : vm_->GetGlobalConstants()->HandledFalse();
   }
   // 4. Else, both px and py are Strings
   else {
@@ -2622,7 +2669,7 @@ JSHandle<JSValue> Interpreter::AbstractRelationalComparison(JSHandle<JSValue> x,
     // f. If m < n, return true. Otherwise, return false.
     return
       px.As<String>()->GetString() < py.As<String>()->GetString() ?
-      JSHandle<JSValue>{vm_, JSValue::True()} : JSHandle<JSValue>{vm_, JSValue::False()};
+      vm_->GetGlobalConstants()->HandledTrue() : vm_->GetGlobalConstants()->HandledFalse();
   }
 }
 
@@ -2679,7 +2726,7 @@ JSHandle<JSValue> Interpreter::GetUsedByGetValue(JSHandle<JSValue> base, JSHandl
   // 3. If desc is undefined, return undefined.
   // todo
   if (desc.IsEmpty()) {
-    return JSHandle<JSValue>{vm_, JSValue::Undefined()};
+    return vm_->GetGlobalConstants()->HandledUndefined();
   }
   
   // 4. If IsDataDescriptor(desc) is true, return desc.[[Value]].

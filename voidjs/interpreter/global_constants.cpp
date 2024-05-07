@@ -1,5 +1,6 @@
 #include "voidjs/interpreter/global_constants.h"
 
+#include "voidjs/types/js_value.h"
 #include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
@@ -27,8 +28,22 @@ DEFINE_GET_METHOD_FOR_JSVALUE(Null, 1)
 DEFINE_GET_METHOD_FOR_JSVALUE(False, 2)
 DEFINE_GET_METHOD_FOR_JSVALUE(True, 3)
 
-
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(LengthString, String, types::String, 4)
+
+#define SET_CONSTANT(name, value, index)         \
+  constants_[index] = value       \
+
+
+void GlobalConstants::Initialize() {
+  auto factory = vm_->GetObjectFactory();
+    
+  SET_CONSTANT(Undefined, JSValue::Undefined(), 0);
+  SET_CONSTANT(Null, JSValue::Null(), 1);
+  SET_CONSTANT(Null, JSValue::False(), 2);
+  SET_CONSTANT(Null, JSValue::True(), 3);
+
+  SET_CONSTANT(LengthString, factory->GetStringFromTable(u"length").GetJSValue(), 4);
+}
 
 #undef DEFINE_GET_METHOD_FOR_JSVALUE
 #undef DEFINE_GET_METHOD_FOR_HEAP_OBJECT

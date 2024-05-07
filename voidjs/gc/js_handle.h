@@ -51,7 +51,7 @@ class JSHandle {
 
   JSValue GetJSValue() const {
     if (IsEmpty()) {
-      return JSValue::Undefined();
+      return JSValue::Hole();
     }
     return *reinterpret_cast<JSValue*>(address_);
   }
