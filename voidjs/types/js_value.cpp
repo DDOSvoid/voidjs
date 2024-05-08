@@ -235,14 +235,14 @@ JSHandle<types::String> JSValue::ToString(VM* vm, JSHandle<JSValue> val) {
   auto factory = vm->GetObjectFactory();
   
   if (val->IsUndefined()) {
-    return factory->GetStringFromTable(u"undefined");
+    return vm->GetGlobalConstants()->HandledUndefinedString();
   } else if (val->IsNull()) {
-    return factory->GetStringFromTable(u"null");
+    return vm->GetGlobalConstants()->HandledNullString();
   } else if (val->IsBoolean()) {
     if (val->IsTrue()) {
-      return factory->GetStringFromTable(u"true");
+      return vm->GetGlobalConstants()->HandledTrueString();
     } else {
-      return factory->GetStringFromTable(u"false");
+      return vm->GetGlobalConstants()->HandledFalseString();
     }
   } else if (val->IsNumber()) {
     return NumberToString(vm, val->IsInt() ? val->GetInt() : val->GetDouble());
@@ -414,17 +414,17 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
   auto factory = vm->GetObjectFactory();
   
   if (std::isnan(num)) {
-    return factory->GetStringFromTable(u"NAN");
+    return vm->GetGlobalConstants()->HandledNANString();
   }
 
   if (num == 0) {
-    return factory->GetStringFromTable(u"0");
+    return vm->GetGlobalConstants()->HandledZeroString();
   }
 
   if (std::isinf(num)) {
     return std::signbit(num) ?
-      factory->GetStringFromTable(u"-Infinity") :
-      factory->GetStringFromTable(u"Infinity");
+      vm->GetGlobalConstants()->HandledNegativeInfinityString() : 
+      vm->GetGlobalConstants()->HandledPositiveInfinityString();
   }
 
   std::u16string sign = u"";
@@ -468,7 +468,7 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
     }
     std::reverse(ret.begin(), ret.end());
     ret += std::u16string(n - k, u'0');
-    return factory->GetStringFromTable(sign + ret);
+    return factory->NewString(sign + ret);
   }
   
   if (0 < n && n <= 21) {
@@ -482,7 +482,7 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
       s = tmp;
     }
     std::reverse(ret.begin(), ret.end());
-    return factory->GetStringFromTable(sign + ret);
+    return factory->NewString(sign + ret);
   }
   
   if (-6 < n && n <= 0) {
@@ -494,7 +494,7 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
     }
     std::reverse(ret.begin(), ret.end());
     ret = u"0." + std::u16string(-n, u'0') + ret;
-    return factory->GetStringFromTable(sign + ret);
+    return factory->NewString(sign + ret);
   }
   
   if (k == 1) {
@@ -505,7 +505,7 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
     } else {
       ret += u"-" + std::u16string(NumberToString(vm, 1 - n)->GetString());
     }
-    return factory->GetStringFromTable(sign + ret);
+    return factory->NewString(sign + ret);
   }
   
   for (int i = 0; i < k; i++) {
@@ -524,7 +524,7 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
   } else {
     ret += u"-" + std::u16string(NumberToString(vm, 1 - n)->GetString());
   }
-  return factory->GetStringFromTable(sign + ret);
+  return factory->NewString(sign + ret);
 }
 
 // Check Object Coercible

@@ -19,7 +19,7 @@ JSHandleScope::~JSHandleScope() {
   vm_->handle_scope_current_block_index_ = prev_index_;
 }
 
-std::uintptr_t JSHandleScope::NewHandle(VM* vm, JSValueType value) {
+std::uintptr_t JSHandleScope::NewHandle(VM* vm, JSValue value) {
   auto addr = vm->handle_scope_current_block_pos_;
   if (addr == vm->handle_scope_current_block_end_) {
     addr = vm->ExpandHandleScopeBlock();

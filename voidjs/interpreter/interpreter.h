@@ -2,6 +2,7 @@
 #define VOIDJS_INTERPRETER_INTERPRETER_H
 
 #include <variant>
+#include <memory>
 
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/interpreter/runtime_call_info.h"
@@ -23,8 +24,12 @@ namespace voidjs {
 
 class Interpreter {
  public:
-  Interpreter() {
+  Interpreter() : vm_(new VM{this}) {
     Initialize();
+  }
+
+  ~Interpreter() {
+    delete vm_;
   }
   
   void Initialize(); 

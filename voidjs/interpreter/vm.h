@@ -17,9 +17,9 @@ class GlobalConstants;
 
 class VM {
  public:
-  VM(Interpreter* interpreter)
-    : interpreter_{interpreter}
-  {}
+  VM(Interpreter* interpreter);
+
+  ~VM();
 
   Interpreter* GetInterpreter() const { return interpreter_; }
   
@@ -72,22 +72,9 @@ class VM {
   bool HasException() const { return !exception_.IsEmpty(); }
   void ClearException() { exception_ = JSHandle<builtins::JSError>{}; }
 
-  JSValueType* ExpandHandleScopeBlock() {
-    if (handle_scope_current_block_index_ + 1 == handle_scope_blocks_.size()) {
-      auto block = new std::array<JSValueType, HANDLE_SCOPE_BLOCK_SIZE>{};
-      handle_scope_blocks_.push_back(*block);
-      handle_scope_current_block_pos_ = block->data();
-      handle_scope_current_block_end_ = block->data() + block->size();
-      ++handle_scope_current_block_index_;
-      return block->data();
-    } else {
-      auto block = &handle_scope_blocks_.back();
-      handle_scope_current_block_pos_ = block->data();
-      handle_scope_current_block_end_ = block->data() + block->size();
-      ++handle_scope_current_block_index_;
-      return block->data();
-    }
-  }
+  JSValue* ExpandHandleScopeBlock();
+
+  std::vector<JSHandle<JSValue>> GetRoots();
 
  private:
   friend class JSHandleScope;
@@ -146,9 +133,9 @@ class VM {
   
   // handle scope
   static constexpr std::size_t HANDLE_SCOPE_BLOCK_SIZE = 10 * 1024;
-  std::vector<std::array<JSValueType, HANDLE_SCOPE_BLOCK_SIZE>> handle_scope_blocks_;
-  JSValueType* handle_scope_current_block_pos_ {nullptr};
-  JSValueType* handle_scope_current_block_end_ {nullptr};
+  std::vector<std::array<JSValue, HANDLE_SCOPE_BLOCK_SIZE>> handle_scope_blocks_;
+  JSValue* handle_scope_current_block_pos_ {nullptr};
+  JSValue* handle_scope_current_block_end_ {nullptr};
   std::int32_t handle_scope_current_block_index_ {-1};
 
   //

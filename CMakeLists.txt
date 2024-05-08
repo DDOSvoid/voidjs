@@ -16,6 +16,7 @@ add_library(voidjs_obj OBJECT
   voidjs/ir/ast.cpp
   voidjs/parser/parser.cpp
   voidjs/types/js_value.cpp
+  voidjs/types/heap_object.cpp
   voidjs/types/object_class_type.cpp
   voidjs/types/object_factory.cpp
   voidjs/types/lang_types/object.cpp
@@ -31,6 +32,7 @@ add_library(voidjs_obj OBJECT
   voidjs/builtins/js_boolean.cpp
   voidjs/builtins/js_number.cpp
   voidjs/gc/js_handle_scope.cpp
+  voidjs/interpreter/vm.cpp
   voidjs/interpreter/string_table.cpp
   voidjs/interpreter/global_constants.cpp
   voidjs/interpreter/interpreter.cpp

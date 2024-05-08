@@ -12,12 +12,12 @@ class JSHandleScope {
   explicit JSHandleScope(VM* vm);
   ~JSHandleScope();
   
-  static std::uintptr_t NewHandle(VM* vm, JSValueType value);
+  static std::uintptr_t NewHandle(VM* vm, JSValue value);
 
  private:
   VM* vm_ {nullptr};
-  JSValueType* prev_pos_ {nullptr};
-  JSValueType* prev_end_ {nullptr};
+  JSValue* prev_pos_ {nullptr};
+  JSValue* prev_end_ {nullptr};
   std::int32_t prev_index_ {-1};
 };
 

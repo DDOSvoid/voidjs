@@ -9,6 +9,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/spec_types/environment_record.h"
+#include "voidjs/gc/heap.h"
 #include "voidjs/gc/js_handle.h"
 
 namespace voidjs {
@@ -19,9 +20,11 @@ class StringTable;
 
 class ObjectFactory {
  public:
-  ObjectFactory(VM* vm, StringTable* string_table)
-    : vm_(vm), string_table_(string_table)
+  ObjectFactory(VM* vm, Heap* heap, StringTable* string_table)
+    : vm_(vm), heap_(heap), string_table_(string_table)
   {}
+
+  ~ObjectFactory();
   
   std::byte* Allocate(std::size_t size);
 
@@ -36,8 +39,6 @@ class ObjectFactory {
   
   JSHandle<types::String> NewString(std::u16string_view source);
   JSHandle<types::String> GetStringFromTable(std::u16string_view source);
-  JSHandle<types::String> GetEmptyString();
-  JSHandle<types::String> GetLengthString();
   JSHandle<types::String> GetIntString(std::int32_t i);
   
   JSHandle<types::Object> NewObject(
@@ -65,6 +66,7 @@ class ObjectFactory {
 
  private:
   VM* vm_;
+  Heap* heap_;
   StringTable* string_table_;
 };
 

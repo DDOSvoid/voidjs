@@ -34,6 +34,7 @@
 #include "voidjs/builtins/js_array.h"
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/gc/js_handle.h"
+#include "voidjs/gc/heap.h"
 #include "voidjs/interpreter/execution_context.h"
 #include "voidjs/interpreter/string_table.h"
 #include "voidjs/interpreter/global_constants.h"
@@ -46,14 +47,6 @@ using namespace types;
 using namespace builtins;
 
 void Interpreter::Initialize() {
-  vm_ = new VM{this};
-
-  auto object_factory = new ObjectFactory{vm_, new StringTable{vm_}};
-  vm_->SetObjectFactory(object_factory);
-
-  auto global_constant = new GlobalConstants{vm_};
-  vm_->SetGlobalConstants(global_constant);
-
   // Initialize builtin objects and set it for vm
   Builtin::Initialize(vm_);
   

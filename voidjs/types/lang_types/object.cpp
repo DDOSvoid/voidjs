@@ -16,6 +16,7 @@
 #include "voidjs/builtins/js_number.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/interpreter/interpreter.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 
@@ -275,7 +276,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
   
   if (hint == PreferredType::STRING) {
     // 1. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
-    JSHandle<JSValue> to_string = Get(vm, O, factory->GetStringFromTable(u"toString"));
+    JSHandle<JSValue> to_string = Get(vm, O, vm->GetGlobalConstants()->HandledToStringString());
 
     // 2. If IsCallable(toString) is true then,
     if (to_string->IsCallable()) {
@@ -290,7 +291,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     }
 
     // 3. Let valueOf be the result of calling the [[Get]] internal method of object O with argument "valueOf".
-    JSHandle<JSValue> value_of = Object::Get(vm, O, factory->GetStringFromTable(u"valueOf"));
+    JSHandle<JSValue> value_of = Object::Get(vm, O, vm->GetGlobalConstants()->HandledValueOfString());
 
     // 4. If IsCallable(valueOf) is true then,
     if (value_of->IsCallable()) {
@@ -310,7 +311,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     // hint must be PreferredType::NUMBER
 
     // 1. Let valueOf be the result of calling the [[Get]] internal method of object O with argument "valueOf".
-    JSHandle<JSValue> value_of = Object::Get(vm, O, factory->GetStringFromTable(u"valueOf"));
+    JSHandle<JSValue> value_of = Object::Get(vm, O, vm->GetGlobalConstants()->HandledValueOfString());
 
     // 2. If IsCallable(valueOf) is true then,
     if (value_of->IsCallable()) {
@@ -325,7 +326,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     }
 
     // 3. Let toString be the result of calling the [[Get]] internal method of object O with argument "toString".
-    JSHandle<JSValue> to_string = Get(vm, O, factory->GetStringFromTable(u"toString"));
+    JSHandle<JSValue> to_string = Get(vm, O, vm->GetGlobalConstants()->HandledToStringString());
 
     // 4. If IsCallable(toString) is true then,
     if (to_string->IsCallable()) {

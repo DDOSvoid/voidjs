@@ -125,7 +125,10 @@ class HeapObject {
 
   static constexpr std::size_t SIZE = META_DATA_SIZE;
   static constexpr std::size_t END_OFFSET = META_DATA_OFFSET + META_DATA_SIZE;
- 
+
+  static std::size_t GetSize(JSValue value);
+  static std::size_t GetSize(JSHandle<JSValue> handle);
+  static std::vector<JSHandle<JSValue>> GetValues(JSValue value);
   
   // Is Check
   bool IsString() const { return GetType() == JSType::STRING; }
@@ -135,7 +138,7 @@ class HeapObject {
   bool IsAccessorPropertyDescriptor() const { return GetType() == JSType::ACCESSOR_PROPERTY_DESCRIPTOR; }
   bool IsGenericPropertyDescriptor() const { return GetType() == JSType::GENERIC_PROPERTY_DESCRIPTOR; }
   bool IsPropertyMap() const { return GetType() == JSType::PROPERTY_MAP; }
-  bool IsBindgin() const { return GetType() == JSType::BINDING; }
+  bool IsBinding() const { return GetType() == JSType::BINDING; }
   bool IsInternalFunction() const { return GetType() == JSType::INTERNAL_FUNCTION; }
   bool IsHashMap() const { return GetType() == JSType::HASH_MAP; }
   bool IsEnvironmentRecord() const { return IsDeclarativeEnvironmentRecord() || IsObjectEnvironmentRecord(); }

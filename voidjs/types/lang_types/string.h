@@ -37,7 +37,7 @@ class String : public HeapObject {
     std::u16string str;
     str += str1->GetString();
     str += str2->GetString();
-    return vm->GetObjectFactory()->GetStringFromTable(str);
+    return vm->GetObjectFactory()->NewString(str);
   }
 
   static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2, JSHandle<String> str3) {
@@ -45,7 +45,7 @@ class String : public HeapObject {
     str += str1->GetString();
     str += str2->GetString();
     str += str3->GetString();
-    return vm->GetObjectFactory()->GetStringFromTable(str);
+    return vm->GetObjectFactory()->NewString(str);
   }
 
   // used for print 

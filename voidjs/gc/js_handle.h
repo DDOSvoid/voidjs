@@ -20,11 +20,11 @@ class JSHandle {
   {}
 
   JSHandle(VM* vm, JSValue value)
-    : address_(JSHandleScope::NewHandle(vm, value.GetRawData()))
+    : address_(JSHandleScope::NewHandle(vm, value))
   {}
 
   JSHandle(VM* vm, HeapObject* object)
-    : address_(JSHandleScope::NewHandle(vm, reinterpret_cast<JSValueType>(object)))
+    : address_(JSHandleScope::NewHandle(vm, JSValue{object}))
   {}
 
   // use this constructor

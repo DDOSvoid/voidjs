@@ -2,11 +2,13 @@
 
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_class_type.h"
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/interpreter/runtime_call_info.h"
-#include "voidjs/types/object_class_type.h"
+#include "voidjs/interpreter/global_constants.h"
+#include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -22,7 +24,7 @@ JSValue JSString::Call(RuntimeCallInfo* argv) {
   // Returns a String value (not a String object) computed by ToString(value).
   // If value is not supplied, the empty String "" is returned.
   auto ret = argv->GetArgsNum() == 0 ?
-    factory->GetEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
+    vm->GetGlobalConstants()->HandledEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
 
   return ret.GetJSValue();
 }
@@ -46,7 +48,7 @@ JSValue JSString::Construct(RuntimeCallInfo* argv) {
   auto str = factory->NewObject(JSString::SIZE, JSType::JS_STRING, ObjectClassType::STRING,
                                 vm->GetStringPrototype().As<JSValue>(), true, false, false)->AsJSString();
   JSHandle<types::String> val = argv->GetArgsNum() == 0 ?
-    factory->GetEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
+    vm->GetGlobalConstants()->HandledEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
   str->SetPrimitiveValue(val.As<JSValue>());
 
   return JSValue{str};
@@ -77,7 +79,7 @@ JSValue JSString::CharAt(RuntimeCallInfo* argv) {
   
   // 5. If position < 0 or position ≥ size, return the empty String.
   if (position < 0 || position >= size) {
-    return factory->GetEmptyString().GetJSValue();
+    return JSValue{vm->GetGlobalConstants()->EmptyString()};
   }
   auto idx = static_cast<int>(position);
   

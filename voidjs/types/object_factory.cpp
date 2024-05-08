@@ -21,6 +21,12 @@
 
 namespace voidjs {
 
+ObjectFactory::~ObjectFactory() {
+  delete heap_;
+  
+  delete string_table_;
+}
+
 std::byte* ObjectFactory::Allocate(std::size_t size) {
   return new std::byte[size];
 }
@@ -73,14 +79,6 @@ JSHandle<types::String> ObjectFactory::NewString(std::u16string_view source) {
 
 JSHandle<types::String> ObjectFactory::GetStringFromTable(std::u16string_view str_view) {
   return string_table_->GetOrInsert(str_view);
-}
-
-JSHandle<types::String> ObjectFactory::GetEmptyString() {
-  return string_table_->GetOrInsert(u"");
-}
-
-JSHandle<types::String> ObjectFactory::GetLengthString() {
-  return string_table_->GetOrInsert(u"length");
 }
 
 JSHandle<types::String> ObjectFactory::GetIntString(std::int32_t i) {
@@ -237,7 +235,7 @@ JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, JSHand
 }
 
 JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, std::u16string_view msg) {
-  return NewNativeError(type, GetStringFromTable(msg));
+  return NewNativeError(type, NewString(msg));
 }
 
 }  // namespace voidjs

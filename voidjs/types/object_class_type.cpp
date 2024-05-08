@@ -12,43 +12,43 @@ inline JSHandle<types::String> ObjectClassTypeToString(VM* vm, ObjectClassType t
   
   switch (type) {
     case ObjectClassType::GLOBAL_OBJECT: {
-      return factory->GetStringFromTable(u"GlobalObject");
+      return factory->NewString(u"GlobalObject");
     }
     case ObjectClassType::ARGUMENTS: {
-      return factory->GetStringFromTable(u"Arguments");
+      return factory->NewString(u"Arguments");
     }
     case ObjectClassType::ARRAY: {
-      return factory->GetStringFromTable(u"Array");
+      return factory->NewString(u"Array");
     }
     case ObjectClassType::BOOLEAN: {
-      return factory->GetStringFromTable(u"Boolean");
+      return factory->NewString(u"Boolean");
     }
     case ObjectClassType::DATE: {
-      return factory->GetStringFromTable(u"Date");
+      return factory->NewString(u"Date");
     }
     case ObjectClassType::ERROR: {
-      return factory->GetStringFromTable(u"Error");
+      return factory->NewString(u"Error");
     }
     case ObjectClassType::FUNCTION: {
-      return factory->GetStringFromTable(u"Function");
+      return factory->NewString(u"Function");
     }
     case ObjectClassType::JSON: {
-      return factory->GetStringFromTable(u"JSON");
+      return factory->NewString(u"JSON");
     }
     case ObjectClassType::MATH: {
-      return factory->GetStringFromTable(u"Math");
+      return factory->NewString(u"Math");
     }
     case ObjectClassType::NUMBER: {
-      return factory->GetStringFromTable(u"Number");
+      return factory->NewString(u"Number");
     }
     case ObjectClassType::OBJECT: {
-      return factory->GetStringFromTable(u"Object");
+      return factory->NewString(u"Object");
     }
     case ObjectClassType::REG_EXP: {
-      return factory->GetStringFromTable(u"RegExp");
+      return factory->NewString(u"RegExp");
     }
     case ObjectClassType::STRING: {
-      return factory->GetStringFromTable(u"String");
+      return factory->NewString(u"String");
     }
   }
 }

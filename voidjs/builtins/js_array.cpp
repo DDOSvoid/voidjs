@@ -25,7 +25,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
   //    A passing "length" as the argument. The result will never be undefined or
   ///   an accessor descriptor because Array objects are created with a length data property that
   //    cannot be deleted or reconfigured.
-  types::PropertyDescriptor old_len_desc = Object::GetOwnProperty(vm, O, factory->GetLengthString());
+  types::PropertyDescriptor old_len_desc = Object::GetOwnProperty(vm, O, vm->GetGlobalConstants()->HandledLengthString());
 
   // 2. Let oldLen be oldLenDesc.[[Value]].
   std::int32_t old_len = old_len_desc.GetValue()->GetInt();
@@ -36,7 +36,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
     if (!Desc.HasValue()) {
       // i. Return the result of calling the default [[DefineOwnProperty]] internal method (8.12.9)
       //    on A passing "length", Desc, and Throw as arguments.
-      return Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), Desc, Throw);
+      return Object::DefineOwnPropertyDefault(vm, O, vm->GetGlobalConstants()->HandledLengthString(), Desc, Throw);
     }
     
     // b. Let newLenDesc be a copy of Desc.
@@ -57,7 +57,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
     if (new_len >= old_len) {
       // a. Return the result of calling the default [[DefineOwnProperty]] internal method (8.12.9)
       ///   on A passing "length", newLenDesc, and Throw as arguments.
-      return Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), new_len_desc, Throw);
+      return Object::DefineOwnPropertyDefault(vm, O, vm->GetGlobalConstants()->HandledLengthString(), new_len_desc, Throw);
     }
 
     // g. Reject if oldLenDesc.[[Writable]] is false.
@@ -88,7 +88,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
 
     // j. Let succeeded be the result of calling the default [[DefineOwnProperty]] internal method (8.12.9)
     //    on A passing "length", newLenDesc, and Throw as arguments.
-    bool succeeded = Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), new_len_desc, Throw);
+    bool succeeded = Object::DefineOwnPropertyDefault(vm, O, vm->GetGlobalConstants()->HandledLengthString(), new_len_desc, Throw);
     RETURN_VALUE_IF_HAS_EXCEPTION(vm, false);
 
     // k. If succeeded is false, return false..
@@ -117,7 +117,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
         
         // 3. Call the default [[DefineOwnProperty]] internal method (8.12.9) on
         //    A passing "length", newLenDesc, and false as arguments.
-        Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), new_len_desc, false);
+        Object::DefineOwnPropertyDefault(vm, O, vm->GetGlobalConstants()->HandledLengthString(), new_len_desc, false);
         
         // 4. Reject.
         if (Throw) {
@@ -135,7 +135,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
       //    Property Descriptor{[[Writable]]: false}, and false as arguments. This call will always return true.
       types::PropertyDescriptor prop{vm};
       prop.SetWritable(false);
-      Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), prop, false);
+      Object::DefineOwnPropertyDefault(vm, O, vm->GetGlobalConstants()->HandledLengthString(), prop, false);
     }
 
     // n. Return true.
@@ -179,7 +179,7 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
       
       // ii .Call the default [[DefineOwnProperty]] internal method (8.12.9) on
       //     A passing "length", oldLenDesc, and false as arguments. This call will always return true.
-      Object::DefineOwnPropertyDefault(vm, O, factory->GetLengthString(), old_len_desc, false);
+      Object::DefineOwnPropertyDefault(vm, O, vm->GetGlobalConstants()->HandledLengthString(), old_len_desc, false);
     }
 
     // f. Retrun true.
@@ -226,10 +226,10 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
         THROW_RANGE_ERROR_AND_RETURN_VALUE(
           vm, u"new Array(len) fails, becacuse len is not a uint32.", JSValue{});
       } else {
-        Builtin::SetDataProperty(vm, arr, factory->GetLengthString(), JSHandle<JSValue>{vm, JSValue{JSValue::ToUint32(vm, len)}}, true, false, false);
+        Builtin::SetDataProperty(vm, arr, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{JSValue::ToUint32(vm, len)}}, true, false, false);
       }
     } else {
-      Builtin::SetDataProperty(vm, arr, factory->GetLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, true, false, false);
+      Builtin::SetDataProperty(vm, arr, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, true, false, false);
       Builtin::SetDataProperty(vm, arr, factory->GetStringFromTable(u"0"), len, true, true, true);
     }
 
@@ -253,7 +253,7 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
     JSHandle<JSArray> arr = factory->NewObject(JSArray::SIZE, JSType::JS_ARRAY, ObjectClassType::ARRAY,
                                   vm->GetArrayPrototype().As<JSValue>(), true, false, false).As<JSArray>();
  
-    Builtin::SetDataProperty(vm, arr, factory->GetLengthString(), JSHandle<JSValue>{vm, JSValue{static_cast<int>(args_num)}}, true, false, false);
+    Builtin::SetDataProperty(vm, arr, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{static_cast<int>(args_num)}}, true, false, false);
 
     for (std::size_t idx = 0; idx < args_num; ++idx) {
       Builtin::SetDataProperty(vm, arr, factory->GetIntString(idx), argv->GetArg(idx), true, true, true);
@@ -386,7 +386,7 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
-  JSHandle<JSValue> len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
   
   // 3. Let len be ToUint32(lenVal).
   std::int32_t len = JSValue::ToUint32(vm, len_val);
@@ -410,7 +410,7 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
   // 8. If element0 is undefined or null, let R be the empty String;
   //    otherwise, Let R be ToString(element0).
   JSHandle<types::String> R = element0->IsUndefined() || element0->IsNull() ?
-    factory->GetEmptyString() : JSValue::ToString(vm, element0);
+    vm->GetGlobalConstants()->HandledLengthString() : JSValue::ToString(vm, element0);
   
   // 9. Let k be 1.
   std::int32_t k = 1;
@@ -451,7 +451,7 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
-  JSHandle<JSValue> len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
   
   // 3. Let len be ToUint32(lenVal).
   std::int32_t len = JSValue::ToUint32(vm, len_val);
@@ -459,7 +459,7 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
   // 4. If len is zero,
   if (len == 0) { 
     // a. Call the [[Put]] internal method of O with arguments "length", 0, and true.
-    types::Object::Put(vm, O, factory->GetLengthString(), JSHandle<JSValue>{vm, JSValue{0}}, true);
+    types::Object::Put(vm, O, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{0}}, true);
     RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
     
     // b. Return undefined.
@@ -478,7 +478,7 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
     RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
     
     // d. Call the [[Put]] internal method of O with arguments "length", indx, and true.
-    types::Object::Put(vm, O, factory->GetLengthString(), JSHandle<JSValue>{vm, JSValue{len - 1}}, true);
+    types::Object::Put(vm, O, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{len - 1}}, true);
     
     // e. Return element.
     return element.GetJSValue();
@@ -497,7 +497,7 @@ JSValue JSArray::Push(RuntimeCallInfo* argv) {
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
-  JSHandle<JSValue> len_val = types::Object::Get(vm, O, factory->GetLengthString());
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
   
   // 3. Let n be ToUint32(lenVal).
   std::int32_t n = JSValue::ToUint32(vm, len_val);
@@ -518,7 +518,7 @@ JSValue JSArray::Push(RuntimeCallInfo* argv) {
   }
   
   // 6. Call the [[Put]] internal method of O with arguments "length", n, and true.
-  types::Object::Put(vm, O, factory->GetLengthString(), JSHandle<JSValue>{vm, JSValue{n}}, true);
+  types::Object::Put(vm, O, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{n}}, true);
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 7. Return n.
