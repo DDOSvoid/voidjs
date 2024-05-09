@@ -279,7 +279,7 @@ void Builtin::InitializeErrorObjects(VM* vm) {
   vm->SetURIErrorConstructor(uri_error_ctor);
 }
 
-
+// Defined in ECMAScript 5.1 Chapter 13.2
 JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   VM* vm, ast::AstNode* ast_node, JSHandle<types::LexicalEnvironment> scope, bool strict) {
   ObjectFactory* factory = vm->GetObjectFactory();

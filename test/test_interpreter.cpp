@@ -195,6 +195,60 @@ count;
     ASSERT_TRUE(comp.GetValue()->IsInt());
     EXPECT_EQ(43, comp.GetValue()->GetInt());
   }
+
+  {
+    std::u16string source = uR"(
+var object = { a: 1, b: 2, c: 3 };
+
+var cnt = 0; 
+
+for (var property in object) {
+  cnt += object[property];
+}
+
+cnt;
+)";
+    
+    Parser parser(source);
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(6, comp.GetValue()->GetInt());
+  }
+}
+
+TEST(Interpreter, EvalForInStatement) {
+  {
+    std::u16string source = uR"(
+var object = { a: 1, b: 2, c: 3 };
+
+var cnt = 0; 
+
+for (var property in object) {
+  cnt += object[property];
+}
+
+cnt;
+)";
+    
+    Parser parser(source);
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(6, comp.GetValue()->GetInt());
+  }
 }
 
 TEST(Interpreter, EvalContinueStatement) {

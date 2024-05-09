@@ -445,7 +445,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
 
 // Eval ForInStatement
 // Defined in ECMASCript 5.1 Chapter 12.6.4
-Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
+Completion Interpreter::EvalForInStatement(ForInStatement* for_in_stmt) {
   // IterationStatement : for ( LeftHandSideExpression in Expression ) Statement
   // IterationStatement : for ( var VariableDeclarationNoIn in Expression ) Statement
 
@@ -469,7 +469,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   // 4. If experValue is null or undefined, return (normal, empty, empty).
   if (expr_val->IsNull() || expr_val->IsUndefined()) {
     vm_->GetExecutionContext()->ExitIteration();
-    return Completion(CompletionType::NORMAL);
+    return Completion{CompletionType::NORMAL};
   }
 
   // 5. Let obj be ToObject(experValue).
@@ -477,14 +477,46 @@ Completion Interpreter::EvalForInStatement(ForInStatement *for_in_stmt) {
   RETURN_COMPLETION_AND_EXIT_ITERATION_IF_HAS_EXCEPTION(vm_);
 
   // 6. Let V = empty.
-  JSValue V;
+  JSHandle<JSValue> V;
 
   // 7. Repeat
-  while (true) {
+  auto props = JSHandle<PropertyMap>{vm_, obj->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = props->GetAllEnumerableKeys(vm_);
+  for (auto P : keys) {
     // a. Let P be the name of the next property of obj whose [[Enumerable]] attribute is true.
     //    If there is no such property, return (normal, V, empty).
-    // todo
+
+    // b. Let lhsRef be the result of evaluating the LeftHandSideExpression ( it may be evaluated repeatedly).
+    auto lhs_ref = for_in_stmt->GetLeft()->IsVariableDeclaraion() ?
+      IdentifierResolution(var_name.As<String>()) : EvalExpression(for_in_stmt->GetLeft()->AsExpression());
+    
+    // c. Call PutValue(lhsRef, P).
+    PutValue(lhs_ref, P);
+    
+    // d. Let stmt be the result of evaluating Statement.
+    auto stmt = EvalStatement(for_in_stmt->GetBody());
+    
+    // e. If stmt.value is not empty, let V = stmt.value.
+    if (!stmt.GetValue().IsEmpty()) {
+      V = stmt.GetValue();
+    }
+    // f. If stmt.type is break and stmt.target is in the current label set, return (normal, V, empty).
+    if (stmt.GetType() == CompletionType::BREAK &&
+        vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      return Completion{CompletionType::NORMAL, V};
+    }
+    
+    // g. If stmt.type is not continue || stmt.target is not in the current label set, then
+    if (stmt.GetType() != CompletionType::CONTINUE ||
+        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+      // i. If stmt is an abrupt completion, return stmt.
+      if (stmt.IsAbruptCompletion()) {
+        return stmt;
+      }
+    }
   }
+
+  return Completion{CompletionType::NORMAL, V};
 }
 
 // EvalContinueStatement
@@ -574,7 +606,6 @@ Completion Interpreter::EvalRetrunStatement(ReturnStatement* return_stmt) {
 
 // EvalWithStatement
 // Defined in ECMAScript 5.1 Chapter 12.10
-// todo
 Completion Interpreter::EvalWithStatement(WithStatement* with_stmt) {
   // WithStatement : with ( Expression ) Statement
 
@@ -734,7 +765,6 @@ Completion Interpreter::EvalTryStatement(TryStatement* try_stmt) {
 
 // EvalDebuggerStatement
 // Defined in ECMAScript 5.1 Chapter 12.15
-// todo
 Completion Interpreter::EvalDebuggerStatement(DebuggerStatement* debug_stmt) {
   // DebuggerStatement : debugger ;
 
@@ -1004,7 +1034,6 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalBinaryExpression(Bin
     }
     default: {
       // unreachable branch
-      // todo
       return {};
     }
   }
@@ -1037,7 +1066,6 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalMemberExpression(Mem
   RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
 
   // 3. Let propertyNameReference be the result of evaluating Expression.
-  // todo
   auto prop_name_ref =
     std::invoke([=](Expression* expr, bool is_dot) mutable -> std::variant<JSHandle<JSValue>, Reference> {
     if (is_dot) {
@@ -1166,7 +1194,6 @@ JSHandle<JSValue> Interpreter::EvalFunctionExpression(FunctionExpression* func_e
   // FunctionExpression : function ( FormalParameterListopt ) { FunctionBody }
   // FunctionExpression : function Identifier ( FormalParameterListopt ) { FunctionBody }
   
-  // todo
   if (!func_expr->GetName()) {
     return Builtin::InstantiatingFunctionDeclaration(
       vm_, func_expr, vm_->GetExecutionContext()->GetLexicalEnvironment(), false).As<JSValue>();
@@ -1615,7 +1642,6 @@ std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignm
     if (name->IsIdentifier()) {
       return factory->NewString(name->AsIdentifier()->GetName());
     } else if (name->IsNumericLiteral()) {
-      // todo
       return JSValue::NumberToString(vm_, name->AsNumericLiteral()->GetNumber<double>());
     } else {
       // name.IsStringLiteral must be true
@@ -1790,7 +1816,6 @@ JSHandle<JSValue> Interpreter::ApplyCompoundAssignment(TokenType op, JSHandle<JS
     }
     default: {
       // unreachable branch
-      // todo
       return {};
     }
   }

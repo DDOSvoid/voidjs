@@ -67,6 +67,34 @@ str;
   EXPECT_EQ(u"1,2,0", comp.GetValue()->GetString());
 }
 
+TEST(JSObject, Create) {
+  Parser parser(uR"(
+var person = {
+  isHuman: false,
+  printIntroduction: function () {
+    return "My name is " + this.name + ". Am I human? " + this.isHuman;
+  },
+};
+
+var me = Object.create(person);
+
+me.name = 'Matthew';
+me.isHuman = true;
+
+me.printIntroduction();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"My name is Matthew. Am I human? true", comp.GetValue()->GetString());
+}
+
 TEST(JSObject, DefineProperty) {
   {
     Parser parser(uR"(

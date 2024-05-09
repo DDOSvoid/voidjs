@@ -162,6 +162,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   JSHandleScope handle_scope{vm};
   ObjectFactory* factory = argv->GetVM()->GetObjectFactory();
   JSHandle<JSValue> O = argv->GetArg(0);
+  JSHandle<JSValue> Properties = argv->GetArg(1);
   
   // 1. If Type(O) is not Object or Null throw a TypeError exception.
   if (!O->IsObject() && !O->IsNull()) {
@@ -181,7 +182,23 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
   // 4. If the argument Properties is present and not undefined,
   //    add own properties to obj as if by calling the standard built-in function
   //    Object.defineProperties with arguments obj and Properties.
-  
+  if (!Properties->IsUndefined()) {
+    // Object.DefineProperties(O, Properties)
+    
+    auto props = JSValue::ToObject(vm, Properties);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+
+    auto prop_map = JSHandle<types::PropertyMap>{vm, props.As<types::Object>()->GetProperties()};
+    std::vector<JSHandle<JSValue>> keys = prop_map->GetAllEnumerableKeys(vm);
+    for (auto key : keys) {
+      JSHandle<JSValue> prop = types::Object::Get(vm, props, key.As<types::String>());
+    
+      auto desc = types::PropertyDescriptor::ToPropertyDescriptor(vm, prop);
+
+      types::Object::DefineOwnProperty(vm, obj, key.As<types::String>(), desc, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+  }
   
   // 5. Return obj.
   return obj.GetJSValue();
@@ -217,7 +234,6 @@ JSValue JSObject::DefineProperty(RuntimeCallInfo* argv) {
 
 // Object.defineProperties(O, Properties)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.7
-// todo
 JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
