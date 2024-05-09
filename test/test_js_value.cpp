@@ -39,7 +39,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            42
  )";
-    auto val = factory->GetStringFromTable(source).As<JSValue>();
+    auto val = factory->NewString(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
@@ -50,7 +50,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            42E-2
  )";
-    auto val = factory->GetStringFromTable(source).As<JSValue>();
+    auto val = factory->NewString(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
@@ -62,7 +62,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            42E.-2
  )";
-    auto val = factory->GetStringFromTable(source).As<JSValue>();
+    auto val = factory->NewString(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
@@ -73,7 +73,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
            .142857E6
  )";
-    auto val = factory->GetStringFromTable(source).As<JSValue>();
+    auto val = factory->NewString(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
@@ -84,7 +84,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
 23.142857E3
  )";
-    auto val = factory->GetStringFromTable(source).As<JSValue>();
+    auto val = factory->NewString(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.GetDouble());
@@ -95,7 +95,7 @@ TEST(JSValue, ToNumber) {
     auto source = uR"(
 0xFAb4
  )";
-    auto val = factory->GetStringFromTable(source).As<JSValue>();
+    auto val = factory->NewString(source).As<JSValue>();
     auto num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
@@ -242,7 +242,7 @@ TEST(JSValue, ToObject) {
   }
   
   {
-    auto val = factory->GetStringFromTable(u"Hello").As<JSValue>();
+    auto val = factory->NewString(u"Hello").As<JSValue>();
     auto obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSString());

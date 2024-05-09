@@ -3,8 +3,10 @@
 
 #include <functional>
 
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/internal_types/array.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
@@ -21,6 +23,9 @@ class HashMap : public Array {
   static constexpr std::uint32_t BUCKET_CAPACITY_INDEX = 1;
   std::int32_t GetBucketCapacity() const { return Get(BUCKET_CAPACITY_INDEX).GetInt(); }
   void SetBucketCapacity(std::int32_t capacity) { return Set(BUCKET_CAPACITY_INDEX, JSValue(capacity)); }
+
+  static constexpr std::size_t SIZE = 0;
+  static constexpr std::size_t END_OFFSET = Array::END_OFFSET + SIZE;
 
   using Hash = utils::detail::hash<std::u16string_view>;
   static constexpr std::uint32_t MIN_CAPACITY = 2;

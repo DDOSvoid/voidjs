@@ -16,6 +16,9 @@ namespace types {
 
 class PropertyMap : public HashMap {
  public:
+  static constexpr std::size_t SIZE = 0;
+  static constexpr std::size_t END_OFFSET = HashMap::END_OFFSET + SIZE;
+  
   static constexpr std::uint32_t DEFAULT_PROPERTY_NUMS = 4;
   
   JSHandle<JSValue> GetProperty(VM* vm, JSHandle<String> key) {

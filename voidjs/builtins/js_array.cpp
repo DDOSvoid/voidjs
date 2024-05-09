@@ -1,18 +1,19 @@
 #include "voidjs/builtins/js_array.h"
 
-#include "voidjs/builtins/js_object.h"
-#include "voidjs/gc/js_handle_scope.h"
-#include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/object_factory.h"
+#include "voidjs/types/object_class_type.h"
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
-#include "voidjs/types/object_class_type.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/builtins/builtin.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/js_object.h"
+#include "voidjs/gc/js_handle_scope.h"
 #include "voidjs/interpreter/global_constants.h"
+#include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -230,7 +231,7 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
       }
     } else {
       Builtin::SetDataProperty(vm, arr, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, true, false, false);
-      Builtin::SetDataProperty(vm, arr, factory->GetStringFromTable(u"0"), len, true, true, true);
+      Builtin::SetDataProperty(vm, arr, vm->GetGlobalConstants()->HandledZeroString(), len, true, true, true);
     }
 
     return arr.GetJSValue();
@@ -256,7 +257,7 @@ JSValue JSArray::Construct(RuntimeCallInfo* argv) {
     Builtin::SetDataProperty(vm, arr, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{static_cast<int>(args_num)}}, true, false, false);
 
     for (std::size_t idx = 0; idx < args_num; ++idx) {
-      Builtin::SetDataProperty(vm, arr, factory->GetIntString(idx), argv->GetArg(idx), true, true, true);
+      Builtin::SetDataProperty(vm, arr, factory->NewStringFromInt(idx), argv->GetArg(idx), true, true, true);
     }
 
     return arr.GetJSValue();
@@ -339,7 +340,7 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
     if (elem->IsObject() && elem->GetHeapObject()->GetClassType() == ObjectClassType::ARRAY) {
       JSHandle<JSArray> arr = elem.As<JSArray>();
       std::int32_t k = 0;
-      std::int32_t len = types::Object::Get(vm, arr, factory->GetStringFromTable(u"length"))->GetInt();
+      std::int32_t len = types::Object::Get(vm, arr, vm->GetGlobalConstants()->HandledLengthString())->GetInt();
       
       while (k < len) {
         JSHandle<types::String> P = JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue{k}});
@@ -348,7 +349,7 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
         
         if (exists) {
           JSHandle<JSValue> sub_element = types::Object::Get(vm, arr, P);
-          DefineOwnProperty(vm, A, factory->GetIntString(n),
+          DefineOwnProperty(vm, A, factory->NewStringFromInt(n),
                             types::PropertyDescriptor{vm, sub_element, true, true, true}, false);
         }
         
@@ -356,7 +357,7 @@ JSValue JSArray::Concat(RuntimeCallInfo* argv) {
         ++k;
       }
     } else {
-      DefineOwnProperty(vm, A, factory->GetIntString(n),
+      DefineOwnProperty(vm, A, factory->NewStringFromInt(n),
                         types::PropertyDescriptor{vm, elem, true, true, true}, false);
       ++n;
     }
@@ -393,7 +394,7 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
   
   // 4. If separator is undefined, let separator be the single-character String ",".
   if (separator->IsUndefined()) {
-    separator = factory->GetStringFromTable(u",").As<JSValue>();
+    separator = factory->NewString(u",").As<JSValue>();
   }
   
   // 5. Let sep be ToString(separator).
@@ -405,7 +406,7 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
   }
   
   // 7. Let element0 be the result of calling the [[Get]] internal method of O with argument "0".
-  JSHandle<JSValue> element0 = types::Object::Get(vm, O, factory->GetIntString(0));
+  JSHandle<JSValue> element0 = types::Object::Get(vm, O, factory->NewStringFromInt(0));
   
   // 8. If element0 is undefined or null, let R be the empty String;
   //    otherwise, Let R be ToString(element0).
@@ -421,7 +422,7 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
     JSHandle<types::String> S = types::String::Concat(vm, R, sep);
     
     // b. Let element be the result of calling the [[Get]] internal method of O with argument ToString(k).
-    JSHandle<JSValue> element = types::Object::Get(vm, O, factory->GetIntString(k));
+    JSHandle<JSValue> element = types::Object::Get(vm, O, factory->NewStringFromInt(k));
     
     // c. If element is undefined or null, Let next be the empty String; otherwise, let next be ToString(element).
     JSHandle<types::String> next = element->IsUndefined() || element->IsNull() ?
@@ -468,7 +469,7 @@ JSValue JSArray::Pop(RuntimeCallInfo* argv) {
   // 5. Else, len > 0
   else {
     // a. Let indx be ToString(len–1).
-    JSHandle<types::String> index = factory->GetIntString(len - 1);
+    JSHandle<types::String> index = factory->NewStringFromInt(len - 1);
     
     // b. Let element be the result of calling the [[Get]] internal method of O with argument indx.
     JSHandle<JSValue> element = types::Object::Get(vm, O, index);
@@ -510,7 +511,7 @@ JSValue JSArray::Push(RuntimeCallInfo* argv) {
     JSHandle<JSValue> E = argv->GetArg(idx);
     
     // b. Call the [[Put]] internal method of O with arguments ToString(n), E, and true.
-    types::Object::Put(vm, O, factory->GetIntString(n), E, true);
+    types::Object::Put(vm, O, factory->NewStringFromInt(n), E, true);
     RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
     
     // c. Increase n by 1.

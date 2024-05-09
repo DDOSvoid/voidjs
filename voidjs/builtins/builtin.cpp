@@ -43,7 +43,21 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   ObjectFactory* factory = vm->GetObjectFactory();
   
   // Initialize GlobalObject
-  JSHandle<GlobalObject> global_obj = factory->NewGlobalObject();
+  // 
+  // Unless otherwise specified, the standard built-in properties of the global object have
+  // attributes {[[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}.
+  // 
+  // The global object does not have a [[Construct]] internal property;
+  // it is not possible to use the global object as a constructor with the new operator.
+  // 
+  // The global object does not have a [[Call]] internal property;
+  // it is not possible to invoke the global object as a function.
+  // 
+  // The values of the [[Prototype]] and [[Class]]
+  // internal properties of the global object are implementation-dependent.
+  JSHandle<GlobalObject> global_obj = factory->NewObject(
+    GlobalObject::SIZE, JSType::GLOBAL_OBJECT, ObjectClassType::OBJECT,
+    JSHandle<JSValue>{vm, JSValue::Null()}, true, false, false).As<GlobalObject>();
   vm->SetGlobalObject(global_obj);
 
   // Initialize Object Prototype
@@ -269,6 +283,7 @@ void Builtin::InitializeErrorObjects(VM* vm) {
 JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   VM* vm, ast::AstNode* ast_node, JSHandle<types::LexicalEnvironment> scope, bool strict) {
   ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
   
   // 1. Create a new native ECMAScript object and let F be that object.
   // 2. Set all the internal methods, except for [[Get]], of F as described in 8.12.
@@ -306,7 +321,7 @@ JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   // 15. Call the [[DefineOwnProperty]] internal method of F with arguments "length",
   ///    Property Descriptor {[[Value]]: len, [[Writable]]: false, [[Enumerable]]: false,
   //     [[Configurable]]: false}, and false.
-  types::Object::DefineOwnProperty(vm, F, factory->GetStringFromTable(u"length"),
+  types::Object::DefineOwnProperty(vm, F, constants->HandledLengthString(),
                                    types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue{len}}, false, false, false}, false);
   RETURN_HANDLE_IF_HAS_EXCEPTION(vm, JSFunction);
   
@@ -319,13 +334,13 @@ JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   // 17. Call the [[DefineOwnProperty]] internal method of proto with arguments "constructor",
   ///    Property Descriptor {[[Value]]: F, { [[Writable]]: true, [[Enumerable]]: false,
   //     [[Configurable]]: true}, and false.
-  types::Object::DefineOwnProperty(vm, proto, factory->GetStringFromTable(u"constuctor"),
+  types::Object::DefineOwnProperty(vm, proto, constants->HandledConstructorString(),
                                    types::PropertyDescriptor{vm, F.As<JSValue>(), true, false, true}, false);
   
   // 18. Call the [[DefineOwnProperty]] internal method of F with arguments "prototype",
   //     Property Descriptor {[[Value]]: proto, { [[Writable]]: true, [[Enumerable]]: false,
   //     [[Configurable]]: false}, and false.
-  types::Object::DefineOwnProperty(vm, F, factory->GetStringFromTable(u"prototype"),
+  types::Object::DefineOwnProperty(vm, F, constants->HandledPrototypeString(),
                                    types::PropertyDescriptor{vm, proto.As<JSValue>(), true, false, false}, false);
   
   // 19. If Strict is true, then
@@ -343,6 +358,7 @@ JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
 void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   JSHandle<GlobalObject> global_obj = vm->GetGlobalObject();
   ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
   JSHandle<JSFunction> obj_ctor = vm->GetObjectConstructor();
   JSHandle<JSObject> obj_proto = vm->GetObjectPrototype();
   JSHandle<JSFunction> func_ctor = vm->GetFunctionConstructor();
@@ -351,55 +367,53 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   JSHandle<JSString> str_proto = vm->GetStringPrototype();
 
   // Set properties for Global Object
-  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Object"),
+  SetDataProperty(vm, global_obj, constants->HandledObjectString(),
                   obj_ctor.As<JSValue>(), true, false, true);
-  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Function"),
+  SetDataProperty(vm, global_obj, constants->HandledFunctionString(),
                   func_ctor.As<JSValue>(), true, false, true);
-  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Array"),
+  SetDataProperty(vm, global_obj, constants->HandledArrayString(),
                   arr_ctor.As<JSValue>(), true, false, true);
-  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Boolean"),
+  SetDataProperty(vm, global_obj, constants->HandledBooleanString(),
                   vm->GetBooleanConstructor().As<JSValue>(), true, false, true);
-  SetDataProperty(vm, global_obj, factory->GetStringFromTable(u"Number"),
+  SetDataProperty(vm, global_obj, constants->HandledNumberString(),
                   vm->GetNumberConstructor().As<JSValue>(), true, false, true);
 
   // Set propreties for Object Constructor
-  SetDataProperty(vm, obj_ctor, factory->NewString(u"length"), JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);
-  SetDataProperty(vm, obj_ctor, factory->NewString(u"prototype"), obj_proto.As<JSValue>(), false, false, false);
-  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"getPrototypeOf"),
+  SetDataProperty(vm, obj_ctor, constants->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);
+  SetDataProperty(vm, obj_ctor, constants->HandledPrototypeString(), obj_proto.As<JSValue>(), false, false, false);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"getPrototypeOf"),
                       JSObject::GetPrototypeOf, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"getOwnPropertyDescriptor"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"getOwnPropertyDescriptor"),
                       JSObject::GetOwnPropretyDescriptor, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"defineProperty"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"defineProperty"),
                       JSObject::DefineProperty, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"preventExtensions"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"preventExtensions"),
                       JSObject::PreventExtensions, true, false, true);
-  SetFunctionProperty(vm, obj_ctor, factory->GetStringFromTable(u"isExtensible"),
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"isExtensible"),
                       JSObject::IsExtensible, true, false, true);
 
   // Set properties for Array Constructor
-  SetDataProperty(vm, arr_ctor, factory->GetStringFromTable(u"prototype"),
+  SetDataProperty(vm, arr_ctor, factory->NewString(u"prototype"),
                   arr_proto.As<JSValue>(), false, false, false);
-  SetFunctionProperty(vm, arr_ctor, factory->GetStringFromTable(u"isArray"),
-                      JSArray::IsArray, true, false, true);
-  SetFunctionProperty(vm, arr_ctor, factory->GetStringFromTable(u"isArray"),
+  SetFunctionProperty(vm, arr_ctor, factory->NewString(u"isArray"),
                       JSArray::IsArray, true, false, true);
   
   // Set propreties for Array Prototype
-  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"concat"),
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"concat"),
                       JSArray::Concat, true, false, true);
-  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"join"),
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"join"),
                       JSArray::Join, true, false, true);
-  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"pop"),
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"pop"),
                       JSArray::Pop, true, false, true);
-  SetFunctionProperty(vm, arr_proto, factory->GetStringFromTable(u"push"),
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"push"),
                       JSArray::Push, true, false, true);
 
   // Set propreties for String Prototype
-  SetFunctionProperty(vm, str_proto, factory->GetStringFromTable(u"charAt"),
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"charAt"),
                       JSString::CharAt, true, false, true);
-  SetFunctionProperty(vm, str_proto, factory->GetStringFromTable(u"concat"),
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"concat"),
                       JSString::Concat, true, false, true);
-  SetFunctionProperty(vm, str_proto, factory->GetStringFromTable(u"indexOf"),
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"indexOf"),
                       JSString::IndexOf, true, false, true);
 }
 

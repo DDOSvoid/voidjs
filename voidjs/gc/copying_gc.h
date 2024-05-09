@@ -30,7 +30,10 @@ class CopyingGC {
   }
   
   std::uintptr_t Allocate(std::size_t size) {
-    if (alloc_ + size > tospace_) {
+    if (size & 0x7) {
+      size += 0x8 - (size & 0x7);
+    }
+    if (alloc_ + size > fromspace_ + extent_) {
       Collect();
     }
     std::uintptr_t ret = alloc_;

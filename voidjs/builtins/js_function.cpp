@@ -3,6 +3,7 @@
 #include "voidjs/ir/ast.h"
 #include "voidjs/parser/parser.h"
 #include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/builtins/builtin.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/utils/macros.h"

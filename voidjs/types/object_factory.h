@@ -7,6 +7,8 @@
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/lang_types/string.h"
+#include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/gc/heap.h"
@@ -26,24 +28,52 @@ class ObjectFactory {
 
   ~ObjectFactory();
   
-  std::byte* Allocate(std::size_t size);
+  template <GCFlag flag = GCFlag::NORMAL> 
+  std::uintptr_t Allocate(std::size_t size) {
+    return heap_->Allocate<flag>(size);
+  }
 
   JSHandle<builtins::GlobalObject> NewGlobalObject();
-  
-  JSHandle<HeapObject> NewHeapObject(std::size_t size);
+
+  template <GCFlag flag = GCFlag::NORMAL>
+  JSHandle<HeapObject> NewHeapObject(std::size_t size) {
+    auto obj = reinterpret_cast<HeapObject*>(Allocate(HeapObject::SIZE + size));
+    obj->SetMetaData(0);
+    return JSHandle<HeapObject>(vm_, obj);
+  }
 
   // used to create builtin objects
   JSHandle<types::Object> NewEmptyObject(
     std::size_t extra_size, JSType type, ObjectClassType class_type,
     JSValue proto, bool extensible, bool callable, bool is_counstructor);
-  
-  JSHandle<types::String> NewString(std::u16string_view source);
-  JSHandle<types::String> GetStringFromTable(std::u16string_view source);
-  JSHandle<types::String> GetIntString(std::int32_t i);
-  
+
+  template <GCFlag flag = GCFlag::NORMAL>
+  JSHandle<types::String> NewString(std::u16string_view source) {
+    auto len = source.size();
+    auto str = NewHeapObject(sizeof(std::size_t) + len * sizeof(char16_t)).As<types::String>();
+    str->SetType(JSType::STRING);
+    str->SetLength(len);
+    std::copy(source.begin(), source.end(), str->GetData());
+    return str;
+  }
+  JSHandle<types::String> NewStringFromInt(std::int32_t i);
+
+  template <GCFlag flag = GCFlag::NORMAL>
   JSHandle<types::Object> NewObject(
     std::size_t extra_size, JSType type, ObjectClassType class_type, JSHandle<JSValue> proto,
-    bool extensible, bool callable, bool is_counstructor);
+    bool extensible, bool callable, bool is_counstructor) {
+    auto obj = NewHeapObject(types::Object::SIZE + extra_size).As<types::Object>();
+
+    obj->SetType(type);
+    obj->SetClassType(class_type);
+    obj->SetProperties(NewPropertyMap().As<JSValue>());
+    obj->SetPrototype(proto);
+    obj->SetExtensible(extensible);
+    obj->SetCallable(callable);
+    obj->SetIsConstructor(is_counstructor);
+  
+    return obj;
+  }
   JSHandle<types::Array> NewArray(std::size_t len);
   JSHandle<types::DataPropertyDescriptor> NewDataPropertyDescriptor(const types::PropertyDescriptor& desc);
   JSHandle<types::AccessorPropertyDescriptor> NewAccessorPropertyDescriptor(const types::PropertyDescriptor& desc);

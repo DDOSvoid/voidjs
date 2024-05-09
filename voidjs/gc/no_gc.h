@@ -12,6 +12,7 @@ class NoGC {
  public:
   NoGC(VM* vm, std::size_t size) {
     space_ = reinterpret_cast<std::uintptr_t>(new std::byte[size]{});
+    alloc_ = space_;
   }
 
   ~NoGC() {

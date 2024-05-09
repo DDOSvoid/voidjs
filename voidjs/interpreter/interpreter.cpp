@@ -1039,7 +1039,7 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalMemberExpression(Mem
     std::invoke([=](Expression* expr, bool is_dot) mutable -> std::variant<JSHandle<JSValue>, Reference> {
     if (is_dot) {
       auto factory = vm_->GetObjectFactory();
-      return factory->GetStringFromTable(expr->AsIdentifier()->GetName()).As<JSValue>();
+      return factory->NewString(expr->AsIdentifier()->GetName()).As<JSValue>();
     } else {
       return EvalExpression(expr);
     }
@@ -1168,8 +1168,7 @@ JSHandle<JSValue> Interpreter::EvalFunctionExpression(FunctionExpression* func_e
     return Builtin::InstantiatingFunctionDeclaration(
       vm_, func_expr, vm_->GetExecutionContext()->GetLexicalEnvironment(), false).As<JSValue>();
   }
-  auto ident = vm_->GetObjectFactory()->GetStringFromTable(
-    func_expr->GetName()->AsIdentifier()->GetName());
+  auto ident = vm_->GetObjectFactory()->NewString(func_expr->GetName()->AsIdentifier()->GetName());
 
   // 1. Let funcEnv be the result of calling NewDeclarativeEnvironment passing
   //    the running execution context’s Lexical Environment as the argument
@@ -1370,7 +1369,7 @@ Completion Interpreter::EvalCatch(Expression* catch_name, Statement* catch_block
   auto catch_env_rec = JSHandle<EnvironmentRecord>{vm_, catch_env->GetEnvRec()};
     
   // 4. Call the CreateMutableBinding concrete method of catchEnv passing the Identifier String value as the argument.
-  auto ident_name = factory->GetStringFromTable(catch_name->AsIdentifier()->GetName());
+  auto ident_name = factory->NewString(catch_name->AsIdentifier()->GetName());
   EnvironmentRecord::CreateMutableBinding(vm_, catch_env_rec, ident_name, false);
     
   // 5. Call the SetMutableBinding concrete method of catchEnv passing the Identifier, C,
@@ -1445,13 +1444,13 @@ JSHandle<JSValue> Interpreter::EvalNumericLiteral(NumericLiteral* num) {
 // Eval StringLiteral
 // Defined in ECMAScript 5.1 Chapter 11.1
 JSHandle<JSValue> Interpreter::EvalStringLiteral(StringLiteral* str) {
-  return vm_->GetObjectFactory()->GetStringFromTable(str->GetString()).As<JSValue>();
+  return vm_->GetObjectFactory()->NewString(str->GetString()).As<JSValue>();
 }
 
 // Eval Identifier
 // Defined in ECMAScript 5.1 Chapter 11.1.2
 Reference Interpreter::EvalIdentifier(Identifier* ident) {
-  return IdentifierResolution(vm_->GetObjectFactory()->GetStringFromTable(ident->GetName()));
+  return IdentifierResolution(vm_->GetObjectFactory()->NewString(ident->GetName()));
 }
 
 // EvalSourceElements
@@ -1539,7 +1538,7 @@ JSHandle<JSValue> Interpreter::EvalVariableDeclaration(VariableDeclaration* decl
 
   // 2. Let rhs be the result of evaluating Initialiser.
   if (!decl->GetInitializer()) {
-    return vm_->GetObjectFactory()->GetStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()).As<JSValue>();
+    return vm_->GetObjectFactory()->NewString(decl->GetIdentifier()->AsIdentifier()->GetName()).As<JSValue>();
   }
   auto rhs = EvalExpression(decl->GetInitializer());
   RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
@@ -1553,7 +1552,7 @@ JSHandle<JSValue> Interpreter::EvalVariableDeclaration(VariableDeclaration* decl
   RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
 
   // 5. Return a String value containing the same sequence of characters as in the Identifier.
-  return vm_->GetObjectFactory()->GetStringFromTable(decl->GetIdentifier()->AsIdentifier()->GetName()).As<JSValue>();
+  return vm_->GetObjectFactory()->NewString(decl->GetIdentifier()->AsIdentifier()->GetName()).As<JSValue>();
 }
 
 // EvalPropertyNameAndValueList
@@ -1608,13 +1607,13 @@ std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignm
     // 1. Let propName be the result of evaluating PropertyName.
     auto prop_name = std::invoke([vm = vm_, factory](Expression* name) {
       if (name->IsIdentifier()) {
-        return factory->GetStringFromTable(name->AsIdentifier()->GetName());
+        return factory->NewString(name->AsIdentifier()->GetName());
       } else if (name->IsNumericLiteral()) {
         // todo
         return JSValue::NumberToString(vm, name->AsNumericLiteral()->GetNumber<double>());
       } else {
         // name.IsStringLiteral must be true
-        return factory->GetStringFromTable(name->AsStringLiteral()->GetString());
+        return factory->NewString(name->AsStringLiteral()->GetString());
       }
     }, prop->GetKey());
     
@@ -2219,7 +2218,7 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       if (auto pref = std::get_if<Reference>(&ref)) {
         // a. If IsUnresolvableReference(val) is true, return "undefined".
         if (pref->IsUnresolvableReference()) {
-          return vm_->GetObjectFactory()->GetStringFromTable(u"undefined").As<JSValue>();
+          return vm_->GetGlobalConstants()->HandledUndefined().As<JSValue>();
         }
         // b. Let val be GetValue(val).
       }
@@ -2242,7 +2241,7 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       } else if (val->IsObject() && val->GetHeapObject()->GetCallable()) {
         str = u"function";
       }
-      return factory->GetStringFromTable(str).As<JSValue>();
+      return factory->NewString(str).As<JSValue>();
     }
     case TokenType::INC: {
       // 1. Throw a SyntaxError exception if the following conditions are all true:

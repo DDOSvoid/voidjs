@@ -18,6 +18,7 @@
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/runtime_call_info.h"
+#include "voidjs/interpreter/string_table.h"
 
 namespace voidjs {
 
@@ -27,78 +28,15 @@ ObjectFactory::~ObjectFactory() {
   delete string_table_;
 }
 
-std::byte* ObjectFactory::Allocate(std::size_t size) {
-  return new std::byte[size];
-}
-
-// Unless otherwise specified, the standard built-in properties of the global object have
-// attributes {[[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}.
-// 
-// The global object does not have a [[Construct]] internal property;
-// it is not possible to use the global object as a constructor with the new operator.
-// 
-// The global object does not have a [[Call]] internal property;
-// it is not possible to invoke the global object as a function.
-// 
-// The values of the [[Prototype]] and [[Class]]
-// internal properties of the global object are implementation-dependent.
-// 
-// Properties of Global Object are initialized in Interpreter::InitializeBuiltinObjects()
-JSHandle<builtins::GlobalObject> ObjectFactory::NewGlobalObject() {
-  auto obj = NewHeapObject(types::Object::SIZE).As<builtins::GlobalObject>();
-  obj->SetType(JSType::GLOBAL_OBJECT);
-  obj->SetClassType(ObjectClassType::GLOBAL_OBJECT);
-  obj->SetProperties(NewPropertyMap().As<JSValue>());
-  obj->SetExtensible(true);
-  obj->SetCallable(false);
-  obj->SetIsConstructor(false);
-  obj->SetPrototype(JSHandle<JSValue>{vm_, JSValue::Null()});
-  return obj;
-}
-
-JSHandle<HeapObject> ObjectFactory::NewHeapObject(std::size_t size) {
-  auto obj = reinterpret_cast<HeapObject*>(Allocate(HeapObject::SIZE + size));
-  obj->SetMetaData(0);
-  return JSHandle<HeapObject>(vm_, obj);
-}
-
 // used to create builtin objects
 JSHandle<types::Object> ObjectFactory::NewEmptyObject(
   std::size_t extra_size, JSType type, ObjectClassType class_type, JSValue proto,
   bool extensible, bool callable, bool is_counstructor) {
 }
 
-JSHandle<types::String> ObjectFactory::NewString(std::u16string_view source) {
-  auto len = source.size();
-  auto str = NewHeapObject(sizeof(std::size_t) + len * sizeof(char16_t)).As<types::String>();
-  str->SetType(JSType::STRING);
-  str->SetLength(len);
-  std::copy(source.begin(), source.end(), str->GetData());
-  return str;
-}
 
-JSHandle<types::String> ObjectFactory::GetStringFromTable(std::u16string_view str_view) {
-  return string_table_->GetOrInsert(str_view);
-}
-
-JSHandle<types::String> ObjectFactory::GetIntString(std::int32_t i) {
+JSHandle<types::String> ObjectFactory::NewStringFromInt(std::int32_t i) {
   return JSValue::NumberToString(vm_, i);
-}
-
-JSHandle<types::Object> ObjectFactory::NewObject(
-  std::size_t extra_size, JSType type, ObjectClassType class_type,
-  JSHandle<JSValue> proto, bool extensible, bool callable, bool is_counstructor) {
-  auto obj = NewHeapObject(types::Object::SIZE + extra_size).As<types::Object>();
-
-  obj->SetType(type);
-  obj->SetClassType(class_type);
-  obj->SetProperties(NewPropertyMap().As<JSValue>());
-  obj->SetPrototype(proto);
-  obj->SetExtensible(extensible);
-  obj->SetCallable(callable);
-  obj->SetIsConstructor(is_counstructor);
-  
-  return obj;
 }
 
 JSHandle<types::Array> ObjectFactory::NewArray(std::size_t len) {

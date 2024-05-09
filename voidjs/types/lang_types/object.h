@@ -5,13 +5,12 @@
 #include <cstdint>
 #include <optional>
 
-#include "voidjs/types/object_factory.h"
-#include "voidjs/utils/helper.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/interpreter/vm.h"
+#include "voidjs/utils/helper.h"
 
 namespace voidjs {
 namespace types {

@@ -1030,7 +1030,7 @@ TEST(Interpreter, EvalObjectLiteral) {
     auto obj = obj_val.As<types::Object>();
 
     {
-      auto key = factory->GetStringFromTable(u"1");
+      auto key = factory->NewString(u"1");
       auto prop = types::Object::GetProperty(vm, obj, key);
       ASSERT_TRUE(prop.GetValue()->IsInt());
       EXPECT_EQ(42, prop.GetValue()->GetInt());
@@ -1068,14 +1068,14 @@ TEST(Interpreter, EvalArrayLiteral) {
     ASSERT_TRUE(array->GetHeapObject()->IsJSArray());
 
     {
-      auto key = factory->GetStringFromTable(u"0");
+      auto key = factory->NewString(u"0");
       auto prop = types::Object::GetOwnProperty(vm, array.As<builtins::JSArray>(), key);
       ASSERT_TRUE(prop.GetValue()->IsString());
       EXPECT_EQ(u"Hello", prop.GetValue()->GetString());
     }
 
     {
-      auto key = factory->GetStringFromTable(u"length");
+      auto key = factory->NewString(u"length");
       auto prop = types::Object::GetOwnProperty(vm, array.As<builtins::JSArray>(), key);
       ASSERT_TRUE(prop.GetValue()->IsInt());
       EXPECT_EQ(7, prop.GetValue()->GetInt());

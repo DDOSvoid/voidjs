@@ -20,6 +20,7 @@ add_library(voidjs_obj OBJECT
   voidjs/types/object_class_type.cpp
   voidjs/types/object_factory.cpp
   voidjs/types/lang_types/object.cpp
+  voidjs/types/lang_types/string.cpp
   voidjs/types/spec_types/environment_record.cpp
   voidjs/types/spec_types/lexical_environment.cpp
   voidjs/types/spec_types/property_descriptor.cpp
@@ -61,6 +62,7 @@ add_executable(
   test/test_js_value.cpp
   test/test_internal_types.cpp
   test/test_builtins.cpp
+  test/test_gc.cpp
 )
 target_link_libraries(
   unit_test

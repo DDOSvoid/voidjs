@@ -48,6 +48,9 @@ class DeclarativeEnvironmentRecord : public EnvironmentRecord {
   JSValue GetBindingMap() const { return *utils::BitGet<JSValue*>(this, BINDING_MAP_OFFSET); }
   void SetBindingMap(JSValue value) { *utils::BitGet<JSValue*>(this, BINDING_MAP_OFFSET) = value; }
   void SetBindingMap(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, BINDING_MAP_OFFSET) = handle.GetJSValue(); }
+
+  static constexpr std::size_t SIZE = sizeof(JSValue);
+  static constexpr std::size_t END_OFFSET = EnvironmentRecord::END_OFFSET + SIZE;
 };
 
 class ObjectEnvironmentRecord : public EnvironmentRecord {
@@ -64,6 +67,9 @@ class ObjectEnvironmentRecord : public EnvironmentRecord {
   JSValue GetObject() const { return *utils::BitGet<JSValue*>(this, OBJECT_OFFSET); }
   void SetObject(JSValue value) { *utils::BitGet<JSValue*>(this, OBJECT_OFFSET) = value; }
   void SetObject(JSHandle<JSValue> handle) { *utils::BitGet<JSValue*>(this, OBJECT_OFFSET) = handle.GetJSValue(); }
+
+  static constexpr std::size_t SIZE = sizeof(JSValue);
+  static constexpr std::size_t END_OFFSET = EnvironmentRecord::END_OFFSET + SIZE;
 };
 
 }  // namespace types

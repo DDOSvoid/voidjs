@@ -2,6 +2,7 @@
 #define VOIDJS_BUILTINS_JS_NUMBER_H
 
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/interpreter/runtime_call_info.h"
 
 namespace voidjs {
 namespace builtins {

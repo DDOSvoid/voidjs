@@ -1,10 +1,11 @@
 #include "gtest/gtest.h"
 
+#include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/builtins/js_function.h"
 #include "voidjs/builtins/js_array.h"
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/interpreter/interpreter.h"
-#include "voidjs/types/js_value.h"
 
 using namespace voidjs;
 
@@ -246,11 +247,11 @@ array3;
     ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSArray());
 
     auto array = comp.GetValue().As<builtins::JSArray>();
-    auto key0 = factory->GetStringFromTable(u"0");
-    auto key1 = factory->GetStringFromTable(u"1");
-    auto key3 = factory->GetStringFromTable(u"3");
-    auto key4 = factory->GetStringFromTable(u"4");
-    auto key_length = factory->GetStringFromTable(u"length");
+    auto key0 = factory->NewString(u"0");
+    auto key1 = factory->NewString(u"1");
+    auto key3 = factory->NewString(u"3");
+    auto key4 = factory->NewString(u"4");
+    auto key_length = factory->NewString(u"length");
     auto val0 = types::Object::Get(vm, array, key0);
     auto val1 = types::Object::Get(vm, array, key1);
     auto val3 = types::Object::Get(vm, array, key3);
@@ -289,10 +290,10 @@ array4;
     ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSArray());
 
     auto array = comp.GetValue().As<builtins::JSArray>();
-    auto key0 = factory->GetStringFromTable(u"0");
-    auto key1 = factory->GetStringFromTable(u"1");
-    auto key3 = factory->GetStringFromTable(u"3");
-    auto key6 = factory->GetStringFromTable(u"6");
+    auto key0 = factory->NewString(u"0");
+    auto key1 = factory->NewString(u"1");
+    auto key3 = factory->NewString(u"3");
+    auto key6 = factory->NewString(u"6");
     auto val0 = types::Object::Get(vm, array, key0);
     auto val1 = types::Object::Get(vm, array, key1);
     auto val3 = types::Object::Get(vm, array, key3);

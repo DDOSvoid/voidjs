@@ -43,28 +43,28 @@ TEST(InternalTypes, HashMap) {
   
   auto hashmap = factory->NewHashMap(2);
   
-  auto key1 = factory->GetStringFromTable(u"key1");
+  auto key1 = factory->NewString(u"key1");
   auto val1 = JSHandle<JSValue>{vm, JSValue{42}};
 
-  auto key2 = factory->GetStringFromTable(u"key2");
-  auto val2 = factory->GetStringFromTable(u"42").As<JSValue>();
+  auto key2 = factory->NewString(u"key2");
+  auto val2 = factory->NewString(u"42").As<JSValue>();
 
-  auto key3 = factory->GetStringFromTable(u"key3");
+  auto key3 = factory->NewString(u"key3");
   auto val3 = JSHandle<JSValue>{vm, JSValue{-2}};
 
-  auto key4 = factory->GetStringFromTable(u"key4");
+  auto key4 = factory->NewString(u"key4");
   auto val4 = JSHandle<JSValue>{vm, JSValue{100}};
 
-  auto key5 = factory->GetStringFromTable(u"1");
+  auto key5 = factory->NewString(u"1");
   auto val5 = JSHandle<JSValue>{vm, JSValue{0}};
 
-  auto key6 = factory->GetStringFromTable(u"2");
+  auto key6 = factory->NewString(u"2");
   auto val6 = JSHandle<JSValue>{vm, JSValue{0}};
 
-  auto key7 = factory->GetStringFromTable(u"3");
+  auto key7 = factory->NewString(u"3");
   auto val7 = JSHandle<JSValue>{vm, JSValue{-10}};
 
-  auto key8 = factory->GetStringFromTable(u"4");
+  auto key8 = factory->NewString(u"4");
   auto val8 = JSHandle<JSValue>{vm, JSValue{0}};
 
   hashmap = types::HashMap::Insert(vm, hashmap, key1, val1);
@@ -109,16 +109,16 @@ TEST(InternalTypes, PropertyMap) {
   
   auto map = factory->NewPropertyMap();
 
-  auto key1 = factory->GetStringFromTable(u"key1");
+  auto key1 = factory->NewString(u"key1");
   auto val1 = types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue{42}}};
 
-  auto key2 = factory->GetStringFromTable(u"key2");
+  auto key2 = factory->NewString(u"key2");
   auto val2 = types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue{2}}};
 
-  auto key3 = factory->GetStringFromTable(u"key3");
+  auto key3 = factory->NewString(u"key3");
   auto val3 = types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue{3}}};
 
-  auto key4 = factory->GetStringFromTable(u"key4");
+  auto key4 = factory->NewString(u"key4");
   auto val4 = types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, JSValue{4}}};
 
   map = types::PropertyMap::SetProperty(vm, map, key1, val1);

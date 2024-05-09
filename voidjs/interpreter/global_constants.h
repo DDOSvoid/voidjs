@@ -43,6 +43,32 @@ class GlobalConstants {
   
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ToStringString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ValueOfString, types::String)
+
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ValueString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(WritableString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(GetString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(SetString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(EnumerableString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ConfigurableString, types::String)
+  
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ConstructorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(PrototypeString, types::String)
+
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ObjectString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(FunctionString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ArrayString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(StringString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(BooleanString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(NumberString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(DateString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(RegExpString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ErrorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(EvalErrorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(RangeErrorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ReferenceErrorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(SyntaxErrorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(TypeErrorString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(URIErrorString, types::String)
   
  private:
   static constexpr std::size_t GLOBAL_CONSTANTS_NUM = 100;

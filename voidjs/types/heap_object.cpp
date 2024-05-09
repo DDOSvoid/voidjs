@@ -1,6 +1,7 @@
 #include "voidjs/types/heap_object.h"
 
 #include "voidjs/types/internal_types/binding.h"
+#include "voidjs/types/internal_types/hash_map.h"
 #include "voidjs/types/internal_types/internal_function.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
@@ -30,13 +31,15 @@ std::size_t HeapObject::GetSize(JSValue value) {
 
   switch (value.GetHeapObject()->GetType()) {
     case JSType::STRING: {
-      return types::String::SIZE + HeapObject::SIZE;
+      types::String* string = value.GetHeapObject()->AsString();
+      return string->GetLength() * sizeof(char16_t) + types::String::SIZE + HeapObject::SIZE;
     }
     case JSType::OBJECT: {
       return types::Object::SIZE + HeapObject::SIZE;
     }
     case JSType::ARRAY: {
-      return types::Array::SIZE + HeapObject::SIZE;
+      types::Array* array = value.GetHeapObject()->AsArray();
+      return array->GetLength() * sizeof(JSValue) + types::Array::SIZE + HeapObject::SIZE;
     }
     case JSType::DATA_PROPERTY_DESCRIPTOR: {
       return types::DataPropertyDescriptor::SIZE + HeapObject::SIZE;
@@ -48,7 +51,8 @@ std::size_t HeapObject::GetSize(JSValue value) {
       return types::GenericPropertyDescriptor::SIZE + HeapObject::SIZE;
     }
     case JSType::PROPERTY_MAP: {
-      return types::PropertyMap::SIZE + types::HashMap::SIZE + types::Array::SIZE + HeapObject::SIZE;
+      types::PropertyMap* prop_map = value.GetHeapObject()->AsPropertyMap();
+      return prop_map->GetLength() * sizeof(JSValue) + types::PropertyMap::SIZE + types::HashMap::SIZE + types::Array::SIZE + HeapObject::SIZE;
     }
     case JSType::BINDING: {
       return types::Binding::SIZE + HeapObject::SIZE;
@@ -57,7 +61,8 @@ std::size_t HeapObject::GetSize(JSValue value) {
       return types::InternalFunction::SIZE + HeapObject::SIZE;
     }
     case JSType::HASH_MAP: {
-      return types::HashMap::SIZE + types::Array::SIZE + HeapObject::SIZE;
+      types::HashMap* hashmap = value.GetHeapObject()->AsHashMap();
+      return hashmap->GetLength() * sizeof(JSValue) + types::HashMap::SIZE + types::Array::SIZE + HeapObject::SIZE;
     }
     case JSType::ENVIRONMENT_RECORD: {
       return types::EnvironmentRecord::SIZE + HeapObject::SIZE;

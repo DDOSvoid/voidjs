@@ -2,9 +2,10 @@
 
 #include <iostream>
 
+#include "voidjs/types/object_factory.h"
+#include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/reference.h"
 #include "voidjs/types/spec_types/environment_record.h"
-#include "voidjs/types/lang_types/string.h"
 
 namespace voidjs {
 namespace types {

@@ -7,6 +7,7 @@
 #include "voidjs/ir/statement.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
 #include "voidjs/builtins/builtin.h"
@@ -93,7 +94,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
     });
     std::vector<JSHandle<types::String>> names;
     for (auto param : params) {
-      names.push_back(factory->GetStringFromTable(param->AsIdentifier()->GetName()));
+      names.push_back(factory->NewString(param->AsIdentifier()->GetName()));
     }
     
     // b. Let argCount be the number of elements in args.
@@ -139,7 +140,7 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
   for (auto func : func_decls) {
     // a. Let fn be the Identifier in FunctionDeclaration f.
     auto fn = func->GetName()->AsIdentifier()->GetName();
-    auto fn_str = factory->GetStringFromTable(fn);
+    auto fn_str = factory->NewString(fn);
 
     // b. Let fo be the result of instantiating FunctionDeclaration f as described in Clause 13.
     auto fo = builtins::Builtin::InstantiatingFunctionDeclaration(

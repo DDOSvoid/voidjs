@@ -3,6 +3,7 @@
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_class_type.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/lang_types/string.h"
@@ -87,7 +88,7 @@ JSValue JSString::CharAt(RuntimeCallInfo* argv) {
   //    namely the character at position position,
   //    where the first (leftmost) character in S is considered to be at position 0,
   //    the next one at position 1, and so on.
-  return factory->GetStringFromTable(std::u16string_view{S->GetData() + idx, 1}).GetJSValue();
+  return factory->NewString(std::u16string_view{S->GetData() + idx, 1}).GetJSValue();
 }
 
 // String.prototype.concat([string1[,string2[,...]]]

@@ -10,7 +10,6 @@
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/interpreter/vm.h"
-#include "voidjs/interpreter/string_table.h"
 
 namespace voidjs {
 namespace types {
@@ -27,26 +26,13 @@ class String : public HeapObject {
   char16_t* GetData() const { return utils::BitGet<char16_t*>(this, DATA_OFFSET); }
   char16_t Get(std::size_t idx) const { return *(GetData() + idx); } 
   void Set(std::size_t idx, char16_t ch) { *(GetData() + idx) = ch; }
-
   
   bool Equal(std::u16string_view str) const { return GetString() == str; }
   bool Equal(String* str) const { return Equal(str->GetString()); }
   bool Equal(JSHandle<String> str) const { return Equal(str.GetObject()); }
 
-  static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2) {
-    std::u16string str;
-    str += str1->GetString();
-    str += str2->GetString();
-    return vm->GetObjectFactory()->NewString(str);
-  }
-
-  static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2, JSHandle<String> str3) {
-    std::u16string str;
-    str += str1->GetString();
-    str += str2->GetString();
-    str += str3->GetString();
-    return vm->GetObjectFactory()->NewString(str);
-  }
+  static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2);
+  static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2, JSHandle<String> str3);
 
   // used for print 
   std::u16string_view GetString() const {
