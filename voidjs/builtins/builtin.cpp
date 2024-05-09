@@ -384,12 +384,28 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"getPrototypeOf"),
                       JSObject::GetPrototypeOf, true, false, true);
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"getOwnPropertyDescriptor"),
-                      JSObject::GetOwnPropretyDescriptor, true, false, true);
+                      JSObject::GetOwnPropertyDescriptor, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"getOwnPropertyNames"),
+                      JSObject::GetOwnPropertyNames, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"create"),
+                      JSObject::Create, true, false, true);
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"defineProperty"),
                       JSObject::DefineProperty, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"defineProperties"),
+                      JSObject::DefineProperties, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"seal"),
+                      JSObject::Seal, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"freeze"),
+                      JSObject::Freeze, true, false, true);
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"preventExtensions"),
                       JSObject::PreventExtensions, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"isSealed"),
+                      JSObject::IsSealed, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"isFrozen"),
+                      JSObject::IsFrozen, true, false, true);
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"isExtensible"),
+                      JSObject::IsExtensible, true, false, true);
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"keys"),
                       JSObject::IsExtensible, true, false, true);
 
   // Set properties for Array Constructor

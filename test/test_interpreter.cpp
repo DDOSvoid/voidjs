@@ -1036,6 +1036,36 @@ TEST(Interpreter, EvalObjectLiteral) {
       EXPECT_EQ(42, prop.GetValue()->GetInt());
     }
   }
+
+  {
+    Parser parser(uR"(
+var language = {
+  set current(name) {
+    this.log.push(name);
+  },
+  get current() {
+    return this.log.join(' ');
+  },
+  log: [],
+};
+
+language.current = "ZH";
+language.current = "FA";
+language.current = "EN";
+
+language.current;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"ZH FA EN", comp.GetValue()->GetString());
+  }
 }
 
 TEST(Interpreter, EvalArrayLiteral) {

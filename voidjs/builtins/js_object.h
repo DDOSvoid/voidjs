@@ -22,7 +22,7 @@ class JSObject : public types::Object {
   // Function properties of the Object Constructor
   // Defined in ECMAScript 5.1 Chapter 15.2.3
   static JSValue GetPrototypeOf(RuntimeCallInfo* argv);
-  static JSValue GetOwnPropretyDescriptor(RuntimeCallInfo* argv);
+  static JSValue GetOwnPropertyDescriptor(RuntimeCallInfo* argv);
   static JSValue GetOwnPropertyNames(RuntimeCallInfo* argv);
   static JSValue Create(RuntimeCallInfo* argv);
   static JSValue DefineProperty(RuntimeCallInfo* argv);

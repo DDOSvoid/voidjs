@@ -49,6 +49,24 @@ desc.value;
   EXPECT_EQ(42, comp.GetValue()->GetInt());
 }
 
+TEST(JSObject, GetOwnPropertyNames) {
+  Parser parser(uR"(
+var obj = { 0: "a", 1: "b", 2: "c" };
+var str = Object.getOwnPropertyNames(obj).join();
+str;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"1,2,0", comp.GetValue()->GetString());
+}
+
 TEST(JSObject, DefineProperty) {
   {
     Parser parser(uR"(
@@ -98,6 +116,120 @@ object.value;
     ASSERT_TRUE(comp.GetValue()->IsInt());
     EXPECT_EQ(42, comp.GetValue()->GetInt()); 
   }
+}
+
+TEST(JSObject, DefineProperties) {
+  {
+    Parser parser(uR"(
+var object1 = {};
+
+Object.defineProperties(object1, {
+  property1: {
+    value: 42,
+    writable: true,
+  },
+  property2: {},
+});
+
+object1.property1;
+
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(42, comp.GetValue()->GetInt());
+  }
+
+  {
+    Parser parser(uR"(
+var object1 = {};
+
+Object.defineProperties(object1, {
+  property1: {
+    value: 42,
+    writable: true,
+  },
+  property2: {},
+});
+
+object1.property1;
+
+var object2 = {};
+
+Object.defineProperties(object2, object1);
+
+object2.property1;
+
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    EXPECT_TRUE(comp.GetValue()->IsUndefined());
+  }
+}
+
+TEST(JSObject, Seal) {
+  Parser parser(uR"(
+var object = {
+  property: 42,
+};
+
+Object.seal(object);
+
+object.property = 33;
+
+// Cannot delete when sealed
+// Throws an error in strict mode
+delete object.property; 
+
+object.property;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(33, comp.GetValue()->GetInt());
+}
+
+TEST(JSObject, Freeze) {
+  Parser parser(uR"(
+var obj = {
+  prop: 42,
+};
+
+Object.freeze(obj);
+
+obj.prop = 33;
+// Throws an error in strict mode
+
+obj.prop;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(42, comp.GetValue()->GetInt());
 }
 
 TEST(JSObject, PreventExtensions) {
@@ -199,7 +331,7 @@ arr.join();
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsString());
-  EXPECT_EQ(u"5,4,3,2,1", comp.GetValue()->GetString());
+  EXPECT_EQ(u"1,2,3,4,5", comp.GetValue()->GetString());
 }
 
 TEST(JSArray, IsArray) {

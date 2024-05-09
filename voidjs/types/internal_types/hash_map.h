@@ -74,6 +74,42 @@ class HashMap : public Array {
     }
   }
 
+  std::vector<JSHandle<JSValue>> GetAllKeys(VM* vm) {
+    std::vector<JSHandle<JSValue>> keys;
+    std::uint32_t capacity = GetBucketCapacity();
+    for (std::uint32_t idx = 0; idx < capacity; ++idx) {
+      JSValue key = GetKey(idx);
+      if (!GetKey(idx).IsHole()) {
+        keys.emplace_back(vm, key);
+      }
+    }
+    return keys;
+  }
+
+  std::vector<JSHandle<JSValue>> GetAllEnumerableKeys(VM* vm) {
+    std::vector<JSHandle<JSValue>> keys;
+    std::uint32_t capacity = GetBucketCapacity();
+    for (std::uint32_t idx = 0; idx < capacity; ++idx) {
+      JSValue key = GetKey(idx);
+      if (!GetKey(idx).IsHole() && GetValue(idx).GetHeapObject()->GetEnumerable()) {
+        keys.emplace_back(vm, key);
+      }
+    }
+    return keys;
+  }
+
+  std::vector<JSHandle<JSValue>> GetAllValues(VM* vm) {
+    std::vector<JSHandle<JSValue>> keys;
+    std::uint32_t capacity = GetBucketCapacity();
+    for (std::uint32_t idx = 0; idx < capacity; ++idx) {
+      JSValue key = GetKey(idx);
+      if (!GetKey(idx).IsHole()) {
+        keys.emplace_back(vm, GetValue(idx));
+      }
+    }
+    return keys;
+  }
+
   static JSHandle<HashMap> Reserve(VM* vm, JSHandle<HashMap> hashmap, std::uint32_t capacity) {
     if (capacity <= hashmap->GetBucketCapacity()) {
       return hashmap;

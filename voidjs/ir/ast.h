@@ -213,7 +213,7 @@ class AstNode {
   BooleanLiteral* AsBooleanLiteral() { return reinterpret_cast<BooleanLiteral*>(this); }
   NumericLiteral* AsNumericLiteral() { return reinterpret_cast<NumericLiteral*>(this); }
   StringLiteral* AsStringLiteral() { return reinterpret_cast<StringLiteral*>(this); }
-  This* AsThisExpression() { return reinterpret_cast<This*>(this); }
+  This* AsThis() { return reinterpret_cast<This*>(this); }
   Identifier* AsIdentifier() { return reinterpret_cast<Identifier*>(this); }
   VariableDeclaration* AsVariableDeclaration() { return reinterpret_cast<VariableDeclaration*>(this); }
   ArrayLiteral* AsArrayLiteral() { return reinterpret_cast<ArrayLiteral*>(this); }

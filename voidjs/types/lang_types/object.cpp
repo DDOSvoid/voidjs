@@ -115,7 +115,7 @@ JSHandle<JSValue> Object::Get(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   }
 
   // 6. Return the result calling the [[Call]] internal method of getter providing O as the this value and providing no arguments.
-  // todo
+  return Call(vm, getter.As<Object>(), O.As<JSValue>(), {});
 }
 
 // CanPut
@@ -213,7 +213,7 @@ void Object::Put(VM* vm, JSHandle<Object> O, JSHandle<String> P, JSHandle<JSValu
     auto setter = desc.GetSetter();
 
     // b. Call the [[Call]] internal method of setter providing O as the this value and providing V as the sole argument.
-    // todo
+    Call(vm, setter.As<Object>(), O.As<JSValue>(), {V});
   }
   // 6. Else, create a named data property named P on object O as follows
   else {

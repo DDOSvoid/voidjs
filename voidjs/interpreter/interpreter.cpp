@@ -811,6 +811,9 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalExpression(Expressio
     case AstNodeType::IDENTIFIER: {
       return EvalIdentifier(expr->AsIdentifier());
     }
+    case AstNodeType::THIS: {
+      return EvalThis(expr->AsThis());
+    }
     default: {
       return JSHandle<JSValue>{vm_, JSValue{}};
     }
@@ -1447,6 +1450,12 @@ JSHandle<JSValue> Interpreter::EvalStringLiteral(StringLiteral* str) {
   return vm_->GetObjectFactory()->NewString(str->GetString()).As<JSValue>();
 }
 
+// EvalThis
+// Defined in ECMAScript 5.1 Chapter 11.1.1
+JSHandle<JSValue> Interpreter::EvalThis(This* this_expr) {
+  return vm_->GetExecutionContext()->GetThisBinding().As<JSValue>();
+}
+
 // Eval Identifier
 // Defined in ECMAScript 5.1 Chapter 11.1.2
 Reference Interpreter::EvalIdentifier(Identifier* ident) {
@@ -1600,22 +1609,24 @@ JSHandle<JSValue> Interpreter::EvalPropertyNameAndValueList(const ast::Propertie
 // Defined in ECMAScript 5.1 Chapter 11.1.5
 std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignment(ast::Property* prop) {
   auto factory = vm_->GetObjectFactory();
+
+  JSHandle<String> prop_name = std::invoke([=]() {
+    Expression* name = prop->GetKey();
+    if (name->IsIdentifier()) {
+      return factory->NewString(name->AsIdentifier()->GetName());
+    } else if (name->IsNumericLiteral()) {
+      // todo
+      return JSValue::NumberToString(vm_, name->AsNumericLiteral()->GetNumber<double>());
+    } else {
+      // name.IsStringLiteral must be true
+      return factory->NewString(name->AsStringLiteral()->GetString());
+    }
+  });
   
   if (prop->GetPropertyType() == PropertyType::INIT) {
     // PropertyAssignment : PropertyName : AssignmentExpression
     
     // 1. Let propName be the result of evaluating PropertyName.
-    auto prop_name = std::invoke([vm = vm_, factory](Expression* name) {
-      if (name->IsIdentifier()) {
-        return factory->NewString(name->AsIdentifier()->GetName());
-      } else if (name->IsNumericLiteral()) {
-        // todo
-        return JSValue::NumberToString(vm, name->AsNumericLiteral()->GetNumber<double>());
-      } else {
-        // name.IsStringLiteral must be true
-        return factory->NewString(name->AsStringLiteral()->GetString());
-      }
-    }, prop->GetKey());
     
     // 2. Let exprValue be the result of evaluating AssignmentExpression.
     auto expr_value = EvalExpression(prop->GetValue());
@@ -1634,22 +1645,37 @@ std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignm
     // PropertyAssignment : PropertyName : AssignmentExpression
 
     // 1. Let propName be the result of evaluating PropertyName.
-    auto prop_name = EvalExpression(prop->GetKey());
-    RETURN_VALUE_IF_HAS_EXCEPTION(vm_, std::make_pair(JSHandle<String>{}, PropertyDescriptor{vm_}));
     
     // 2. Let closure be the result of creating a new Function object as specified in 13.2
     //    with an empty parameter list and body specified by FunctionBody.
     //    Pass in the LexicalEnvironment of the running execution context as the Scope.
     //    Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
+    //    todo
+    JSHandle<JSFunction> closure = Builtin::InstantiatingFunctionDeclaration(
+      vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), false);
+    
     // 3. Let desc be the Property Descriptor{[[Get]]: closure, [[Enumerable]]: true, [[Configurable]]: true}
+    auto desc = PropertyDescriptor{vm_, closure.As<JSValue>(), JSHandle<JSValue>{}, true, true};
+    
     // 4. Return Property Identifier (propName, desc).
+    return std::make_pair(prop_name, desc);
   } else {
     // PropertyAssignment : set PropertyName ( PropertySetParameterList ) { FunctionBody }
 
     // 1. Let propName be the result of evaluating PropertyName.
-    // 2. Let closure be the result of creating a new Function object as specified in 13.2 with parameters specified by PropertySetParameterList and body specified by FunctionBody. Pass in the LexicalEnvironment of the running execution context as the Scope. Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
+    
+    // 2. Let closure be the result of creating a new Function object as specified in 13.2
+    //    with parameters specified by PropertySetParameterList and body specified by FunctionBody.
+    //    Pass in the LexicalEnvironment of the running execution context as the Scope.
+    //    Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
+    JSHandle<JSFunction> closure = Builtin::InstantiatingFunctionDeclaration(
+      vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), false);
+    
     // 3. Let desc be the Property Descriptor{[[Set]]: closure, [[Enumerable]]: true, [[Configurable]]: true}
+    auto desc = PropertyDescriptor{vm_, JSHandle<JSValue>{}, closure.As<JSValue>(), true, true};
+    
     // 4. Return Property Identifier (propName, desc).
+    return std::make_pair(prop_name, desc);
   }
   
 }
@@ -2183,7 +2209,7 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       // 4. If IsPropertyReference(ref) is true, then
       if (pref.IsPropertyReference()) {
         // a. Return the result of calling the [[Delete]] internal method on
-        // ToObject(GetBase(ref)) providing GetReferencedName(ref) and IsStrictReference(ref) as the arguments.
+        //    ToObject(GetBase(ref)) providing GetReferencedName(ref) and IsStrictReference(ref) as the arguments.
         auto ret = Object::Delete(vm_, JSValue::ToObject(vm_, pref.GetBase()),
                                   pref.GetReferencedName(), pref.IsStrictReference());
         RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
@@ -2733,7 +2759,7 @@ JSHandle<JSValue> Interpreter::GetUsedByGetValue(JSHandle<JSValue> base, JSHandl
   }
   
   // 7. Return the result calling the [[Call]] internal method of getter providing base as the this value and providing no arguments.
-  // todo
+  return Object::Call(vm_, getter.As<JSFunction>(), base, {});
 }
 
 // PutValue
@@ -2836,7 +2862,7 @@ void Interpreter::PutUsedByPutValue(JSHandle<JSValue> base, JSHandle<String> P, 
 
     // b. Call the [[Call]] internal method of setter providing base
     //    as the this value and an argument list containing only W.
-    // todo
+    Object::Call(vm_, setter.As<JSFunction>(), base, {W});
   }
   // 7. Else, this is a request to create an own property on the transient object O
   else {

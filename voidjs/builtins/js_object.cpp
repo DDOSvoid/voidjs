@@ -1,10 +1,13 @@
 #include "voidjs/builtins/js_object.h"
 
+#include "voidjs/builtins/js_array.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
+#include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/js_array.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/gc/js_handle_scope.h"
 #include "voidjs/interpreter/vm.h"
@@ -93,7 +96,7 @@ JSValue JSObject::GetPrototypeOf(RuntimeCallInfo* argv) {
 
 // Object.getOwnPropertyDescriptor(O, P)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.3
-JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
+JSValue JSObject::GetOwnPropertyDescriptor(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   JSHandle<JSValue> O = argv->GetArg(0);
@@ -119,14 +122,37 @@ JSValue JSObject::GetOwnPropretyDescriptor(RuntimeCallInfo* argv) {
 // Defined in ECMAScript 5.1 Chapter 15.2.3.4
 // todo
 JSValue JSObject::GetOwnPropertyNames(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> O = argv->GetArg(0);
+  
   // 1. If Type(O) is not Object throw a TypeError exception.
+  if (!O->IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(
+      argv->GetVM(), u"Object.getownPropretyDescriptor cannot work on non-object type.", JSValue{});
+  }
   // 2. Let array be the result of creating a new object as if by the expression new Array() where Array is the standard built-in constructor with that name.
+  JSHandle<JSArray> array = types::Object::Construct(vm, vm->GetArrayConstructor(),
+                                                     vm->GetGlobalConstants()->HandledUndefined(), {}).As<JSArray>();
+  
   // 3. Let n be 0.
+  std::int32_t n = 0;
+  
   // 4. For each named own property P of O
-  // a. Let name be the String value that is the name of P.
-  // b. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(n), the PropertyDescriptor {[[Value]]: name, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
-  // c. Increment n by 1.
+  auto prop_map = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = prop_map->GetAllKeys(vm);
+  for (auto name : keys) {
+    // a. Let name be the String value that is the name of P.
+    // b. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(n),
+    //    the PropertyDescriptor {[[Value]]: name, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    JSArray::DefineOwnProperty(vm, array, vm->GetObjectFactory()->NewStringFromInt(n),
+                               types::PropertyDescriptor{vm, name, true, true, true}, false);
+    
+    // c. Increment n by 1.
+    ++n;
+  }
   // 5. Return array.
+  return array.GetJSValue();
 }
 
 // Object.create(O, [, Properties])
@@ -209,20 +235,26 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
   RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 3. Let names be an internal list containing the names of each enumerable own property of props.
-  
   // 4. Let descriptors be an empty internal List.
-  
   // 5. For each element P of names in list order,
-  
   // a. Let descObj be the result of calling the [[Get]] internal method of props with P as the argument.
   // b. Let desc be the result of calling ToPropertyDescriptor with descObj as the argument.
   // c. Append desc to the end of descriptors.
-  
   // 6. For each element desc of descriptors in list order,
-  
   // 7. Call the [[DefineOwnProperty]] internal method of O with arguments P, desc, and true.
-  
   // 8. Return O
+
+  auto prop_map = JSHandle<types::PropertyMap>{vm, props.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = prop_map->GetAllEnumerableKeys(vm);
+  for (auto key : keys) {
+    JSHandle<JSValue> prop = types::Object::Get(vm, props, key.As<types::String>());
+    
+    auto desc = types::PropertyDescriptor::ToPropertyDescriptor(vm, prop);
+
+    types::Object::DefineOwnProperty(vm, O.As<types::Object>(), key.As<types::String>(), desc, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  }
+  
   return O.GetJSValue();
 }
 
@@ -230,6 +262,8 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
 // Defined in ECMAScript 5.1 Chapter 15.2.3.8
 // todo
 JSValue JSObject::Seal(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
   JSHandle<JSValue> O = argv->GetArg(0);
 
   // 1. If Type(O) is not Object throw a TypeError exception.
@@ -239,14 +273,24 @@ JSValue JSObject::Seal(RuntimeCallInfo* argv) {
   }
 
   // 2. For each named own property name P of O,
-
-  // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
-
-  // b. If desc.[[Configurable]] is true, set desc.[[Configurable]] to false.
-
-  // c. Call the [[DefineOwnProperty]] internal method of O with P, desc, and true as arguments.
+  auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  for (auto key : keys) {
+    // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
+    types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
+    
+    // b. If desc.[[Configurable]] is true, set desc.[[Configurable]] to false.
+    if (desc.GetConfigurable()) {
+      desc.SetConfigurable(false);
+    }
+    
+    // c. Call the [[DefineOwnProperty]] internal method of O with P, desc, and true as arguments.
+    types::Object::DefineOwnProperty(vm, O.As<types::Object>(), key.As<types::String>(), desc, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  }
 
   // 3. Set the [[Extensible]] internal property of O to false.
+  O.As<types::Object>()->SetExtensible(false);
 
   // 4. Return O.
   return O.GetJSValue();
@@ -256,6 +300,8 @@ JSValue JSObject::Seal(RuntimeCallInfo* argv) {
 // Defined in ECMAScript 5.1 Chapter 15.2.3.9
 // todo
 JSValue JSObject::Freeze(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
   JSHandle<JSValue> O = argv->GetArg(0);
   
   // 1. If Type(O) is not Object throw a TypeError exception.
@@ -265,18 +311,32 @@ JSValue JSObject::Freeze(RuntimeCallInfo* argv) {
   }
 
   // 2. For each named own property name P of O,
+  auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  for (auto key : keys) {
+    // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
+    types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
+    
+    // b. If IsDataDescriptor(desc) is true, then
+    if (desc.IsDataDescriptor()) {
+      // i.If desc.[[Writable]] is true, set desc.[[Writable]] to false.
+      if (desc.GetWritable()) {
+        desc.SetWritable(false);
+      }
+    }
+    
+    // c. If desc.[[Configurable]] is true, set desc.[[Configurable]] to false.
+    if (desc.GetConfigurable()) {
+      desc.SetConfigurable(false);
+    }
 
-  // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
-
-  // b. If IsDataDescriptor(desc) is true, then
-
-  // i.If desc.[[Writable]] is true, set desc.[[Writable]] to false.
-
-  // c. If desc.[[Configurable]] is true, set desc.[[Configurable]] to false.
-
-  // d. Call the [[DefineOwnProperty]] internal method of O with P, desc, and true as arguments.
+    // d. Call the [[DefineOwnProperty]] internal method of O with P, desc, and true as arguments.
+    types::Object::DefineOwnProperty(vm, O.As<types::Object>(), key.As<types::String>(), desc, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  }
 
   // 3. Set the [[Extensible]] internal property of O to false.
+  O.As<types::Object>()->SetExtensible(false);
 
   // 4. Return O.
   return O.GetJSValue();

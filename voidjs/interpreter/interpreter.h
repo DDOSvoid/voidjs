@@ -77,6 +77,7 @@ class Interpreter {
   JSHandle<JSValue> EvalBooleanLiteral(ast::BooleanLiteral* boolean);
   JSHandle<JSValue> EvalNumericLiteral(ast::NumericLiteral* num);
   JSHandle<JSValue> EvalStringLiteral(ast::StringLiteral* str);
+  JSHandle<JSValue> EvalThis(ast::This* this_expr);
   types::Reference EvalIdentifier(ast::Identifier* ident);
 
   types::Completion EvalSourceElements(const ast::Statements& stmts);

@@ -2,6 +2,7 @@
 #define VOIDJS_TYPES_INTERNAL_TYPES_PROPERTY_MAP_H
 
 #include <iostream>
+#include <algorithm>
 
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
@@ -43,7 +44,6 @@ class PropertyMap : public HashMap {
   void DeleteProperty(VM* vm, JSHandle<String> key) {
     Erase(vm, key);
   }
-
 };
 
 }  // namespace types
