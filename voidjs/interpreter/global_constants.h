@@ -60,6 +60,7 @@ class GlobalConstants {
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(StringString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(BooleanString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(NumberString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(MathString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(DateString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(RegExpString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ErrorString, types::String)

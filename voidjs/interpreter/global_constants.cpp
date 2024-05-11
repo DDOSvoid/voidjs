@@ -63,15 +63,16 @@ DEFINE_GET_METHOD_FOR_HEAP_OBJECT(ArrayString, String, types::String, 26)
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(StringString, String, types::String, 27)
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(BooleanString, String, types::String, 28)
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(NumberString, String, types::String, 29)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(DateString, String, types::String, 30)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(RegExpString, String, types::String, 31)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(ErrorString, String, types::String, 32)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(EvalErrorString, String, types::String, 33)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(RangeErrorString, String, types::String, 34)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(ReferenceErrorString, String, types::String, 35)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(SyntaxErrorString, String, types::String, 36)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(TypeErrorString, String, types::String, 37)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(URIErrorString, String, types::String, 38)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(MathString, String, types::String, 30)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(DateString, String, types::String, 31)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(RegExpString, String, types::String, 32)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(ErrorString, String, types::String, 33)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(EvalErrorString, String, types::String, 34)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(RangeErrorString, String, types::String, 35)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(ReferenceErrorString, String, types::String, 36)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(SyntaxErrorString, String, types::String, 37)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(TypeErrorString, String, types::String, 38)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(URIErrorString, String, types::String, 39)
 
 #define SET_CONSTANT(name, value, index)         \
   constants_[index] = value       \
@@ -119,15 +120,16 @@ void GlobalConstants::Initialize() {
   SET_CONSTANT(StringString, factory->NewString<GCFlag::CONST>(u"String").GetJSValue(), 27);
   SET_CONSTANT(BooleanString, factory->NewString<GCFlag::CONST>(u"Boolean").GetJSValue(), 28);
   SET_CONSTANT(NumberString, factory->NewString<GCFlag::CONST>(u"Number").GetJSValue(), 29);
-  SET_CONSTANT(DateString, factory->NewString<GCFlag::CONST>(u"Date").GetJSValue(), 30);
-  SET_CONSTANT(RegExpString, factory->NewString<GCFlag::CONST>(u"RegExp").GetJSValue(), 31);
-  SET_CONSTANT(ErrorString, factory->NewString<GCFlag::CONST>(u"Error").GetJSValue(), 32);
-  SET_CONSTANT(EvalErrorString, factory->NewString<GCFlag::CONST>(u"EvalError").GetJSValue(), 33);
-  SET_CONSTANT(RangeErrorString, factory->NewString<GCFlag::CONST>(u"RangeError").GetJSValue(), 34);
-  SET_CONSTANT(ReferenceErrorString, factory->NewString<GCFlag::CONST>(u"ReferenceError").GetJSValue(), 35);
-  SET_CONSTANT(SynTaxString, factory->NewString<GCFlag::CONST>(u"SyntaxError").GetJSValue(), 36);
-  SET_CONSTANT(TypeErrorString, factory->NewString<GCFlag::CONST>(u"TypeError").GetJSValue(), 37);
-  SET_CONSTANT(URIErrorString, factory->NewString<GCFlag::CONST>(u"URIError").GetJSValue(), 38);
+  SET_CONSTANT(NumberString, factory->NewString<GCFlag::CONST>(u"Math").GetJSValue(), 30);
+  SET_CONSTANT(DateString, factory->NewString<GCFlag::CONST>(u"Date").GetJSValue(), 31);
+  SET_CONSTANT(RegExpString, factory->NewString<GCFlag::CONST>(u"RegExp").GetJSValue(), 32);
+  SET_CONSTANT(ErrorString, factory->NewString<GCFlag::CONST>(u"Error").GetJSValue(), 33);
+  SET_CONSTANT(EvalErrorString, factory->NewString<GCFlag::CONST>(u"EvalError").GetJSValue(), 34);
+  SET_CONSTANT(RangeErrorString, factory->NewString<GCFlag::CONST>(u"RangeError").GetJSValue(), 35);
+  SET_CONSTANT(ReferenceErrorString, factory->NewString<GCFlag::CONST>(u"ReferenceError").GetJSValue(), 36);
+  SET_CONSTANT(SynTaxString, factory->NewString<GCFlag::CONST>(u"SyntaxError").GetJSValue(), 37);
+  SET_CONSTANT(TypeErrorString, factory->NewString<GCFlag::CONST>(u"TypeError").GetJSValue(), 38);
+  SET_CONSTANT(URIErrorString, factory->NewString<GCFlag::CONST>(u"URIError").GetJSValue(), 39);
 }
 
 #undef DEFINE_GET_METHOD_FOR_JSVALUE

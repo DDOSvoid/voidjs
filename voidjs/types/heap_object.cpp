@@ -1,5 +1,6 @@
 #include "voidjs/types/heap_object.h"
 
+#include "voidjs/gc/heap.h"
 #include "voidjs/types/internal_types/binding.h"
 #include "voidjs/types/internal_types/hash_map.h"
 #include "voidjs/types/internal_types/internal_function.h"
@@ -17,6 +18,7 @@
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/builtins/js_number.h"
 #include "voidjs/builtins/js_string.h"
+#include "voidjs/builtins/js_math.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
@@ -58,7 +60,7 @@ std::size_t HeapObject::GetSize(JSValue value) {
       return types::Binding::SIZE + HeapObject::SIZE;
     }
     case JSType::INTERNAL_FUNCTION: {
-      return types::InternalFunction::SIZE + HeapObject::SIZE;
+      return types::InternalFunction::SIZE + types::Object::SIZE + HeapObject::SIZE;
     }
     case JSType::HASH_MAP: {
       types::HashMap* hashmap = value.GetHeapObject()->AsHashMap();
@@ -96,6 +98,9 @@ std::size_t HeapObject::GetSize(JSValue value) {
     }
     case JSType::JS_NUMBER: {
       return builtins::JSNumber::SIZE + types::Object::SIZE + HeapObject::SIZE;
+    }
+    case JSType::JS_MATH: {
+      return builtins::JSMath::SIZE + types::Object::SIZE; + HeapObject::SIZE;
     }
     case JSType::JS_ERROR: {
       return builtins::JSError::SIZE + types::Object::SIZE + HeapObject::SIZE;
@@ -155,7 +160,10 @@ std::vector<JSHandle<JSValue>> HeapObject::GetValues(JSValue value) {
       return {JSHandle<JSValue>{value.GetRawData() + types::Binding::VALUE_OFFSET}};
     }
     case JSType::INTERNAL_FUNCTION: {
-      return {};
+      return {
+        JSHandle<JSValue>{value.GetRawData() + types::Object::PROPERTIES_OFFSET},
+        JSHandle<JSValue>{value.GetRawData() + types::Object::PROTOTYPE_OFFSET}
+      };
     }
     case JSType::HASH_MAP: {
       types::Array* array = value.GetHeapObject()->AsArray();
@@ -225,6 +233,12 @@ std::vector<JSHandle<JSValue>> HeapObject::GetValues(JSValue value) {
         JSHandle<JSValue>{value.GetRawData() + types::Object::PROPERTIES_OFFSET},
         JSHandle<JSValue>{value.GetRawData() + types::Object::PROTOTYPE_OFFSET},
         JSHandle<JSValue>{value.GetRawData() + builtins::JSNumber::PRIMITIVE_VALUE_OFFSET}
+      };
+    }
+    case JSType::JS_MATH: {
+      return {
+        JSHandle<JSValue>{value.GetRawData() + types::Object::PROPERTIES_OFFSET},
+        JSHandle<JSValue>{value.GetRawData() + types::Object::PROTOTYPE_OFFSET}
       };
     }
     case JSType::JS_ERROR: {

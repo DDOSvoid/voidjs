@@ -2,8 +2,10 @@
 
 #include "voidjs/builtins/js_array.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_class_type.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/builtins/js_function.h"
@@ -276,7 +278,6 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
 
 // Object.seal(O)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.8
-// todo
 JSValue JSObject::Seal(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
@@ -378,8 +379,9 @@ JSValue JSObject::PreventExtensions(RuntimeCallInfo* argv) {
 
 // Object.isSealed(O)
 // Defined in ECMAScript 5.1 Chapter 15.2.3.11
-// todo
 JSValue JSObject::IsSealed(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
   JSHandle<JSValue> O = argv->GetArg(0);
 
   // 1. If Type(O) is not Object throw a TypeError exception.
@@ -389,21 +391,33 @@ JSValue JSObject::IsSealed(RuntimeCallInfo* argv) {
   }
 
   // 2. For each named own property name P of O,
+  auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  for (auto key : keys) {
+    // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
+    types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
 
-  // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
-
-  // b. If desc.[[Configurable]] is true, then return false.
+    // b. If desc.[[Configurable]] is true, then return false.
+    if (desc.GetConfigurable()) {
+      return JSValue::False();
+    }
+  }
 
   // 3. If the [[Extensible]] internal property of O is false, then return true.
-
+  if (!O.As<types::Object>()->GetExtensible()) {
+    return JSValue::True();
+  }
   // 4. Otherwise, return false.
-  
+  else {
+    return JSValue::False();
+  }
 }
 
 // Object.isFrozen
 // Defined in ECMAScript 5.1 Chapter 15.2.3.12
-// todo
 JSValue JSObject::IsFrozen(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
   JSHandle<JSValue> O = argv->GetArg(0);
 
   // 1. If Type(O) is not Object throw a TypeError exception.
@@ -413,18 +427,34 @@ JSValue JSObject::IsFrozen(RuntimeCallInfo* argv) {
   }
 
   // 2. For each named own property name P of O,
-
-  // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
-
-  // b. If IsDataDescriptor(desc) is true then
-
-  // i. If desc.[[Writable]] is true, return false.
-
-  // c. If desc.[[Configurable]] is true, then return false.
+  auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  for (auto key : keys) {
+    // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
+    types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
+    
+    // b. If IsDataDescriptor(desc) is true then
+    if (desc.IsDataDescriptor()) {
+      // i. If desc.[[Writable]] is true, return false.
+      if (desc.GetWritable()) {
+        return JSValue::False();
+      }
+    }
+    
+    // c. If desc.[[Configurable]] is true, then return false.
+    if (desc.GetConfigurable()) {
+      return JSValue::False();
+    }
+  }
 
   // 3. If the [[Extensible]] internal property of O is false, then return true.
-
+  if (!O.As<types::Object>()->GetExtensible()) {
+    return JSValue::True();
+  }
   // 4. Otherwise, return false.
+  else {
+    return JSValue::False();
+  }
 }
 
 // Object.isExtensible
@@ -444,9 +474,11 @@ JSValue JSObject::IsExtensible(RuntimeCallInfo* argv) {
 
 // Object.keys
 // Defined in ECMAScript 5.1 Chapter 15.2.3.14
-// todo
 JSValue JSObject::Keys(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
   JSHandle<JSValue> O = argv->GetArg(0);
+  ObjectFactory* factory = vm->GetObjectFactory();
 
   // 1. If the Type(O) is not Object, throw a TypeError exception.
   if (!O->IsObject()) {
@@ -455,38 +487,86 @@ JSValue JSObject::Keys(RuntimeCallInfo* argv) {
   }
 
   // 2. Let n be the number of own enumerable properties of O
+  std::int32_t n = 0; 
 
   // 3. Let array be the result of creating a new Object as if by the expression new Array(n) where Array is the standard built-in constructor with that name.
-
+  JSHandle<JSArray> array = types::Object::Construct(
+    vm, vm->GetArrayConstructor(),
+    vm->GetGlobalConstants()->HandledUndefined(), {JSHandle<JSValue>{vm, JSValue{n}}}).As<JSArray>();
+  
   // 4. Let index be 0.
+  std::int32_t index = 0;
 
   // 5. For each own enumerable property of O whose name String is P
+  auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
+  std::vector<JSHandle<JSValue>> keys = props->GetAllEnumerableKeys(vm);
+  for (auto key : keys) {
+    // a. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(index),
+    //    the PropertyDescriptor {[[Value]]: P, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+    types::Object::DefineOwnProperty(vm, array, factory->NewStringFromInt(index),
+                                     types::PropertyDescriptor{vm, key, true, true, true}, false);
 
-  // a. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(index), the PropertyDescriptor {[[Value]]: P, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
-
-  // b. Increment index by 1.
-
+    // b. Increment index by 1.
+    ++index;
+  }
+  
   // 6. Return array.
+  return array.GetJSValue();
 }
 
 // Object.prototype.toString()
 // Defined in ECMAScript 5.1 Chapter 15.2.4.2
 JSValue JSObject::ToString(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
   // 1. If the this value is undefined, return "[object Undefined]".
+  if (this_value->IsUndefined()) {
+    return factory->NewString(u"[object Undefined]").GetJSValue();
+  }
+  
   // 2. If the this value is null, return "[object Null]".
+  if (this_value->IsNull()) {
+    return factory->NewString(u"[object Null]").GetJSValue();
+  }
+  
   // 3. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
   // 4. Let class be the value of the [[Class]] internal property of O.
+  ObjectClassType class_type = O->GetClassType();
+  
   // 5 .Return the String value that is the result of concatenating the three Strings "[object ", class, and "]".
+  return types::String::Concat(
+    vm, factory->NewString(u"[object "),
+    ObjectClassTypeToString(vm, class_type), factory->NewString(u"]")).GetJSValue();
 }
 
 // Object.prototype.toLocaleString()
 // Defined in ECMAScript 5.1 Chapter 15.2.4.3
-// todo
-JSValue JSObject::ToLocalString(RuntimeCallInfo* argv) {
+JSValue JSObject::ToLocaleString(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
   // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
   // 2. Let toString be the result of calling the [[Get]] internal method of O passing "toString" as the argument.
+  JSHandle<JSValue> to_string = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledToStringString());
+  
   // 3. If IsCallable(toString) is false, throw a TypeError exception.
+  if (!to_string.As<HeapObject>()->GetCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"No toString method on current object.", JSValue{});
+  }
+
   // 4. Return the result of calling the [[Call]] internal method of toString passing O as the this value and no arguments.
+  return types::Object::Call(vm, to_string.As<Object>(), O.As<JSValue>(), {}).GetJSValue();
 }
 
 // Object.prototype.valueOf()
@@ -494,10 +574,10 @@ JSValue JSObject::ToLocalString(RuntimeCallInfo* argv) {
 JSValue JSObject::ValueOf(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
-  JSHandle<JSValue> this_obj = argv->GetThis();
+  JSHandle<JSValue> this_value = argv->GetThis();
   
   // 1. Let O be the result of calling ToObject passing the this value as the argument.
-  JSHandle<Object> O = JSValue::ToObject(vm, this_obj);
+  JSHandle<Object> O = JSValue::ToObject(vm, this_value);
 
   // 2. If O is the result of calling the Object constructor with a host object (15.2.2.1), then
   // a. Return either O or another value such as the host object originally passed to the constructor. The specific result that is returned is implementation-defined.
@@ -512,14 +592,14 @@ JSValue JSObject::ValueOf(RuntimeCallInfo* argv) {
 JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
-  JSHandle<JSValue> this_obj = argv->GetThis();
+  JSHandle<JSValue> this_value = argv->GetThis();
   JSHandle<JSValue> V = argv->GetArg(0);
   
   // 1. Let P be ToString(V).
   JSHandle<types::String> P = JSValue::ToString(vm, V);
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  JSHandle<types::Object> O = JSValue::ToObject(vm, this_obj);
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
   types::PropertyDescriptor desc = Object::GetOwnProperty(vm, O, P);
@@ -538,7 +618,7 @@ JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
 JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
-  JSHandle<JSValue> this_obj = argv->GetThis();
+  JSHandle<JSValue> this_value = argv->GetThis();
   JSHandle<JSValue> V = argv->GetArg(0);
 
   // 1. If V is not an object, return false.
@@ -547,19 +627,21 @@ JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
   }
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  JSHandle<types::Object> O = JSValue::ToObject(vm, this_obj);
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 3. Repeat
   while (true) {
     // a. Let V be the value of the [[Prototype]] internal property of V.
-    auto proto = JSHandle<JSValue>{vm, V.As<types::Object>()->GetPrototype()};
+    V = JSHandle<JSValue>{vm, V.As<types::Object>()->GetPrototype()};
     
     // b. if V is null, return false
-    if (proto->IsNull()) {
+    if (V->IsNull()) {
       return JSValue::False();
     }
+    
     // c. If O and V refer to the same object, return true.
-    if (proto->GetRawData() == O.GetJSValue().GetRawData()) {
+    if (V.GetJSValue() == O.GetJSValue()) {
       return JSValue::True();
     }
   }
@@ -570,14 +652,15 @@ JSValue JSObject::IsPrototypeOf(RuntimeCallInfo* argv) {
 JSValue JSObject::PropertyIsEnumerable(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
-  JSHandle<JSValue> this_obj = argv->GetThis();
+  JSHandle<JSValue> this_value = argv->GetThis();
   JSHandle<JSValue> V = argv->GetArg(0);
   
   // 1. Let P be ToString(V).
   JSHandle<types::String> P = JSValue::ToString(vm, V);
   
   // 2. Let O be the result of calling ToObject passing the this value as the argument.
-  JSHandle<types::Object> O = JSValue::ToObject(vm, this_obj);
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
   
   // 3. Let desc be the result of calling the [[GetOwnProperty]] internal method of O passing P as the argument.
   types::PropertyDescriptor desc = Object::GetOwnProperty(vm, O, P);

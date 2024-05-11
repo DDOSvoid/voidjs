@@ -39,6 +39,7 @@ class JSArray;
 class JSString;
 class JSBoolean;
 class JSNumber;
+class JSMath; 
 class JSError;
 
 }  // namespace builtins
@@ -152,6 +153,7 @@ class HeapObject {
   bool IsJSString() const { return GetType() == JSType::JS_STRING; }
   bool IsJSBoolean() const { return GetType() == JSType::JS_BOOLEAN; }
   bool IsJSNumber() const { return GetType() == JSType::JS_NUMBER; }
+  bool ISJSMath() const { return GetType() == JSType::JS_MATH; } 
   bool IsJSError() const { return GetType() == JSType::JS_ERROR; }
 
   // As Cast
@@ -176,6 +178,7 @@ class HeapObject {
   builtins::JSString* AsJSString() { return reinterpret_cast<builtins::JSString*>(this); }
   builtins::JSBoolean* AsJSBoolean() { return reinterpret_cast<builtins::JSBoolean*>(this); }
   builtins::JSNumber* AsJSNumber() { return reinterpret_cast<builtins::JSNumber*>(this); }
+  builtins::JSMath* AsJSMath() { return reinterpret_cast<builtins::JSMath*>(this); }
   builtins::JSError* AsJSError() { return reinterpret_cast<builtins::JSError*>(this); }
 
   // As Cast
@@ -200,6 +203,7 @@ class HeapObject {
   const builtins::JSString* AsJSString() const { return reinterpret_cast<const builtins::JSString*>(this); }
   const builtins::JSBoolean* AsJSBoolean() const { return reinterpret_cast<const builtins::JSBoolean*>(this); }
   const builtins::JSNumber* AsJSNumber() const { return reinterpret_cast<const builtins::JSNumber*>(this); }
+  const builtins::JSMath* AsJSMath() const { return reinterpret_cast<const builtins::JSMath*>(this); }
   const builtins::JSError* AsJSError() const { return reinterpret_cast<const builtins::JSError*>(this); }
 };
 

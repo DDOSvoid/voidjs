@@ -7,7 +7,7 @@
 
 namespace voidjs {
 
-inline JSHandle<types::String> ObjectClassTypeToString(VM* vm, ObjectClassType type) {
+JSHandle<types::String> ObjectClassTypeToString(VM* vm, ObjectClassType type) {
   ObjectFactory* factory = vm->GetObjectFactory();
   
   switch (type) {

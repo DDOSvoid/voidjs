@@ -94,10 +94,9 @@ JSHandle<types::Binding> ObjectFactory::NewBinding(JSHandle<JSValue> value, bool
 }
 
 JSHandle<types::InternalFunction> ObjectFactory::NewInternalFunction(InternalFunctionType func) {
-  auto internal_func = NewHeapObject(types::InternalFunction::SIZE).As<types::InternalFunction>();
-  internal_func->SetType(JSType::INTERNAL_FUNCTION);
+  auto internal_func = NewObject(types::InternalFunction::SIZE, JSType::INTERNAL_FUNCTION, ObjectClassType::FUNCTION,
+                                 vm_->GetFunctionPrototype().As<JSValue>(), true, true, false).As<types::InternalFunction>();
   internal_func->SetFunction(func);
-  internal_func->SetCallable(true);
   return internal_func;
 }
 

@@ -76,7 +76,7 @@ bool JSValue::ToBoolean(VM* vm, JSHandle<JSValue> val) {
 // Defined in ECMAScript 5.1 Chapter 9.3
 types::Number JSValue::ToNumber(VM* vm, JSHandle<JSValue> val) {
   if (val->IsUndefined()) {
-    return types::Number{std::numeric_limits<double>::quiet_NaN()};
+    return types::Number::NaN();
   } else if (val->IsNull()) {
     return types::Number{0};
   } else if (val->IsBoolean()) {

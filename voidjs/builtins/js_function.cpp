@@ -19,7 +19,6 @@ JSValue JSFunction::Call(RuntimeCallInfo* argv) {
 
 // new Function (p1, p2, ..., pn, body)
 // Defined in ECMAScript 5.1 Chapter 15.3.2.1
-// todo
 JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
@@ -84,6 +83,7 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   bool strict = false;
   
   // 10. If strict is true, throw any exceptions specified in 13.1 that apply.
+  // todo
   if (strict) {
     
   }

@@ -1,7 +1,9 @@
 #include "voidjs/types/lang_types/object.h"
 
 #include "voidjs/builtins/js_boolean.h"
+#include "voidjs/gc/js_handle_scope.h"
 #include "voidjs/interpreter/execution_context.h"
+#include "voidjs/interpreter/vm.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_factory.h"
@@ -596,26 +598,46 @@ JSHandle<JSValue> Object::Construct(VM* vm, JSHandle<Object> O, JSHandle<JSValue
   
   if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
     ret = builtins::JSObject::Construct(info);
-  }
-
-  if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
     ret = builtins::JSFunction::Construct(info);
-  }
-
-  if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
     ret = builtins::JSArray::Construct(info);
-  }
-  
-  if (O.GetJSValue() == vm->GetStringConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetStringConstructor().GetJSValue()) {
     ret = builtins::JSString::Construct(info);
-  }
-
-  if (O.GetJSValue() == vm->GetBooleanConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetBooleanConstructor().GetJSValue()) {
     ret = builtins::JSBoolean::Construct(info);
-  }
-
-  if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
     ret = builtins::JSNumber::Construct(info);
+  }
+  // Define in ECMAScript 5.1 Chapter 13.2.2
+  else if (O->IsJSFunction()) {
+    // JSHandleScope handle_scope{vm};
+    auto F = O.As<builtins::JSFunction>();
+    ObjectFactory* factory = vm->GetObjectFactory();
+    
+    // 1. Let obj be a newly created native ECMAScript object.
+    // 2. Set all the internal methods of obj as specified in 8.12.
+    // 3. Set the [[Class]] internal property of obj to "Object".
+    // 4. Set the [[Extensible]] internal property of obj to true.
+    // 5. Let proto be the value of calling the [[Get]] internal property of F with argument "prototype".
+    // 6. If Type(proto) is Object, set the [[Prototype]] internal property of obj to proto.
+    // 7. If Type(proto) is not Object, set the [[Prototype]] internal property of obj to the standard built-in Object prototype object as described in 15.2.4.
+    JSHandle<JSValue> proto = Get(vm, F, vm->GetGlobalConstants()->HandledPrototypeString());
+    JSHandle<builtins::JSObject> obj = factory->NewObject(
+      builtins::JSObject::SIZE, JSType::JS_OBJECT, ObjectClassType::OBJECT,
+      proto->IsObject() ? proto : vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<builtins::JSObject>();
+    
+    // 8. Let result be the result of calling the [[Call]] internal property of F,
+    //    providing obj as the this value and providing the argument list passed into [[Construct]] as args.
+    JSHandle<JSValue> result = Call(vm, F, obj.As<JSValue>(), args);
+    
+    // 9. If Type(result) is Object then return result.
+    if (result->IsObject()) {
+      return result;
+    }
+    
+    // 10. Return obj.
+    return obj.As<JSValue>();
   }
 
   RuntimeCallInfo::Delete(info);
@@ -632,17 +654,15 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
   
   if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
     ret = builtins::JSObject::Call(info);
-  }
-
-  if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
     ret = builtins::JSFunction::Call(info);
-  }
-
-  if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
+  } else if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
     ret = builtins::JSArray::Call(info);
   }
-
-  if (O->IsJSFunction()) {
+  // Define in ECMAScript 5.1 Chapter 13.2.1
+  else if (O->IsJSFunction()) {
+    // JSHandleScope handle_scope{vm};
+    
     auto F = O.As<builtins::JSFunction>();
     // 1. Let funcCtx be the result of establishing a new execution context for function code
     //    using the value of F's [[FormalParameters]] internal property,
@@ -662,7 +682,7 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
         return ast_node->AsFunctionExpression()->GetStatements();
       }
     });
-    auto result = vm->GetInterpreter()->EvalSourceElements(stmts);
+    auto result = stmts.empty() ? Completion{} : vm->GetInterpreter()->EvalSourceElements(stmts);
     
     // 3. Exit the execution context funcCtx, restoring the previous execution context.
     vm->PopExecutionContext();
@@ -678,9 +698,7 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
     else {
       return JSHandle<JSValue>{vm, JSValue::Undefined()};
     }
-  }
-
-  if (O->IsInternalFunction()) {
+  } else if (O->IsInternalFunction()) {
     auto func = O->AsInternalFunction()->GetFunction();
     ret = func(info);
   }

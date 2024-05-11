@@ -32,6 +32,7 @@ class Builtin {
   static void InitializeStringObjects(VM* vm);
   static void InitializeBooleanObjects(VM* vm);
   static void InitializeNumberObjects(VM* vm);
+  static void InitializeMathObjects(VM* vm);
   static void InitializeErrorObjects(VM* vm);
 
   static JSHandle<JSFunction> InstantiatingFunctionDeclaration(

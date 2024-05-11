@@ -52,6 +52,8 @@ class VM {
   PROPERTY_ACCESSORS(JSHandle<builtins::JSNumber>, NumberPrototype, number_proto_)
   PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, NumberConstructor, number_ctor_)
   
+  PROPERTY_ACCESSORS(JSHandle<builtins::JSMath>, MathObject, math_obj_)
+  
   PROPERTY_ACCESSORS(JSHandle<builtins::JSError>, ErrorPrototype, error_proto_)
   PROPERTY_ACCESSORS(JSHandle<builtins::JSFunction>, ErrorConstructor, error_ctor_)
   
@@ -98,6 +100,8 @@ class VM {
 
   JSHandle<builtins::JSNumber> number_proto_;
   JSHandle<builtins::JSFunction> number_ctor_;
+
+  JSHandle<builtins::JSMath> math_obj_;
   
   JSHandle<builtins::JSError> error_proto_;
   JSHandle<builtins::JSFunction> error_ctor_;

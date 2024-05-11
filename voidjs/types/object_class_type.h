@@ -34,7 +34,7 @@ enum class ObjectClassType : std::uint8_t {
   STRING,
 };
 
-inline JSHandle<types::String> ObjectClassTypeToString(VM* vm, ObjectClassType type); 
+JSHandle<types::String> ObjectClassTypeToString(VM* vm, ObjectClassType type); 
 
 }  // namespace voidjs 
 

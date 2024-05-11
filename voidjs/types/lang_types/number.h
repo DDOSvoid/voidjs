@@ -34,6 +34,8 @@ class Number : public JSValue {
     // assert value.IsNumber()
   }
 
+  static Number NaN() { return Number{std::numeric_limits<double>::quiet_NaN()}; }
+
   Number operator+(Number number) const {
     if (IsInt() && number.IsInt()) {
       std::int64_t num0 = GetInt();

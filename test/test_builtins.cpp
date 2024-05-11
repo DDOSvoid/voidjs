@@ -286,6 +286,112 @@ try {
   EXPECT_EQ(u"Successfully catch.", comp.GetValue()->GetString()); 
 }
 
+TEST(JSObject, isSealed) {
+  Parser parser(uR"(
+var object = {
+  property: 42,
+};
+
+var count = 0;
+
+count += !Object.isSealed(object);
+
+Object.seal(object);
+
+count += Object.isSealed(object);
+
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt()); 
+}
+
+TEST(JSObject, isFrozen) {
+  Parser parser(uR"(
+var count = 0;
+
+// 一个新对象是默认是可扩展的，所以它也是非冻结的。
+count += !Object.isFrozen({}); // false
+
+// 一个不可扩展的空对象同时也是一个冻结对象。
+var vacuouslyFrozen = Object.preventExtensions({});
+count += Object.isFrozen(vacuouslyFrozen); // true
+
+// 一个非空对象默认也是非冻结的。
+var oneProp = { p: 42 };
+count += !Object.isFrozen(oneProp); // false
+
+// 即使令对象不可扩展，它也不会被冻结，因为属性仍然是可配置的（而且可写的）。
+Object.preventExtensions(oneProp);
+count += !Object.isFrozen(oneProp); // false
+
+// 此时，如果删除了这个属性，则它会成为一个冻结对象。
+delete oneProp.p;
+count += Object.isFrozen(oneProp); // true
+
+// 一个不可扩展的对象，拥有一个不可写但可配置的属性，则它仍然是非冻结的。
+var nonWritable = { e: "plep" };
+Object.preventExtensions(nonWritable);
+Object.defineProperty(nonWritable, "e", {
+  writable: false,
+}); // 令其不可写
+count += !Object.isFrozen(nonWritable); // false
+
+// 把这个属性改为不可配置，会让这个对象成为冻结对象。
+Object.defineProperty(nonWritable, "e", {
+  configurable: false,
+}); // 令其不可配置
+count += Object.isFrozen(nonWritable); // true
+
+// 一个不可扩展的对象，拥有一个不可配置但可写的属性，则它也是非冻结的。
+var nonConfigurable = { release: "the kraken!" };
+Object.preventExtensions(nonConfigurable);
+Object.defineProperty(nonConfigurable, "release", {
+  configurable: false,
+});
+count += !Object.isFrozen(nonConfigurable); // false
+
+// 把这个属性改为不可写，会让这个对象成为冻结对象。
+Object.defineProperty(nonConfigurable, "release", {
+  writable: false,
+});
+count += Object.isFrozen(nonConfigurable); // true
+
+// 一个不可扩展的对象，拥有一个访问器属性，则它仍然是非冻结的。
+var accessor = {
+  get food() {
+    return "yum";
+  },
+};
+Object.preventExtensions(accessor);
+count += !Object.isFrozen(accessor); // false
+
+// 把这个属性改为不可配置，会让这个对象成为冻结对象。
+Object.defineProperty(accessor, "food", {
+  configurable: false,
+});
+count += Object.isFrozen(accessor); // true
+
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(11, comp.GetValue()->GetInt()); 
+}
+
 TEST(JSObject, IsExtensible) {
   Parser parser(uR"(
 var object = {};
@@ -314,6 +420,147 @@ mask;
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsInt());
   EXPECT_EQ(3, comp.GetValue()->GetInt()); 
+}
+
+TEST(JSObject, Keys) {
+  Parser parser(uR"(
+var myObj = Object.create({}, {
+  getFoo: {
+    value: function value() {
+      return this.foo;
+    }
+  }
+});
+myObj.foo = 1;
+Object.keys(myObj).join();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"foo", comp.GetValue()->GetString()); 
+}
+
+TEST(JSObject, ToString) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
+TEST(JSObject, ToLocaleString) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
+
+TEST(JSObject, ValueOf) {
+  Parser parser(uR"(
+var obj = { foo: 1 };
+obj.valueOf() === obj; // true
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsBoolean());
+  EXPECT_EQ(true, comp.GetValue()->GetBoolean());
+}
+
+TEST(JSObject, HasOwnProperty) {
+  Parser parser(uR"(
+var fruits = ["Apple", "Banana", "Watermelon", "Orange"];
+var count = 0; 
+count += fruits.hasOwnProperty(3); // 返回 true
+count += !fruits.hasOwnProperty(4); // 返回 false
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSObject, IsPrototypeOf) {
+  Parser parser(uR"(
+function Foo() {}
+function Bar() {}
+
+Bar.prototype = Object.create(Foo.prototype);
+
+var bar = new Bar();
+
+var count = 0;
+
+count += Foo.prototype.isPrototypeOf(bar);
+
+count += Bar.prototype.isPrototypeOf(bar);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSObject, PropertyIsEnumerable) {
+  Parser parser(uR"(
+var object = {};
+var array = [];
+object.property = 42;
+array[0] = 42;
+
+var count = 0; 
+
+count += object.propertyIsEnumerable('property');
+
+count += array.propertyIsEnumerable(0);
+
+count += array.propertyIsEnumerable('length');
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt());
 }
 
 TEST(JSFunction, Construct) {
@@ -630,3 +877,50 @@ num;
   EXPECT_EQ(123, comp.GetValue()->GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetInt());
 }
 
+TEST(JSMath, Abs) {
+  Parser parser(uR"(
+Math.abs("-1"); 
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(1, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Acos) {
+  Parser parser(uR"(
+Math.acos(0.5); // 1.0471975511965979
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsDouble());
+  EXPECT_DOUBLE_EQ(1.0471975511965979, comp.GetValue()->GetDouble());
+}
+
+TEST(JSMath, Asin) {
+  Parser parser(uR"(
+Math.asin(-1); // -1.5707963267948966 (-pi/2)
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsDouble());
+  EXPECT_DOUBLE_EQ(-1.5707963267948966, comp.GetValue()->GetDouble());
+}

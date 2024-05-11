@@ -1,14 +1,14 @@
 #ifndef VOIDJS_TYPES_INTERNAL_TYPES_INTERNAL_FUNCTION_H
 #define VOIDJS_TYPES_INTERNAL_TYPES_INTERNAL_FUNCTION_H
 
-#include "voidjs/types/heap_object.h"
+#include "voidjs/types/lang_types/object.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/utils/helper.h"
 
 namespace voidjs {
 namespace types {
 
-class InternalFunction : public HeapObject {
+class InternalFunction : public types::Object {
  public:
   static constexpr std::size_t FUNCTION_OFFSET = HeapObject::END_OFFSET;
   InternalFunctionType GetFunction() const {

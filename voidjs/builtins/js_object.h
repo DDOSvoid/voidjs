@@ -38,7 +38,7 @@ class JSObject : public types::Object {
   // Function properties of the Object Prototype
   // Defined in ECMAScript 5.1 Chapter 15.2.4
   static JSValue ToString(RuntimeCallInfo* argv);
-  static JSValue ToLocalString(RuntimeCallInfo* argv);
+  static JSValue ToLocaleString(RuntimeCallInfo* argv);
   static JSValue ValueOf(RuntimeCallInfo* argv);
   static JSValue HasOwnProperty(RuntimeCallInfo* argv);
   static JSValue IsPrototypeOf(RuntimeCallInfo* argv);

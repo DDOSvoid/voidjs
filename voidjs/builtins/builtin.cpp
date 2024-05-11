@@ -10,6 +10,7 @@
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_class_type.h"
 #include "voidjs/types/lang_types/object.h"
+#include "voidjs/types/object_factory.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/types/internal_types/internal_function.h"
@@ -20,6 +21,7 @@
 #include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_number.h"
+#include "voidjs/builtins/js_math.h"
 #include "voidjs/builtins/js_error.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/vm.h"
@@ -35,6 +37,7 @@ void Builtin::Initialize(VM* vm) {
   InitializeStringObjects(vm);
   InitializeBooleanObjects(vm);
   InitializeNumberObjects(vm);
+  InitializeMathObjects(vm);
   InitializeErrorObjects(vm);
   SetPropretiesForBuiltinObjects(vm);
 }
@@ -217,6 +220,26 @@ void Builtin::InitializeNumberObjects(VM* vm) {
   vm->SetNumberConstructor(num_ctor);
 }
 
+void Builtin::InitializeMathObjects(VM* vm) {
+  ObjectFactory* factory = vm->GetObjectFactory();
+  // Initialize Math Object
+  //
+  // The Math object is a single object that has some named properties, some of which are functions.
+  //
+  // The value of the [[Prototype]] internal property of the Math object is the standard built-in Object prototype object (15.2.4).
+  // The value of the [[Class]] internal property of the Math object is "Math".
+  // 
+  // The Math object does not have a [[Construct]] internal property;
+  // it is not possible to use the Math object as a constructor with the new operator.
+  // 
+  // The Math object does not have a [[Call]] internal property; it is not possible to invoke the Math object as a function.
+  JSHandle<JSMath> math_obj = factory->NewObject(
+    JSMath::SIZE, JSType::JS_MATH, ObjectClassType::MATH,
+    vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<JSMath>();
+  
+  vm->SetMathObject(math_obj);
+}
+
 void Builtin::InitializeErrorObjects(VM* vm) {
   ObjectFactory* factory = vm->GetObjectFactory();
   
@@ -365,6 +388,7 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   JSHandle<JSFunction> arr_ctor = vm->GetArrayConstructor();
   JSHandle<JSArray> arr_proto = vm->GetArrayPrototype();
   JSHandle<JSString> str_proto = vm->GetStringPrototype();
+  JSHandle<JSMath> math_obj = vm->GetMathObject();
 
   // Set properties for Global Object
   SetDataProperty(vm, global_obj, constants->HandledObjectString(),
@@ -377,8 +401,10 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
                   vm->GetBooleanConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledNumberString(),
                   vm->GetNumberConstructor().As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, constants->HandledMathString(),
+                  vm->GetMathObject().As<JSValue>(), true, false, true);
 
-  // Set propreties for Object Constructor
+  // Set properties for Object Constructor
   SetDataProperty(vm, obj_ctor, constants->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);
   SetDataProperty(vm, obj_ctor, constants->HandledPrototypeString(), obj_proto.As<JSValue>(), false, false, false);
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"getPrototypeOf"),
@@ -406,7 +432,27 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"isExtensible"),
                       JSObject::IsExtensible, true, false, true);
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"keys"),
-                      JSObject::IsExtensible, true, false, true);
+                      JSObject::Keys, true, false, true);
+
+  // Set properties for Object Prototype
+  SetDataProperty(vm, obj_proto, constants->HandledConstructorString(),
+                  vm->GetObjectConstructor().As<JSValue>(), true, false, true);
+  SetFunctionProperty(vm, obj_proto, factory->NewString(u"toString"),
+                      JSObject::ToString, true, false, true);
+  SetFunctionProperty(vm, obj_proto, factory->NewString(u"toLocaleString"),
+                      JSObject::ToLocaleString, true, false, true);
+  SetFunctionProperty(vm, obj_proto, factory->NewString(u"valueOf"),
+                      JSObject::ValueOf, true, false, true);
+  SetFunctionProperty(vm, obj_proto, factory->NewString(u"hasOwnProperty"),
+                      JSObject::HasOwnProperty, true, false, true);
+  SetFunctionProperty(vm, obj_proto, factory->NewString(u"isPrototypeOf"),
+                      JSObject::IsPrototypeOf, true, false, true);
+  SetFunctionProperty(vm, obj_proto, factory->NewString(u"propertyIsEnumerable"),
+                      JSObject::PropertyIsEnumerable, true, false, true);
+
+  // Set properties for Function Constructor
+  SetDataProperty(vm, func_ctor, constants->HandledPrototypeString(),
+                  vm->GetFunctionPrototype().As<JSValue>(), false, false, false);
 
   // Set properties for Array Constructor
   SetDataProperty(vm, arr_ctor, factory->NewString(u"prototype"),
@@ -414,7 +460,7 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetFunctionProperty(vm, arr_ctor, factory->NewString(u"isArray"),
                       JSArray::IsArray, true, false, true);
   
-  // Set propreties for Array Prototype
+  // Set properties for Array Prototype
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"concat"),
                       JSArray::Concat, true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"join"),
@@ -424,13 +470,21 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"push"),
                       JSArray::Push, true, false, true);
 
-  // Set propreties for String Prototype
+  // Set properties for String Prototype
   SetFunctionProperty(vm, str_proto, factory->NewString(u"charAt"),
                       JSString::CharAt, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"concat"),
                       JSString::Concat, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"indexOf"),
                       JSString::IndexOf, true, false, true);
+
+  // Set properties for Math Object
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"abs"),
+                      JSMath::Abs, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"acos"),
+                      JSMath::Acos, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"asin"),
+                      JSMath::Asin, true, false, true);
 }
 
 void Builtin::SetDataProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, JSHandle<JSValue> prop_val,
