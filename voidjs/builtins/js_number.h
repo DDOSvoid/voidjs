@@ -18,8 +18,8 @@ class JSNumber : public types::Object {
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
 
   // Internal method [[Construct]] and [[Call]] for Array Constructor
-  static JSValue Call(RuntimeCallInfo*);
-  static JSValue Construct(RuntimeCallInfo*);
+  static JSValue NumberConstructorCall(RuntimeCallInfo*);
+  static JSValue NumberConstructorConstruct(RuntimeCallInfo*);
 
   // Function propreties of the Number Prototype
   

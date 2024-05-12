@@ -192,11 +192,11 @@ bool JSArray::DefineOwnProperty(VM* vm, JSHandle<types::Object> O, JSHandle<type
   return Object::DefineOwnPropertyDefault(vm, O, P, Desc, Throw);
 }
 
-JSValue JSArray::Call(RuntimeCallInfo* argv) {
-  return Construct(argv);
+JSValue JSArray::ArrayConstructorCall(RuntimeCallInfo* argv) {
+  return ArrayConstructorConstruct(argv);
 }
 
-JSValue JSArray::Construct(RuntimeCallInfo* argv) {
+JSValue JSArray::ArrayConstructorConstruct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   std::size_t args_num = argv->GetArgsNum();

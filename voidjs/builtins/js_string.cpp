@@ -17,7 +17,7 @@ namespace builtins {
 
 // String([value])
 // Defined in ECMAScript 5.1 Chapter 15.5.1.1
-JSValue JSString::Call(RuntimeCallInfo* argv) {
+JSValue JSString::StringConstructorCall(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   ObjectFactory* factory = vm->GetObjectFactory();
@@ -31,7 +31,7 @@ JSValue JSString::Call(RuntimeCallInfo* argv) {
 }
 
 // new String([value])
-JSValue JSString::Construct(RuntimeCallInfo* argv) {
+JSValue JSString::StringConstructorConstruct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   ObjectFactory* factory = vm->GetObjectFactory();

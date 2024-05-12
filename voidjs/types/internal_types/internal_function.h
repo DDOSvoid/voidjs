@@ -10,7 +10,7 @@ namespace types {
 
 class InternalFunction : public types::Object {
  public:
-  static constexpr std::size_t FUNCTION_OFFSET = HeapObject::END_OFFSET;
+  static constexpr std::size_t FUNCTION_OFFSET = Object::END_OFFSET;
   InternalFunctionType GetFunction() const {
     return *utils::BitGet<InternalFunctionType*>(this, FUNCTION_OFFSET);
   }
@@ -19,7 +19,7 @@ class InternalFunction : public types::Object {
   }
 
   static constexpr std::size_t SIZE = sizeof(InternalFunctionType);
-  static constexpr std::size_t END_OFFSET = HeapObject::END_OFFSET + SIZE;
+  static constexpr std::size_t END_OFFSET = Object::END_OFFSET + SIZE;
 };
 
 }  // namespace types

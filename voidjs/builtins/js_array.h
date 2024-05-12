@@ -17,8 +17,8 @@ class JSArray : public types::Object {
     VM* vm, JSHandle<types::Object> O, JSHandle<types::String> P, const types::PropertyDescriptor& Desc, bool Throw);
 
   // Internal method [[Construct]] and [[Call]] for Array Constructor
-  static JSValue Call(RuntimeCallInfo* argv);
-  static JSValue Construct(RuntimeCallInfo* argv);
+  static JSValue ArrayConstructorCall(RuntimeCallInfo* argv);
+  static JSValue ArrayConstructorConstruct(RuntimeCallInfo* argv);
 
   // Function properties of the Array Constructor
   static JSValue IsArray(RuntimeCallInfo* argv);

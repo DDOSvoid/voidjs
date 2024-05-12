@@ -18,8 +18,8 @@ class JSBoolean : public types::Object {
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
 
   // Internal method [[Construct]] and [[Call]] for Boolean Constructor
-  static JSValue Call(RuntimeCallInfo*);
-  static JSValue Construct(RuntimeCallInfo*);
+  static JSValue BooleanConstructorCall(RuntimeCallInfo*);
+  static JSValue BooleanConstructorConstruct(RuntimeCallInfo*);
 }; 
 
 }  // namespace builtins

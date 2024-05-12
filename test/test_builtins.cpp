@@ -9,7 +9,7 @@
 
 using namespace voidjs;
 
-TEST(JSObject, Construct) {
+TEST(JSObject, ObjectConstructorConstruct) {
   Parser parser(uR"(
 var o = new Object();
 o.foo = 42;
@@ -563,7 +563,24 @@ count += array.propertyIsEnumerable('length');
   EXPECT_EQ(2, comp.GetValue()->GetInt());
 }
 
-TEST(JSFunction, Construct) {
+TEST(JSFunction, FunctionConstructorCall) {
+  Parser parser(uR"(
+var add = Function('a', 'b', 'return a + b;');
+add(1, 2);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(3, comp.GetValue()->GetInt());
+}
+
+TEST(JSFunction, FunctionConstructorConstruct) {
   Parser parser(uR"(
 var add = new Function('a', 'b', 'return a + b;');
 add(1, 2);
@@ -578,6 +595,82 @@ add(1, 2);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsInt());
   EXPECT_EQ(3, comp.GetValue()->GetInt());
+}
+
+TEST(JSFunction, ToString) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
+TEST(JSFunction, Apply) {
+  Parser parser(uR"(
+var array = ["a", "b"];
+
+var elements = [0, 1, 2];
+
+array.push.apply(array, elements);
+
+array.join();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"a,b,0,1,2", comp.GetValue()->GetString());
+}
+
+TEST(JSFunction, Call) {
+  Parser parser(uR"(
+function Product(name, price) {
+  this.name = name;
+  this.price = price;
+}
+
+function Food(name, price) {
+  Product.call(this, name, price);
+  this.category = 'food';
+}
+
+var food = new Food('cheese', 5);
+
+food.name;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"cheese", comp.GetValue()->GetString());
+}
+
+TEST(JSFunction, Bind) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
 }
 
 TEST(JSArray, prototype) {

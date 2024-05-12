@@ -1,11 +1,15 @@
 #include "voidjs/builtins/js_function.h"
 
+#include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/parser/parser.h"
+#include "voidjs/types/heap_object.h"
+#include "voidjs/types/js_value.h"
 #include "voidjs/types/lang_types/string.h"
 #include "voidjs/types/object_factory.h"
 #include "voidjs/builtins/builtin.h"
 #include "voidjs/gc/js_handle.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
@@ -13,13 +17,13 @@ namespace builtins {
 
 // Function (p1, p2, ..., pn, body)
 // Defined in ECMAScript 5.1 Chapter 15.3.1.1
-JSValue JSFunction::Call(RuntimeCallInfo* argv) {
-  return Construct(argv);
+JSValue JSFunction::FunctionConstructorCall(RuntimeCallInfo* argv) {
+  return FunctionConstructorConstruct(argv);
 }
 
 // new Function (p1, p2, ..., pn, body)
 // Defined in ECMAScript 5.1 Chapter 15.3.2.1
-JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
+JSValue JSFunction::FunctionConstructorConstruct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   ObjectFactory* factory = vm->GetObjectFactory();
@@ -91,6 +95,105 @@ JSValue JSFunction::Construct(RuntimeCallInfo* argv) {
   //     the FormalParameterList and body as the FunctionBody.
   //     Pass in the Global Environment as the Scope parameter and strict as the Strict flag.
   return Builtin::InstantiatingFunctionDeclaration(vm, func_expr, vm->GetGlobalEnv(), strict).GetJSValue();
+}
+
+// Function.prototype.toString()
+// Defined in ECMAScript 5.1 Chapter 15.3.4.2
+JSValue JSFunction::ToString(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  return factory->NewString(u"[object Function]").GetJSValue();
+}
+
+// Function.prototype.apply(thisArg, argArray)
+// Defined in ECMAScript 5.1 Chapter 15.3.4.3
+JSValue JSFunction::Apply(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> this_arg = argv->GetArg(0);
+  JSHandle<JSValue> arg_array = argv->GetArg(1);
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
+  // 1. If IsCallable(func) is false, then throw a TypeError exception.
+  if (!this_value->IsObject() || !this_value->GetHeapObject()->GetCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Function is not callable when using Function.prototype.apply.", JSValue{});
+  }
+  
+  // 2. If argArray is null or undefined, then
+  if (arg_array->IsUndefined() || arg_array->IsNull()) {
+    // a. Return the result of calling the [[Call]] internal method of func,
+    //    providing thisArg as the this value and an empty list of arguments.
+    return types::Object::Call(vm, this_value.As<types::Object>(), this_arg, {}).GetJSValue();
+  }
+  
+  // 3. If Type(argArray) is not Object, then throw a TypeError exception.
+  if (!arg_array->IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Apply requires the second argument to be an object.", JSValue{});
+  }
+  
+  // 4. Let len be the result of calling the [[Get]] internal method of argArray with argument "length".
+  JSHandle<JSValue> len = types::Object::Get(vm, arg_array.As<types::Object>(), vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 5. Let n be ToUint32(len).
+  std::uint32_t n = JSValue::ToUint32(vm, len);
+  
+  // 6. Let argList be an empty List.
+  std::vector<JSHandle<JSValue>> arg_list;
+  
+  // 7. Let index be 0.
+  std::uint32_t index = 0;
+  
+  // 8. Repeat while index < n
+  while (index < n) {
+    // a. Let indexName be ToString(index).
+    JSHandle<types::String> index_name = factory->NewStringFromInt(index);
+    
+    // b. Let nextArg be the result of calling the [[Get]] internal method of argArray with indexName as the argument.
+    JSHandle<JSValue> next_arg = types::Object::Get(vm, arg_array.As<types::Object>(), index_name);
+    
+    // c. Append nextArg as the last element of argList.
+    arg_list.push_back(next_arg);
+    
+    // d. Set index to index + 1.
+    ++index;
+  }
+  
+  // 9. Return the result of calling the [[Call]] internal method of func, providing thisArg as the this value and argList as the list of arguments.
+  return types::Object::Call(vm, this_value.As<types::Object>(), this_arg, arg_list).GetJSValue();
+}
+
+// Function.prototype.call(thisArg, [ , arg1 [ , arg2, ... ] ])
+// Defined in ECMAScript 5.1 Chapter 15.3.4.4
+JSValue JSFunction::Call(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> this_arg = argv->GetArg(0);
+  std::uint64_t args_num = argv->GetArgsNum();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
+  // 1. If IsCallable(func) is false, then throw a TypeError exception.
+  if (!this_value->IsObject() || !this_value->GetHeapObject()->GetCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Function is not callable when using Function.prototype.call.", JSValue{});
+  }
+  
+  // 2. Let argList be an empty List.
+  std::vector<JSHandle<JSValue>> arg_list;
+  
+  // 3. If this method was called with more than one argument then in left to right order starting with arg1 append each argument as the last element of argList
+  for (std::size_t idx = 1; idx < args_num; ++idx) {
+    arg_list.push_back(argv->GetArg(idx));
+  }
+  
+  // 4. Return the result of calling the [[Call]] internal method of func, providing thisArg as the this value and argList as the list of arguments.
+  return types::Object::Call(vm, this_value.As<types::Object>(), this_arg, arg_list).GetJSValue();
+}
+
+JSValue JSFunction::Bind(RuntimeCallInfo* argv) {
+  return {};
 }
 
 }  // namespace builtins

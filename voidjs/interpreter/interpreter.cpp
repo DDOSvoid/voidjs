@@ -48,7 +48,7 @@ using namespace builtins;
 
 void Interpreter::Initialize() {
   // Initialize builtin objects and set it for vm
-  Builtin::Initialize(vm_);
+  Builtin::InitializeBuiltinObjects(vm_);
   
   JSHandle<LexicalEnvironment> global_env =
     LexicalEnvironment::NewObjectEnvironmentRecord(vm_, vm_->GetGlobalObject().As<JSValue>(), JSHandle<LexicalEnvironment>{});

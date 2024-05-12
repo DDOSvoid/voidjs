@@ -21,7 +21,7 @@ namespace builtins {
 
 // new Object ( [ value ] )
 // Defined in ECMAScript 5.1 Chapter 15.2.2.1
-JSValue JSObject::Construct(RuntimeCallInfo* argv) {
+JSValue JSObject::ObjectConstructorConstruct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   JSHandle<JSValue> value = argv->GetArg(0);
@@ -65,7 +65,7 @@ JSValue JSObject::Construct(RuntimeCallInfo* argv) {
 
 // Object([value])
 // Defined in ECMAScript 5.1 Chapter 15.2.1.1
-JSValue JSObject::Call(RuntimeCallInfo* argv) {
+JSValue JSObject::ObjectConstructorCall(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   JSHandle<JSValue> value = argv->GetArg(0);
@@ -74,7 +74,7 @@ JSValue JSObject::Call(RuntimeCallInfo* argv) {
   //    create and return a new Object object exactly as if
   //    the standard built-in Object constructor had been called with the same arguments (15.2.2.1).
   if (value.IsEmpty() || value->IsNull() || value->IsUndefined()) {
-    return JSValue(Construct(argv));
+    return ObjectConstructorConstruct(argv);
   }
 
   // 2. Return ToObject(value).

@@ -31,18 +31,19 @@
 namespace voidjs {
 namespace builtins {
 
-void Builtin::Initialize(VM* vm) {
-  InitializeBuiltinObjects(vm);
+void Builtin::InitializeBuiltinObjects(VM* vm) {
+  InitializeBaseObjects(vm);
   InitializeArrayObjects(vm);
   InitializeStringObjects(vm);
   InitializeBooleanObjects(vm);
   InitializeNumberObjects(vm);
   InitializeMathObjects(vm);
   InitializeErrorObjects(vm);
+  
   SetPropretiesForBuiltinObjects(vm);
 }
 
-void Builtin::InitializeBuiltinObjects(VM* vm) {
+void Builtin::InitializeBaseObjects(VM* vm) {
   ObjectFactory* factory = vm->GetObjectFactory();
   
   // Initialize GlobalObject
@@ -61,7 +62,6 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
   JSHandle<GlobalObject> global_obj = factory->NewObject(
     GlobalObject::SIZE, JSType::GLOBAL_OBJECT, ObjectClassType::OBJECT,
     JSHandle<JSValue>{vm, JSValue::Null()}, true, false, false).As<GlobalObject>();
-  vm->SetGlobalObject(global_obj);
 
   // Initialize Object Prototype
   // 
@@ -103,6 +103,8 @@ void Builtin::InitializeBuiltinObjects(VM* vm) {
     JSFunction::SIZE, JSType::JS_FUNCTION, ObjectClassType::FUNCTION,
     func_proto.As<JSValue>(), true, true, false).As<JSFunction>();
 
+  
+  vm->SetGlobalObject(global_obj);
   
   vm->SetObjectPrototype(obj_proto);
   vm->SetObjectConstructor(obj_ctor);
@@ -378,25 +380,30 @@ JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   return F;
 }
 
+
 void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
+  SetPropertiesForBaseObjects(vm);
+  SetPropertiesForArrayObjectss(vm);
+  SetProeprtiesForStringObjects(vm);
+  SetPropertiesForMathObjects(vm);
+}
+
+void Builtin::SetPropertiesForBaseObjects(VM *vm) {
   JSHandle<GlobalObject> global_obj = vm->GetGlobalObject();
-  ObjectFactory* factory = vm->GetObjectFactory();
-  GlobalConstants* constants = vm->GetGlobalConstants();
   JSHandle<JSFunction> obj_ctor = vm->GetObjectConstructor();
   JSHandle<JSObject> obj_proto = vm->GetObjectPrototype();
   JSHandle<JSFunction> func_ctor = vm->GetFunctionConstructor();
-  JSHandle<JSFunction> arr_ctor = vm->GetArrayConstructor();
-  JSHandle<JSArray> arr_proto = vm->GetArrayPrototype();
-  JSHandle<JSString> str_proto = vm->GetStringPrototype();
-  JSHandle<JSMath> math_obj = vm->GetMathObject();
-
+  JSHandle<JSFunction> func_proto = vm->GetFunctionPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
+  
   // Set properties for Global Object
   SetDataProperty(vm, global_obj, constants->HandledObjectString(),
                   obj_ctor.As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledFunctionString(),
                   func_ctor.As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledArrayString(),
-                  arr_ctor.As<JSValue>(), true, false, true);
+                  vm->GetArrayConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledBooleanString(),
                   vm->GetBooleanConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledNumberString(),
@@ -453,6 +460,25 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   // Set properties for Function Constructor
   SetDataProperty(vm, func_ctor, constants->HandledPrototypeString(),
                   vm->GetFunctionPrototype().As<JSValue>(), false, false, false);
+  SetDataProperty(vm, func_ctor, constants->HandledLengthString(),
+                  JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);
+
+  // Set properties for Function Prototype
+  SetDataProperty(vm, func_proto, constants->HandledLengthString(),
+                  JSHandle<JSValue>{vm, JSValue{0}}, false, false, false);
+  SetFunctionProperty(vm, func_proto, factory->NewString(u"apply"),
+                      JSFunction::Apply, true, false, true);
+  SetFunctionProperty(vm, func_proto, factory->NewString(u"call"),
+                      JSFunction::Call, true, false, true);
+  SetFunctionProperty(vm, func_proto, factory->NewString(u"bind"),
+                      JSFunction::Bind, true, false, true);
+}
+
+void Builtin::SetPropertiesForArrayObjectss(VM* vm) {
+  JSHandle<JSFunction> arr_ctor = vm->GetArrayConstructor();
+  JSHandle<JSArray> arr_proto = vm->GetArrayPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
 
   // Set properties for Array Constructor
   SetDataProperty(vm, arr_ctor, factory->NewString(u"prototype"),
@@ -469,6 +495,13 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
                       JSArray::Pop, true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"push"),
                       JSArray::Push, true, false, true);
+}
+
+void Builtin::SetProeprtiesForStringObjects(VM* vm) {
+  JSHandle<JSFunction> str_ctor = vm->GetStringConstructor();
+  JSHandle<JSString> str_proto = vm->GetStringPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
 
   // Set properties for String Prototype
   SetFunctionProperty(vm, str_proto, factory->NewString(u"charAt"),
@@ -477,6 +510,12 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
                       JSString::Concat, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"indexOf"),
                       JSString::IndexOf, true, false, true);
+}
+
+void Builtin::SetPropertiesForMathObjects(VM* vm) {
+  JSHandle<JSMath> math_obj = vm->GetMathObject();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
 
   // Set properties for Math Object
   SetFunctionProperty(vm, math_obj, factory->NewString(u"abs"),

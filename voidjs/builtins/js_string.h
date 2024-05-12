@@ -19,8 +19,8 @@ class JSString : public types::Object {
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
 
   // Internal method [[Construct]] and [[Call]] for String Constructor
-  static JSValue Call(RuntimeCallInfo* argv);
-  static JSValue Construct(RuntimeCallInfo* argv);
+  static JSValue StringConstructorCall(RuntimeCallInfo* argv);
+  static JSValue StringConstructorConstruct(RuntimeCallInfo* argv);
 
   // Function properties of String Constructor
   static JSValue FromCharCode(RuntimeCallInfo* argv);

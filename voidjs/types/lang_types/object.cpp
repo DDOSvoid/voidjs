@@ -597,17 +597,17 @@ JSHandle<JSValue> Object::Construct(VM* vm, JSHandle<Object> O, JSHandle<JSValue
   JSValue ret;
   
   if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
-    ret = builtins::JSObject::Construct(info);
+    ret = builtins::JSObject::ObjectConstructorConstruct(info);
   } else if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
-    ret = builtins::JSFunction::Construct(info);
+    ret = builtins::JSFunction::FunctionConstructorConstruct(info);
   } else if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
-    ret = builtins::JSArray::Construct(info);
+    ret = builtins::JSArray::ArrayConstructorConstruct(info);
   } else if (O.GetJSValue() == vm->GetStringConstructor().GetJSValue()) {
-    ret = builtins::JSString::Construct(info);
+    ret = builtins::JSString::StringConstructorConstruct(info);
   } else if (O.GetJSValue() == vm->GetBooleanConstructor().GetJSValue()) {
-    ret = builtins::JSBoolean::Construct(info);
+    ret = builtins::JSBoolean::BooleanConstructorConstruct(info);
   } else if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
-    ret = builtins::JSNumber::Construct(info);
+    ret = builtins::JSNumber::NumberConstructorConstruct(info);
   }
   // Define in ECMAScript 5.1 Chapter 13.2.2
   else if (O->IsJSFunction()) {
@@ -653,11 +653,11 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
   JSValue ret;
   
   if (O.GetJSValue() == vm->GetObjectConstructor().GetJSValue()) {
-    ret = builtins::JSObject::Call(info);
+    ret = builtins::JSObject::ObjectConstructorCall(info);
   } else if (O.GetJSValue() == vm->GetFunctionConstructor().GetJSValue()) {
-    ret = builtins::JSFunction::Call(info);
+    ret = builtins::JSFunction::FunctionConstructorCall(info);
   } else if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
-    ret = builtins::JSArray::Call(info);
+    ret = builtins::JSArray::ArrayConstructorCall(info);
   }
   // Define in ECMAScript 5.1 Chapter 13.2.1
   else if (O->IsJSFunction()) {

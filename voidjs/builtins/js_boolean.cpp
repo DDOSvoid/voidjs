@@ -10,7 +10,7 @@ namespace builtins {
 
 // Boolean(value)
 // Defined in ECMAScript 5.1 Chapter 15.6.1.1
-JSValue JSBoolean::Call(RuntimeCallInfo* argv) {
+JSValue JSBoolean::BooleanConstructorCall(RuntimeCallInfo* argv) {
   auto vm = argv->GetVM();
   auto value = argv->GetArg(0);
   
@@ -20,7 +20,7 @@ JSValue JSBoolean::Call(RuntimeCallInfo* argv) {
 
 // new Boolean(value)
 // Defined in ECMAScript 5.1 Chapter 15.6.2.1
-JSValue JSBoolean::Construct(RuntimeCallInfo* argv) {
+JSValue JSBoolean::BooleanConstructorConstruct(RuntimeCallInfo* argv) {
   VM* vm = argv->GetVM();
   JSHandleScope handle_scope{vm};
   JSHandle<JSValue> value = argv->GetArg(0);
