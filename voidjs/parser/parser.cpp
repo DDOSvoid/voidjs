@@ -795,9 +795,9 @@ Expression* Parser::ParseMemberExpression(bool has_new) {
     callee = ParseMemberExpression(true);
     if (lexer_.GetToken().GetType() == TokenType::LEFT_PAREN) {
       auto args = ParseArguments();
-      return new NewExpression(callee, std::move(args));
+      callee = new NewExpression(callee, std::move(args));
     } else {
-      return new NewExpression(callee, {});
+      callee = new NewExpression(callee, {});
     }
   } else {
     if (lexer_.GetToken().GetType() == TokenType::KEYWORD_FUNCTION) {

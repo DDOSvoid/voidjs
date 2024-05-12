@@ -644,9 +644,7 @@ function Food(name, price) {
   this.category = 'food';
 }
 
-var food = new Food('cheese', 5);
-
-food.name;
+new Food('cheese', 5).name;
 )");
 
   Interpreter interpreter;

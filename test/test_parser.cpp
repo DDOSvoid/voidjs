@@ -234,22 +234,22 @@ TEST(parser, ParseLeftHandSideExpression) {
   }
 
   // // New MemberExpression . IdentifierName 
-  // {
-  //   Parser parser(u"new Food('cheese').name");
+  {
+    Parser parser(u"new Food('cheese').name");
 
-  //   auto expr = parser.ParseLeftHandSideExpression();
-  //   ASSERT_TRUE(expr->IsMemberExpression());
+    auto expr = parser.ParseLeftHandSideExpression();
+    ASSERT_TRUE(expr->IsMemberExpression());
 
-  //   auto mem_expr = expr->AsMemberExpression();
-  //   ASSERT_TRUE(mem_expr->GetObject()->IsNewExpression());
-  //   ASSERT_TRUE(mem_expr->GetProperty()->IsIdentifier());
-  //   EXPECT_EQ(u"name", mem_expr->GetProperty()->AsIdentifier()->GetName());
+    auto mem_expr = expr->AsMemberExpression();
+    ASSERT_TRUE(mem_expr->GetObject()->IsNewExpression());
+    ASSERT_TRUE(mem_expr->GetProperty()->IsIdentifier());
+    EXPECT_EQ(u"name", mem_expr->GetProperty()->AsIdentifier()->GetName());
 
-  //   auto new_expr = mem_expr->GetObject()->AsNewExpression();
-  //   ASSERT_TRUE(new_expr->GetConstructor()->IsIdentifier());
-  //   EXPECT_EQ(u"Food", new_expr->GetConstructor()->AsIdentifier()->GetName());
-  //   EXPECT_EQ(0, new_expr->GetArguments().size());
-  // }
+    auto new_expr = mem_expr->GetObject()->AsNewExpression();
+    ASSERT_TRUE(new_expr->GetConstructor()->IsIdentifier());
+    EXPECT_EQ(u"Food", new_expr->GetConstructor()->AsIdentifier()->GetName());
+    EXPECT_EQ(1, new_expr->GetArguments().size());
+  }
 
   // New New MemberExpression . IdentifierName Arguments Arguments
   {
