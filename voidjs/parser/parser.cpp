@@ -34,11 +34,10 @@ Program* Parser::ParseProgram() {
       lexer_.GetToken().GetString() == u"use strict") {
     is_strict = true;
     lexer_.NextToken();
-    
-    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+
+    if (!TryAutomaticInsertSemicolon()) {
       ThrowSyntaxError("expects a ';'");
     }
-    lexer_.NextToken();
   }
   
   EnterFunctionScope();
@@ -148,10 +147,9 @@ Statement* Parser::ParseVariableStatement() {
 
   auto var_stmt = new VariableStatement(ParseVariableDeclarationList());
 
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
 
   return var_stmt;
 }
@@ -184,10 +182,9 @@ Statement* Parser::ParseExpressionStatement() {
   
   Expression* expr = ParseExpression();
 
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
   
   return new ExpressionStatement(expr);
 }
@@ -251,10 +248,9 @@ Statement* Parser::ParseDoWhileStatement() {
   }
   lexer_.NextToken();
 
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a '('");
   }
-  lexer_.NextToken();
 
   return new DoWhileStatement(cond, body);
 }
@@ -436,10 +432,9 @@ Statement* Parser::ParseContinueStatement() {
     ident = ParseIdentifier();
   }
   
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
 
   return new ContinueStatement(ident);
 }
@@ -460,11 +455,10 @@ Statement* Parser::ParseBreakStatement() {
     ident = ParseIdentifier();
   }
   
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
-
+      
   return new BreakStatement(ident);
 }
 
@@ -484,10 +478,9 @@ Statement* Parser::ParseReturnStatement() {
     expr = ParseExpression();
   }
   
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
 
   return new ReturnStatement(expr);
 }
@@ -573,10 +566,9 @@ Statement* Parser::ParseThrowStatement() {
   }
   auto expr = ParseExpression();
 
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
 
   return new ThrowStatement(expr);
 }
@@ -659,10 +651,9 @@ Statement* Parser::ParseDebuggerStatement() {
   // begin with debugger
   lexer_.NextToken();
 
-  if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+  if (!TryAutomaticInsertSemicolon()) {
     ThrowSyntaxError("expects a ';'");
   }
-  lexer_.NextToken();
 
   return new DebuggerStatement();
 }
@@ -1060,10 +1051,9 @@ Expression* Parser::ParseFunctionExpression() {
     is_strict = true;
     lexer_.NextToken();
     
-    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    if (!TryAutomaticInsertSemicolon()) {
       ThrowSyntaxError("expects a ';'");
     }
-    lexer_.NextToken();
   }
 
   EnterFunctionScope();
@@ -1386,10 +1376,9 @@ Statement* Parser::ParseFunctionDeclaration() {
     is_strict = true;
     lexer_.NextToken();
     
-    if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+    if (!TryAutomaticInsertSemicolon()) {
       ThrowSyntaxError("expects a ';'");
     }
-    lexer_.NextToken();
   }
 
   EnterFunctionScope();
@@ -1496,10 +1485,9 @@ Property* Parser::ParsePropertyAssignment() {
       is_strict = true;
       lexer_.NextToken();
     
-      if (lexer_.GetToken().GetType() != TokenType::SEMICOLON) {
+      if (!TryAutomaticInsertSemicolon()) {
         ThrowSyntaxError("expects a ';'");
       }
-      lexer_.NextToken();
     }
 
     EnterFunctionScope();
@@ -1633,6 +1621,21 @@ Expression* Parser::ParsePropertyName() {
 
 void Parser::ThrowSyntaxError(std::string msg) {
   throw utils::Error{utils::ErrorType::SYNTAX_ERROR, std::move(msg)};
+}
+
+bool Parser::TryAutomaticInsertSemicolon() {
+  if (lexer_.GetToken().GetType() == TokenType::SEMICOLON) {
+    lexer_.NextToken();
+    return true;
+  }
+  
+  if (lexer_.HasLineTerminator()                            ||
+      lexer_.GetToken().GetType() == TokenType::RIGHT_BRACE ||
+      lexer_.GetToken().GetType() == TokenType::EOS) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void Parser::EnterFunctionScope() {

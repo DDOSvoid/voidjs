@@ -80,6 +80,7 @@ class Parser {
 
  private:
   void ThrowSyntaxError(std::string msg);
+  bool TryAutomaticInsertSemicolon();
   void EnterFunctionScope();
   void AddVariableDeclaration(ast::VariableDeclaration* var_decl);
   void AddFunctionDeclaration(ast::FunctionDeclaration* func_decl);
