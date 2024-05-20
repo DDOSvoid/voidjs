@@ -30,7 +30,13 @@ class JSArray : public types::Object {
   static JSValue Join(RuntimeCallInfo* argv);
   static JSValue Pop(RuntimeCallInfo* argv);
   static JSValue Push(RuntimeCallInfo* argv);
-  
+  static JSValue Reverse(RuntimeCallInfo* argv);
+  static JSValue Shift(RuntimeCallInfo* argv);
+  static JSValue Slice(RuntimeCallInfo* argv);
+  static JSValue Sort(RuntimeCallInfo* argv);
+  static JSValue ForEach(RuntimeCallInfo* argv);
+  static JSValue Map(RuntimeCallInfo* argv);
+  static JSValue Filter(RuntimeCallInfo* argv);
 };
 
 }  // namespace builtins

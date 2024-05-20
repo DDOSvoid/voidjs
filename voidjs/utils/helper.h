@@ -10,6 +10,8 @@
 #include <type_traits>
 #include <vector>
 #include <cstring>
+#include <iostream>
+#include <bitset>
 
 #include "voidjs/lexer/character.h"
 
@@ -107,8 +109,8 @@ inline std::int32_t DoubleToInt(double d) {
     // Still has significand bits after mod 2^<BITS>
     // Get low <BITS> bits by shift left <64 - BITS> and shift right <64 - BITS>
     uint64_t value = (((u64 & DOUBLE_SIGNIFICAND_MASK) | DOUBLE_HIDDEN_BIT)
-                      << (static_cast<uint32_t>(exp) - DOUBLE_SIGNIFICAND_BITS + sizeof(std::uint64_t) - BITS)) >>
-      (sizeof(std::uint64_t) - BITS);
+                      << (static_cast<uint32_t>(exp) - DOUBLE_SIGNIFICAND_BITS + sizeof(std::uint64_t) * 8 - BITS)) >>
+      (sizeof(std::uint64_t) * 8 - BITS);
     ret = static_cast<int32_t>(value);
     if ((u64 & DOUBLE_SIGN_MASK) == DOUBLE_SIGN_MASK && ret != INT32_MIN) {
       ret = -ret;

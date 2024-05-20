@@ -724,6 +724,37 @@ count += Array.isArray(new Array(13, 15));
   EXPECT_EQ(4, comp.GetValue()->GetInt());
 }
 
+TEST(JSArray, ToString) {
+  Parser parser(uR"(
+var array = [1, 2, 'a', '1a'];
+
+array.toString();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"1,2,a,1a", comp.GetValue()->GetString());
+}
+
+TEST(JSArray, ToLocaleString) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
 TEST(JSArray, Concat) {
   {
     Parser parser(uR"(
@@ -808,7 +839,8 @@ array4;
 }
 
 TEST(JSArray, Join) {
-  Parser parser(uR"(
+  {
+    Parser parser(uR"(
 var elements = ['Fire', 'Air', 'Water'];
 
 // Fire,Air,Water
@@ -823,15 +855,33 @@ var r3 = elements.join('-');
 r1 + r2 + r3;
 )");
 
-  Interpreter interpreter;
+    Interpreter interpreter;
 
-  auto prog = parser.ParseProgram();
-  ASSERT_TRUE(prog->IsProgram());
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
 
-  auto comp = interpreter.Execute(prog);
-  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
-  ASSERT_TRUE(comp.GetValue()->IsString());
-  EXPECT_EQ(u"Fire,Air,WaterFireAirWaterFire-Air-Water", comp.GetValue()->GetString());
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"Fire,Air,WaterFireAirWaterFire-Air-Water", comp.GetValue()->GetString());
+  }
+  
+  {
+    Parser parser(uR"(
+var elements = [5, 4, , , 1];
+elements.join();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"5,4,,,1", comp.GetValue()->GetString());
+  }
 }
 
 TEST(JSArray, Pop) {
@@ -874,6 +924,254 @@ plants.join(',');
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsString());
   EXPECT_EQ(u"broccoli,cauliflower,cabbage,kale,sunflower", comp.GetValue()->GetString());
+}
+
+TEST(JSArray, Reverse) {
+  Parser parser(uR"(
+var array = [1, , , 4, 5];
+array.reverse().toString()
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"5,4,,,1", comp.GetValue()->GetString());
+}
+
+TEST(JSArray, Shift) {
+  Parser parser(uR"(
+var array = [1, 2, 3];
+
+var count = 0;
+
+var first_elem = array.shift();
+
+count += first_elem === 1;
+
+count += array.toString() === "2,3";
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSArray, Slice) {
+  {
+    Parser parser(uR"(
+var animals = ['ant', 'bison', 'camel', 'duck', 'elephant'];
+
+animals.slice(2).toString();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"camel,duck,elephant", comp.GetValue()->GetString());
+  }
+
+  {
+    Parser parser(uR"(
+[1, 2, , 4, 5].slice(1, 4).toString();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"2,,4", comp.GetValue()->GetString());
+  }
+}
+
+TEST(JSArray, Sort) {
+  {
+    Parser parser(uR"(
+var months = ['March', 'Jan', 'Feb', 'Dec'];
+months.sort().toString();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"Dec,Feb,Jan,March", comp.GetValue()->GetString());
+  }
+
+  {
+    Parser parser(uR"(
+var numberArray = [40, 1, 5, 200];
+// 根据 value 排序
+numberArray.sort(function (a, b) { return a - b; }).toString();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"1,5,40,200", comp.GetValue()->GetString());
+  }
+
+  {
+    Parser parser(uR"(
+var months = ['March', , , , 'Jan', 'Feb', 'Dec'];
+months.sort().toString();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"Dec,Feb,Jan,March,,,", comp.GetValue()->GetString());
+  }
+}
+
+TEST(JSArray, ForEach) {
+  {
+    Parser parser(uR"(
+var arraySparse = [1, 3, /* empty */, 7];
+var numCallbackRuns = 0;
+var sum = 0;
+
+arraySparse.forEach(function (element) {
+  sum += element;
+  numCallbackRuns++;
+});
+
+sum == 11 && numCallbackRuns == 3;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsBoolean());
+    EXPECT_EQ(true, comp.GetValue()->GetBoolean());
+  }
+
+  {
+    Parser parser(uR"(
+var copy = function copy(obj) {
+  var copy = Object.create(Object.getPrototypeOf(obj));
+  var propNames = Object.getOwnPropertyNames(obj);
+  propNames.forEach(function (name) {
+    var desc = Object.getOwnPropertyDescriptor(obj, name);
+    Object.defineProperty(copy, name, desc);
+  });
+  return copy;
+};
+var obj1 = {
+  a: 1,
+  b: 2
+};
+var obj2 = copy(obj1); // 现在 obj2 看起来和 obj1 一模一样了
+
+obj1.a == obj2.a && obj1.b == obj2.b;
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsBoolean());
+    EXPECT_EQ(true, comp.GetValue()->GetBoolean());
+  }
+}
+
+TEST(JSArray, Map) {
+  {
+    Parser parser(uR"(
+var numbers = [1, 4, 9];
+var doubles = numbers.map(function (num) { return num * 2; });
+doubles.join();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"2,8,18", comp.GetValue()->GetString());
+  }
+
+  {
+    Parser parser(uR"(
+[1, , 3].map(function (x) {
+    return x * 2;
+  }).join();
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"2,,6", comp.GetValue()->GetString());
+  }
+}
+
+TEST(JSArray, Filter) {
+  Parser parser(uR"(
+function isBigEnough(value) {
+  return value >= 10;
+}
+
+var filtered = [12, 5, 8, 130, 44].filter(isBigEnough);
+filtered.join();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"12,130,44", comp.GetValue()->GetString());
 }
 
 TEST(JSString, CharAt) {

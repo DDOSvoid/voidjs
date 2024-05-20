@@ -125,12 +125,12 @@ TEST(JSValue, ToInt32) {
   auto vm = interpreter.GetVM();
   
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(std::pow(2, 32) + 3)};
+    auto val = JSHandle<JSValue>{vm, JSValue{4294967296. + 3}};
     EXPECT_EQ(3, JSValue::ToInt32(vm, val));
   }
 
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
+    auto val = JSHandle<JSValue>{vm, JSValue{-2.3}};
     EXPECT_EQ(-2, JSValue::ToInt32(vm, val));
   }
 }
@@ -147,8 +147,8 @@ TEST(JSValue, ToUint32) {
   }
   
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(std::pow(2, 32) + 3)};
-    EXPECT_EQ(3, JSValue::ToInt32(vm, val));
+    auto val = JSHandle<JSValue>{vm, JSValue(4 * std::pow(2, 32) + std::pow(2, 16) - 1352)};
+    EXPECT_EQ(64184, JSValue::ToInt32(vm, val));
   }
 
   {

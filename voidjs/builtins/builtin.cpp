@@ -481,12 +481,18 @@ void Builtin::SetPropertiesForArrayObjectss(VM* vm) {
   GlobalConstants* constants = vm->GetGlobalConstants();
 
   // Set properties for Array Constructor
-  SetDataProperty(vm, arr_ctor, factory->NewString(u"prototype"),
+  SetDataProperty(vm, arr_ctor, constants->HandledPrototypeString(),
                   arr_proto.As<JSValue>(), false, false, false);
   SetFunctionProperty(vm, arr_ctor, factory->NewString(u"isArray"),
                       JSArray::IsArray, true, false, true);
   
   // Set properties for Array Prototype
+  SetDataProperty(vm, arr_proto, constants->HandledConstructorString(),
+                  arr_ctor.As<JSValue>(), false, false, false);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"toString"),
+                      JSArray::ToString, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"toLocaleString"),
+                      JSArray::ToLocaleString, true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"concat"),
                       JSArray::Concat, true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"join"),
@@ -495,6 +501,20 @@ void Builtin::SetPropertiesForArrayObjectss(VM* vm) {
                       JSArray::Pop, true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"push"),
                       JSArray::Push, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"reverse"),
+                      JSArray::Reverse, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"shift"),
+                      JSArray::Shift, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"slice"),
+                      JSArray::Slice, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"sort"),
+                      JSArray::Sort, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"forEach"),
+                      JSArray::ForEach, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"map"),
+                      JSArray::Map, true, false, true);
+  SetFunctionProperty(vm, arr_proto, factory->NewString(u"filter"),
+                      JSArray::Filter, true, false, true);
 }
 
 void Builtin::SetProeprtiesForStringObjects(VM* vm) {

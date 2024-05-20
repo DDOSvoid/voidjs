@@ -1724,9 +1724,9 @@ JSHandle<JSValue> Interpreter::EvalElementList(const Expressions& exprs) {
   //    [[Configurable]]: true}, and false.
   // 6. Return array.
 
-  auto len = exprs.size();
+  std::size_t len = exprs.size();
 
-  auto array = Object::Construct(
+  JSHandle<JSValue> array = Object::Construct(
     vm_, vm_->GetArrayConstructor(), 
     vm_->GetGlobalConstants()->HandledUndefined(), {JSHandle<JSValue>{vm_, JSValue{static_cast<int>(len)}}});
 
@@ -1739,10 +1739,9 @@ JSHandle<JSValue> Interpreter::EvalElementList(const Expressions& exprs) {
 
       val = GetValue(ref);
       RETURN_HANDLE_IF_HAS_EXCEPTION(vm_, JSValue);
-    } else {
-      val = JSHandle<JSValue>{vm_, JSValue::Undefined()};
+      
+      Builtin::SetDataProperty(vm_, array.As<Object>(), factory->NewStringFromInt(idx), val, true, true, true);
     }
-    Builtin::SetDataProperty(vm_, array.As<JSArray>(), JSValue::NumberToString(vm_, idx), val, true, true, true);
   }
 
   return array;

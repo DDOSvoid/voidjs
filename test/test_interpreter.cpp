@@ -1159,6 +1159,12 @@ TEST(Interpreter, EvalArrayLiteral) {
     }
 
     {
+      JSHandle<types::String> key = factory->NewStringFromInt(3);
+      bool present = types::Object::HasProperty(vm, array.As<types::Object>(), key);
+      ASSERT_TRUE(!present);
+    }
+
+    {
       auto key = factory->NewString(u"length");
       auto prop = types::Object::GetOwnProperty(vm, array.As<builtins::JSArray>(), key);
       ASSERT_TRUE(prop.GetValue()->IsInt());

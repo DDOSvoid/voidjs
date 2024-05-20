@@ -285,13 +285,30 @@ JSValue JSArray::IsArray(RuntimeCallInfo* argv) {
 
 // Array.prototype.toString()
 // Defined in ECMAScript 5.1 Chapter 15.4.4.2
-// todo
 JSValue JSArray::ToString(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
+  // 1. Let array be the result of calling ToObject on the this value.
+  JSHandle<JSArray> array = this_value.As<JSArray>();
+  
+  // 2. Let func be the result of calling the [[Get]] internal method of array with argument "join".
+  JSHandle<JSValue> func = types::Object::Get(vm, array, factory->NewString(u"join"));
+  
+  // 3. If IsCallable(func) is false, then let func be the standard built-in method Object.prototype.toString (15.2.4.2).
+  if (!func.As<types::Object>()->GetCallable()) {
+    func = types::Object::Get(vm, vm->GetObjectPrototype(), factory->NewString(u"toString"));
+  }
+  
+  // 4. Return the result of calling the [[Call]] internal method of func providing array as the this value and an empty arguments list.
+  return types::Object::Call(vm, func.As<types::Object>(), array.As<JSValue>(), {}).GetJSValue();
 }
 
 // Array.prototype.toLocaleString()
 // Defined in ECMAScript 5.1 Chapter 15.4.4.3
+// todo
 JSValue JSArray::ToLocaleString(RuntimeCallInfo* argv) {
 }
 
@@ -406,12 +423,12 @@ JSValue JSArray::Join(RuntimeCallInfo* argv) {
   }
   
   // 7. Let element0 be the result of calling the [[Get]] internal method of O with argument "0".
-  JSHandle<JSValue> element0 = types::Object::Get(vm, O, factory->NewStringFromInt(0));
+  JSHandle<JSValue> element0 = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledZeroString());
   
   // 8. If element0 is undefined or null, let R be the empty String;
   //    otherwise, Let R be ToString(element0).
   JSHandle<types::String> R = element0->IsUndefined() || element0->IsNull() ?
-    vm->GetGlobalConstants()->HandledLengthString() : JSValue::ToString(vm, element0);
+    vm->GetGlobalConstants()->HandledEmptyString() : JSValue::ToString(vm, element0);
   
   // 9. Let k be 1.
   std::int32_t k = 1;
@@ -524,6 +541,550 @@ JSValue JSArray::Push(RuntimeCallInfo* argv) {
   
   // 7. Return n.
   return JSValue{n};
+}
+
+// Array.prototype.reverse()
+// Defined in ECMAScript 5.1 Chapter 15.4.4.8
+JSValue JSArray::Reverse(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 3. Let len be ToUint32(lenVal).
+  std::uint32_t len = JSValue::ToUint32(vm, len_val);
+  
+  // 4. Let middle be floor(len/2).
+  std::uint32_t middle = len / 2;
+  
+  // 5. Let lower be 0.
+  std::uint32_t lower = 0;
+  
+  // 6. Repeat, while lower ≠ middle
+  while (lower != middle) {
+    // a. Let upper be len − lower −1.
+    std::uint32_t upper = len - lower - 1;
+    
+    // b. Let upperP be ToString(upper).
+    JSHandle<types::String> upper_p = factory->NewStringFromInt(upper);
+    
+    // c. Let lowerP be ToString(lower).
+    JSHandle<types::String> lower_p = factory->NewStringFromInt(lower);
+    
+    // d. Let lowerValue be the result of calling the [[Get]] internal method of O with argument lowerP.
+    JSHandle<JSValue> lower_value = types::Object::Get(vm, O, lower_p);
+    
+    // e. Let upperValue be the result of calling the [[Get]] internal method of O with argument upperP .
+    JSHandle<JSValue> upper_value = types::Object::Get(vm, O, upper_p);
+    
+    // f. Let lowerExists be the result of calling the [[HasProperty]] internal method of O with argument lowerP.
+    bool lower_exists = types::Object::HasProperty(vm, O, lower_p);
+    
+    // g. Let upperExists be the result of calling the [[HasProperty]] internal method of O with argument upperP.
+    bool upper_exists = types::Object::HasProperty(vm, O, upper_p);
+    
+    // h. If lowerExists is true and upperExists is true, then
+    if (lower_exists && upper_exists) {
+      // i. Call the [[Put]] internal method of O with arguments lowerP, upperValue, and true .
+      types::Object::Put(vm, O, lower_p, upper_value, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+      
+      // ii. Call the [[Put]] internal method of O with arguments upperP, lowerValue, and true .
+      types::Object::Put(vm, O, upper_p, lower_value, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+    // i. Else if lowerExists is false and upperExists is true, then
+    else if (!lower_exists && upper_exists) {
+      // i. Call the [[Put]] internal method of O with arguments lowerP, upperValue, and true .
+      types::Object::Put(vm, O, lower_p, upper_value, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+      
+      // ii. Call the [[Delete]] internal method of O, with arguments upperP and true.
+      types::Object::Delete(vm, O, upper_p, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+    // j. Else if lowerExists is true and upperExists is false, then
+    else if (lower_exists && !upper_exists) {
+      // i. Call the [[Delete]] internal method of O, with arguments lowerP and true .
+      types::Object::Delete(vm, O, lower_p, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+      
+      // ii. Call the [[Put]] internal method of O with arguments upperP, lowerValue, and true .
+      types::Object::Put(vm, O, upper_p, lower_value, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+    // k. Else, both lowerExists and upperExists are false
+    else {
+      // i. No action is required.
+    }
+
+    // i. Increase lower by 1.
+    ++lower;
+  }
+
+  // 7. Return O.
+  return O.GetJSValue();
+}
+
+// Array.prototype.shift()
+// Defined in ECMAScript 5.1 Chapter 15.4.4.9
+JSValue JSArray::Shift(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 3. Let len be ToUint32(lenVal).
+  std::uint32_t len = JSValue::ToUint32(vm, len_val);
+  
+  // 4. If len is zero, then
+  if (len == 0) {
+    // a. Call the [[Put]] internal method of O with arguments "length", 0, and true.
+    types::Object::Put(vm, O, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{0}}, true);
+    RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    
+    // b. Return undefined.
+    return JSValue::Undefined();
+  }
+
+  // 5. Let first be the result of calling the [[Get]] internal method of O with argument "0".
+  JSHandle<JSValue> first = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledZeroString());
+  
+  // 6. Let k be 1.
+  std::uint32_t k = 1;
+
+  // 7. Repeat, while k < len
+  while (k < len) {
+    // a. Let from be ToString(k).
+    JSHandle<types::String> from = factory->NewStringFromInt(k);
+    
+    // b. Let to be ToString(k–1).
+    JSHandle<types::String> to = factory->NewStringFromInt(k - 1);
+    
+    // c. Let fromPresent be the result of calling the [[HasProperty]] internal method of O with argument from.
+    bool from_present = types::Object::HasProperty(vm, O, from);
+    
+    // d. If fromPresent is true, then
+    if (from_present) {
+      // i. Let fromVal be the result of calling the [[Get]] internal method of O with argument from.
+      JSHandle<JSValue> from_val = types::Object::Get(vm, O, from);
+      
+      // ii. Call the [[Put]] internal method of O with arguments to, fromVal, and true.
+      types::Object::Put(vm, O, to, from_val, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+    // e. Else, fromPresent is false
+    else {
+      // i. Call the [[Delete]] internal method of O with arguments to and true.
+      types::Object::Delete(vm, O, to, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+
+    // f. Increase k by 1.
+    ++k;
+  }
+
+  // 8. Call the [[Delete]] internal method of O with arguments ToString(len–1) and true.
+  types::Object::Delete(vm, O, factory->NewStringFromInt(len - 1), true);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 9. Call the [[Put]] internal method of O with arguments "length", (len–1) , and true.
+  types::Object::Put(vm, O, vm->GetGlobalConstants()->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{len - 1}}, true);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 10. Return first.
+  return first.GetJSValue();
+}
+
+// Array.prototype.slice(start, end)
+// Defined in ECMAScript 5.1 Chapter 15.4.4.10
+JSValue JSArray::Slice(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> start = argv->GetArg(0);
+  JSHandle<JSValue> end = argv->GetArg(1);
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let A be a new array created as if by the expression new Array() where
+  //    Array is the standard built-in constructor with that name.
+  JSHandle<JSArray> A = types::Object::Construct(vm, vm->GetArrayConstructor(), {}, {}).As<JSArray>();
+
+  // 3. Let lenVal be the result of calling the [[Get]] internal method of O with argument "length".
+  JSHandle<JSValue> len_val = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 4. Let len be ToUint32(lenVal).
+  std::uint32_t len = JSValue::ToUint32(vm, len_val);
+  
+  // 5. Let relativeStart be ToInteger(start).
+  types::Number relative_start = JSValue::ToInteger(vm, start);
+  
+  // 6. If relativeStart is negative, let k be max((len +relativeStart),0); else let k be min(relativeStart,len).
+  double tmp_k = relative_start.GetNumber() < 0 ?
+    std::max(len + relative_start.GetNumber(), 0.0) : std::min(relative_start.GetNumber(), static_cast<double>(len));
+  auto k = static_cast<std::uint32_t>(tmp_k);
+  
+  // 7. If end is undefined, let relativeEnd be len; else let relativeEnd be ToInteger(end).
+  types::Number relative_end = end->IsUndefined() ?
+    types::Number{len} : JSValue::ToInteger(vm, end);
+  
+  // 8. If relativeEnd is negative, let final be max((len + relativeEnd),0); else let final be min(relativeEnd,len).
+  double tmp_fin = relative_end.GetNumber() < 0 ?
+    std::max(len + relative_end.GetNumber(), 0.0) : std::min(relative_end.GetNumber(), static_cast<double>(len));
+  auto fin = static_cast<std::uint32_t>(tmp_fin);
+  
+  // 9. Let n be 0.
+  std::uint32_t n = 0;
+  
+  // 10. Repeat, while k < final
+  while (k < fin) {
+    // a. Let Pk be ToString(k).
+    JSHandle<types::String> pk = factory->NewStringFromInt(k);
+    
+    // b. Let kPresent be the result of calling the [[HasProperty]] internal method of O with argument Pk.
+    bool k_present = types::Object::HasProperty(vm, O, pk);
+    
+    // c. If kPresent is true, then
+    if (k_present) {
+      // i. Let kValue be the result of calling the [[Get]] internal method of O with argument Pk.
+      JSHandle<JSValue> k_value = types::Object::Get(vm, O, pk);
+      
+      // ii. Call the [[DefineOwnProperty]] internal method of A with arguments ToString(n),
+      //     Property Descriptor {[[Value]]: kValue, [[Writable]]: true, [[Enumerable]]: true,
+      //     [[Configurable]]: true}, and false.
+      types::Object::DefineOwnProperty(vm, A, factory->NewStringFromInt(n),
+                                       types::PropertyDescriptor{vm, k_value, true, true, true}, false);
+    }
+
+    // d. Increase k by 1.
+    ++k;
+
+    // e. Increase n by 1.
+    ++n;
+  }
+
+  // 11. Return A.
+  return A.GetJSValue();
+}
+
+// Array.prototype.sort(comparefn)
+// Defined in ECMAScript 5.1 Chapter 15.4.4.11
+JSValue JSArray::Sort(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> comparefn = argv->GetArg(0);
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  JSHandle<types::Object> obj = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+
+  std::uint32_t len =
+    JSValue::ToUint32(vm, types::Object::Get(vm, obj, vm->GetGlobalConstants()->HandledLengthString()));
+
+  if (!comparefn->IsUndefined() && !comparefn->IsCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"comparefn of Array.prototype.sort is not callable", JSValue{});
+  }
+
+  std::vector<JSHandle<JSValue>> tmp;
+  for (std::uint32_t idx = 0; idx < len; ++idx) {
+    JSHandle<types::String> idx_str = factory->NewStringFromInt(idx);
+    
+    if (HasProperty(vm, obj, idx_str)) {
+      tmp.push_back(types::Object::Get(vm, obj, idx_str));
+    } else {
+      tmp.emplace_back();
+    }
+  }
+
+  std::sort(tmp.begin(), tmp.end(), [=](JSHandle<JSValue> j, JSHandle<JSValue> k) mutable {
+    if (k.IsEmpty()) {
+      return true;
+    }
+
+    if (j.IsEmpty() && !k.IsEmpty()) {
+      return false;
+    }
+    
+    // 1. Let jString be ToString(j).
+    // 2. Let kString be ToString(k).
+    // 3. Let hasj be the result of calling the [[HasProperty]] internal method of obj with argument jString.
+    // 4. Let hask be the result of calling the [[HasProperty]] internal method of obj with argument kString.
+    // 5. If hasj and hask are both false, then return +0.
+    // 6. If hasj is false, then return 1.
+    // 7. If hask is false, then return –1.
+    
+    // 8. Let x be the result of calling the [[Get]] internal method of obj with argument jString.
+    JSHandle<JSValue> x = j;
+    
+    // 9. Let y be the result of calling the [[Get]] internal method of obj with argument kString.
+    JSHandle<JSValue> y = k;
+    
+    // 10. If x and y are both undefined, return +0.
+    // 11. If x is undefined, return 1.
+    // 12. If y is undefined, return −1.
+    if (y->IsUndefined()) {
+      return false;
+    }
+    
+    if (x->IsUndefined() && !y->IsUndefined()) {
+      return true;
+    }
+    
+    // 13. If the argument comparefn is not undefined, then
+    if (!comparefn->IsUndefined()) {
+      // a. If IsCallable(comparefn) is false, throw a TypeError exception.
+      // b. Return the result of calling the [[Call]] internal method of comparefn passing
+      //    undefined as the this value and with arguments x and y.
+      JSHandle<JSValue> ret = types::Object::Call(vm, comparefn.As<types::Object>(),
+                                                  vm->GetGlobalConstants()->HandledUndefined(), {x, y});
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, false);
+      return JSValue::ToNumber(vm, ret).GetNumber() < 0;
+    }
+
+    // 14. Let xString be ToString(x).
+    JSHandle<types::String> x_string = JSValue::ToString(vm, x);
+    
+    // 15. Let yString be ToString(y).
+    JSHandle<types::String> y_string = JSValue::ToString(vm, y);
+    
+    // 16. If xString < yString, return −1.
+    // 17. If xString > yString, return 1.
+    return x_string->GetString() <  y_string->GetString();
+  });
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+
+  for (std::uint32_t idx = 0; idx < len; ++idx) {
+    JSHandle<types::String> idx_str = factory->NewStringFromInt(idx);
+    
+    if (!tmp[idx].IsEmpty()) {
+      types::Object::Put(vm, obj, idx_str, tmp[idx], true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    } else {
+      types::Object::Delete(vm, obj, idx_str, true);
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+    }
+  }
+  
+  return obj.GetJSValue();
+}
+
+// Array.prototype.forEach(callbackfn, [, thisArg])
+// Defined in ECMAScript 5.1 Chapter
+JSValue JSArray::ForEach(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> callbackfn = argv->GetArg(0);
+  JSHandle<JSValue> this_arg = argv->GetArg(1);
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenValue be the result of calling the [[Get]] internal method of O with the argument "length".
+  JSHandle<JSValue> len_value = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 3. Let len be ToUint32(lenValue).
+  std::uint32_t len = JSValue::ToUint32(vm, len_value);
+  
+  // 4. If IsCallable(callbackfn) is false, throw a TypeError exception.
+  if (!callbackfn->IsObject() || !callbackfn->IsCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"callbackfn of Array.prototype.sort is not callable.", JSValue{});
+  }
+  
+  // 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+  // 6. Let k be 0.
+  std::uint32_t k = 0;
+  
+  // 7. Repeat, while k < len
+  while (k < len) {
+    // a. Let Pk be ToString(k).
+    JSHandle<types::String> pk = factory->NewStringFromInt(k);
+    
+    // b. Let kPresent be the result of calling the [[HasProperty]] internal method of O with argument Pk.
+    bool k_present = types::Object::HasProperty(vm, O, pk);
+    
+    // c. If kPresent is true, then
+    if (k_present) {
+      // i. Let kValue be the result of calling the [[Get]] internal method of O with argument Pk.
+      JSHandle<JSValue> k_value = types::Object::Get(vm, O, pk);
+      
+      // ii. Call the [[Call]] internal method of callbackfn with T as the this value and argument list containing kValue, k, and O.
+      types::Object::Call(vm, callbackfn.As<types::Object>(), this_arg, {k_value, JSHandle<JSValue>{vm, JSValue{k}}, O.As<JSValue>()});
+    }
+
+    // d. Increase k by 1.
+    ++k;
+  }
+
+  return JSValue::Undefined();
+}
+
+// Array.prototype.map(callbackfn, [, thisArg])
+// Defined in ECMAScript 5.1 Chapter 15.4.4.19
+JSValue JSArray::Map(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> callbackfn = argv->GetArg(0);
+  JSHandle<JSValue> this_arg = argv->GetArg(1);
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenValue be the result of calling the [[Get]] internal method of O with the argument "length".
+  JSHandle<JSValue> len_value = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 3. Let len be ToUint32(lenValue).
+  std::uint32_t len = JSValue::ToUint32(vm, len_value);
+  
+  // 4. If IsCallable(callbackfn) is false, throw a TypeError exception.
+  if (!callbackfn->IsObject() || !callbackfn->GetHeapObject()->GetCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"callbackfn of Array.prototype.map is not callable.", JSValue{});
+  }
+  
+  // 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+  JSHandle<JSValue> T = this_arg;
+  
+  // 6. Let A be a new array created as if by the expression new Array( len) where
+  //    Array is the standard built-in constructor with that name and len is the value of len.
+  JSHandle<JSArray> A = types::Object::Construct(
+    vm, vm->GetArrayConstructor(),
+    vm->GetGlobalConstants()->HandledUndefined(), {len_value}).As<JSArray>();
+  
+  // 7. Let k be 0.
+  std::uint32_t k = 0;
+  
+  // 8. Repeat, while k < len
+  while (k < len) {
+    // a. Let Pk be ToString(k).
+    JSHandle<types::String> pk = factory->NewStringFromInt(k);
+    
+    // b. Let kPresent be the result of calling the [[HasProperty]] internal method of O with argument Pk.
+    bool k_present = types::Object::HasProperty(vm, O, pk);
+    
+    // c. If kPresent is true, then
+    if (k_present) {
+      // i. Let kValue be the result of calling the [[Get]] internal method of O with argument Pk.
+      JSHandle<JSValue> k_value = types::Object::Get(vm, O, pk);
+      
+      // ii. Let mappedValue be the result of calling the [[Call]] internal method of callbackfn with
+      ///    T as the this value and argument list containing kValue, k, and O.
+      auto mapped_value = types::Object::Call(
+        vm, callbackfn.As<types::Object>(), T, {k_value, JSHandle<JSValue>{vm, JSValue{k}}, O.As<JSValue>()});
+      RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+      
+      // iii. Call the [[DefineOwnProperty]] internal method of A with arguments Pk,
+      //      Property Descriptor {[[Value]]: mappedValue, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+      types::Object::DefineOwnProperty(vm, A, pk, types::PropertyDescriptor{vm, mapped_value, true, true, true}, false);
+    }
+
+    // d. Increase k by 1.
+    ++k;
+  }
+
+  // 9. Return A.
+  return A.GetJSValue();
+}
+
+// Array.prototype.filter(callbackfn, [, thisArg])
+// Defined in ECMAScript 5.1 Chapter 15.4.4.20
+JSValue JSArray::Filter(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> callbackfn = argv->GetArg(0);
+  JSHandle<JSValue> this_arg = argv->GetArg(1);
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  // 1. Let O be the result of calling ToObject passing the this value as the argument.
+  JSHandle<types::Object> O = JSValue::ToObject(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let lenValue be the result of calling the [[Get]] internal method of O with the argument "length".
+  JSHandle<JSValue> len_value = types::Object::Get(vm, O, vm->GetGlobalConstants()->HandledLengthString());
+  
+  // 3. Let len be ToUint32(lenValue).
+  std::uint32_t len = JSValue::ToUint32(vm, len_value);
+  
+  // 4. If IsCallable(callbackfn) is false, throw a TypeError exception.
+  if (!callbackfn->IsObject() || !callbackfn->GetHeapObject()->GetCallable()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"callbackfn of Array.prototype.filter is not callable.", JSValue{});
+  }
+  
+  // 5. If thisArg was supplied, let T be thisArg; else let T be undefined.
+  JSHandle<JSValue> T = this_arg;
+  
+  // 6. Let A be a new array created as if by the expression new Array() where
+  //    Array is the standard built-in constructor with that name and len is the value of len.
+  JSHandle<JSArray> A = types::Object::Construct(
+    vm, vm->GetArrayConstructor(),
+    vm->GetGlobalConstants()->HandledUndefined(), {}).As<JSArray>();
+  
+  // 7. Let k be 0.
+  std::uint32_t k = 0;
+  
+  // 8. Let to be 0.
+  std::uint32_t to = 0;
+  
+  // 9. Repeat, while k < len
+  while (k < len) {
+    // a. Let Pk be ToString(k).
+    JSHandle<types::String> pk = factory->NewStringFromInt(k);
+    
+    // b. Let kPresent be the result of calling the [[HasProperty]] internal method of O with argument Pk.
+    bool k_present = types::Object::HasProperty(vm, O, pk);
+    
+    // c. If kPresent is true, then
+    if (k_present) {
+      // i. Let kValue be the result of calling the [[Get]] internal method of O with argument Pk.
+      JSHandle<JSValue> k_value = types::Object::Get(vm, O, pk);
+      
+      // ii. Let selected be the result of calling the [[Call]] internal method of
+      //     callbackfn with T as the this value and argument list containing kValue, k, and O.
+      JSHandle<JSValue> selected = types::Object::Call(
+        vm, callbackfn.As<types::Object>(), T, {k_value, JSHandle<JSValue>{vm, JSValue{k}}, O.As<JSValue>()});
+      
+      // iii. If ToBoolean(selected) is true, then
+      if (JSValue::ToBoolean(vm, selected)) {
+        // 1. Call the [[DefineOwnProperty]] internal method of A with arguments ToString(to),
+        //    Property Descriptor {[[Value]]: kValue, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
+        types::Object::DefineOwnProperty(
+          vm, A, factory->NewStringFromInt(to), types::PropertyDescriptor{vm, k_value, true, true, true}, false);
+        
+          // 2. Increase to by 1.
+        ++to;
+      }
+    }
+
+    // d. Increase k by 1.
+    ++k;
+  }
+
+  // 10. Return A.
+  return A.GetJSValue();
 }
 
 }  // namespace builtins

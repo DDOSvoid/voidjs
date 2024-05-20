@@ -11,7 +11,7 @@ template <typename Derived>
 class GCBase {
  public:
   std::uintptr_t Allocate(std::size_t size) {
-    AsDerived()->Allocate(size);
+    return AsDerived()->Allocate(size);
   }
 
   void Collect() {

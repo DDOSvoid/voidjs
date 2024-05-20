@@ -20,6 +20,10 @@ class Number : public JSValue {
     : JSValue(number)
   {}
 
+  explicit Number(std::uint32_t number)
+    : JSValue(number)
+  {}
+
   explicit Number(double number)
     : JSValue(number)
   {}

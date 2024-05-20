@@ -79,7 +79,7 @@ class HashMap : public Array {
     std::uint32_t capacity = GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < capacity; ++idx) {
       JSValue key = GetKey(idx);
-      if (!GetKey(idx).IsHole()) {
+      if (!GetKey(idx).IsHole() && !GetKey(idx).IsUndefined()) {
         keys.emplace_back(vm, key);
       }
     }
@@ -91,7 +91,7 @@ class HashMap : public Array {
     std::uint32_t capacity = GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < capacity; ++idx) {
       JSValue key = GetKey(idx);
-      if (!GetKey(idx).IsHole() && GetValue(idx).GetHeapObject()->GetEnumerable()) {
+      if (!GetKey(idx).IsHole() && !GetKey(idx).IsUndefined() && GetValue(idx).GetHeapObject()->GetEnumerable()) {
         keys.emplace_back(vm, key);
       }
     }
@@ -103,7 +103,7 @@ class HashMap : public Array {
     std::uint32_t capacity = GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < capacity; ++idx) {
       JSValue key = GetKey(idx);
-      if (!GetKey(idx).IsHole()) {
+      if (!GetKey(idx).IsHole() && !GetKey(idx).IsUndefined()) {
         keys.emplace_back(vm, GetValue(idx));
       }
     }
@@ -125,7 +125,7 @@ class HashMap : public Array {
     auto old_capacity = old_hashmap->GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < old_capacity; ++idx) {
       auto key = old_hashmap->GetKey(idx);
-      if (key.IsHole()) {
+      if (key.IsHole() || key.IsUndefined()) {
         continue;
       }
 
@@ -142,6 +142,10 @@ class HashMap : public Array {
       auto key_val = GetKey(entry);
       if (key_val.IsHole()) {
         return entry;
+      }
+      if (key_val.IsUndefined()) {
+        // Undefined means it was deleted;
+        continue;
       }
       // Else key must be String*
       if (key_val.GetHeapObject()->AsString()->Equal(key)) {
@@ -181,7 +185,7 @@ class HashMap : public Array {
   }
 
   void DeleteEntry(std::uint32_t entry) {
-    SetKey(entry, JSValue{});
+    SetKey(entry, JSValue::Undefined());
     SetValue(entry, JSValue{});
     DecreaseBucketSize();
   }
