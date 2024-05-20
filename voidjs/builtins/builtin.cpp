@@ -410,6 +410,7 @@ void Builtin::SetPropertiesForBaseObjects(VM *vm) {
                   vm->GetNumberConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledMathString(),
                   vm->GetMathObject().As<JSValue>(), true, false, true);
+  SetFunctionProperty(vm, global_obj, factory->NewString(u"print"), GlobalObject::Print, false, false, false);
 
   // Set properties for Object Constructor
   SetDataProperty(vm, obj_ctor, constants->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);

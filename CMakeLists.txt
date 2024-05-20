@@ -26,6 +26,7 @@ add_library(voidjs_obj OBJECT
   voidjs/types/spec_types/property_descriptor.cpp
   voidjs/types/internal_types/array.cpp
   voidjs/builtins/builtin.cpp
+  voidjs/builtins/global_object.cpp
   voidjs/builtins/js_object.cpp
   voidjs/builtins/js_function.cpp
   voidjs/builtins/js_array.cpp
