@@ -290,7 +290,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     JSHandle<JSValue> to_string = Get(vm, O, vm->GetGlobalConstants()->HandledToStringString());
 
     // 2. If IsCallable(toString) is true then,
-    if (to_string->IsCallable()) {
+    if (to_string->IsObject() && to_string->IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
       JSHandle<JSValue> str = Call(vm, to_string.As<Object>(), O.As<JSValue>(), {});
@@ -305,7 +305,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     JSHandle<JSValue> value_of = Object::Get(vm, O, vm->GetGlobalConstants()->HandledValueOfString());
 
     // 4. If IsCallable(valueOf) is true then,
-    if (value_of->IsCallable()) {
+    if (value_of->IsObject() && value_of->IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
       auto val = Call(vm, value_of.As<Object>(), O.As<JSValue>(), {});
@@ -325,7 +325,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     JSHandle<JSValue> value_of = Object::Get(vm, O, vm->GetGlobalConstants()->HandledValueOfString());
 
     // 2. If IsCallable(valueOf) is true then,
-    if (value_of->IsCallable()) {
+    if (value_of->IsObject() && value_of->IsCallable()) {
       // a. Let val be the result of calling the [[Call]] internal method of valueOf,
       //    with O as the this value and an empty argument list.
       JSHandle<JSValue> val = Call(vm, value_of.As<Object>(), O.As<JSValue>(), {});
@@ -340,7 +340,7 @@ JSHandle<JSValue> Object::DefaultValue(VM* vm, JSHandle<Object> O, PreferredType
     JSHandle<JSValue> to_string = Get(vm, O, vm->GetGlobalConstants()->HandledToStringString());
 
     // 4. If IsCallable(toString) is true then,
-    if (to_string->IsCallable()) {
+    if (to_string->IsObject() && to_string->IsCallable()) {
       // a. Let str be the result of calling the [[Call]] internal method of toString,
       //    with O as the this value and an empty argument list.
       auto str = Call(vm, to_string.As<Object>(), O.As<JSValue>(), {});

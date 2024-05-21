@@ -40,7 +40,7 @@ JSHandle<JSValue> JSValue::ToPrimitive(VM* vm, JSHandle<JSValue> val, PreferredT
   if (val->IsPrimitive()) {
     return val;
   } else if (val->IsObject()) {
-    // todo
+    return types::Object::DefaultValue(vm, val.As<types::Object>(), type);
   }
   
   // this branch is unreachable

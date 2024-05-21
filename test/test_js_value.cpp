@@ -12,46 +12,44 @@
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_number.h"
 #include "voidjs/interpreter/interpreter.h"
+#include "voidjs/interpreter/global_constants.h"
 
 using namespace voidjs;
 
 TEST(JSValue, ToNumber) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
-  auto factory = vm->GetObjectFactory();
+  VM* vm = interpreter.GetVM();
+  ObjectFactory* factory = vm->GetObjectFactory();
   
-  auto nan = std::numeric_limits<double>::quiet_NaN();
-  auto inf = std::numeric_limits<double>::infinity();
-
   {
     auto val = JSHandle<JSValue>{vm, JSValue{42}};
-    auto num = JSValue::ToNumber(vm, val);
+    types::Number num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
     EXPECT_EQ(42, num.GetInt());
   }
   
-  EXPECT_DOUBLE_EQ(0.01, JSValue::ToNumber(vm, JSHandle<JSValue>{vm, JSValue{0.01}}).GetDouble());
-  EXPECT_TRUE(std::isnan(JSValue::ToNumber(vm, JSHandle<JSValue>{vm, JSValue{nan}}).GetDouble()));
-  EXPECT_TRUE(std::isinf(JSValue::ToNumber(vm, JSHandle<JSValue>{vm, JSValue{inf}}).GetDouble()));
+  EXPECT_DOUBLE_EQ(0.01, JSValue::ToNumber(vm, JSHandle<JSValue>{vm, types::Number{0.01}}).GetDouble());
+  EXPECT_TRUE(JSValue::ToNumber(vm, JSHandle<JSValue>{vm, types::Number::NaN()}).IsNaN());
+  EXPECT_TRUE(JSValue::ToNumber(vm, JSHandle<JSValue>{vm, types::Number::Inf()}).IsInf());
 
   { 
-    auto source = uR"(
+    std::u16string source = uR"(
            42
  )";
-    auto val = factory->NewString(source).As<JSValue>();
-    auto num = JSValue::ToNumber(vm, val);
+    JSHandle<JSValue> val = factory->NewString(source).As<JSValue>();
+    types::Number num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsInt());
     EXPECT_EQ(42, num.GetInt());
   }
 
   { 
-    auto source = uR"(
+    std::u16string source = uR"(
            42E-2
  )";
-    auto val = factory->NewString(source).As<JSValue>();
-    auto num = JSValue::ToNumber(vm, val);
+    JSHandle<JSValue> val = factory->NewString(source).As<JSValue>();
+    types::Number num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
     EXPECT_EQ(0.42, num.GetDouble());
@@ -59,14 +57,14 @@ TEST(JSValue, ToNumber) {
 
 
   { 
-    auto source = uR"(
+    std::u16string source = uR"(
            42E.-2
  )";
-    auto val = factory->NewString(source).As<JSValue>();
-    auto num = JSValue::ToNumber(vm, val);
+    JSHandle<JSValue> val = factory->NewString(source).As<JSValue>();
+    types::Number num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
-    EXPECT_TRUE(std::isnan(num.GetDouble()));
+    EXPECT_TRUE(num.IsNaN());
   }
 
   { 
@@ -105,27 +103,27 @@ TEST(JSValue, ToNumber) {
 
 TEST(JSValue, ToInteger) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
+  VM* vm = interpreter.GetVM();
   
-  auto inf = 1.0 / 0.0;
+  double inf = 1.0 / 0.0;
 
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(inf)};
+    auto val = JSHandle<JSValue>{vm, types::Number{inf}};
     EXPECT_DOUBLE_EQ(inf, JSValue::ToInteger(vm, val).GetDouble());
   }
 
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
+    auto val = JSHandle<JSValue>{vm, types::Number{-2.3}};
     EXPECT_DOUBLE_EQ(-2, JSValue::ToInteger(vm, val).GetDouble());
   }
 }
 
 TEST(JSValue, ToInt32) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
+  VM* vm = interpreter.GetVM();
   
   {
-    auto val = JSHandle<JSValue>{vm, JSValue{4294967296. + 3}};
+    auto val = JSHandle<JSValue>{vm, types::Number{4294967296. + 3}};
     EXPECT_EQ(3, JSValue::ToInt32(vm, val));
   }
 
@@ -137,46 +135,46 @@ TEST(JSValue, ToInt32) {
 
 TEST(JSValue, ToUint32) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
+  VM* vm = interpreter.GetVM();
   
-  auto ui32_max = std::numeric_limits<std::uint32_t>::max();
+  std::uint32_t ui32_max = std::numeric_limits<std::uint32_t>::max();
 
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(1)};
+    auto val = JSHandle<JSValue>{vm, types::Number{1}};
     EXPECT_EQ(1, JSValue::ToInt32(vm, val));
   }
   
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(4 * std::pow(2, 32) + std::pow(2, 16) - 1352)};
+    auto val = JSHandle<JSValue>{vm, types::Number{4 * std::pow(2, 32) + std::pow(2, 16) - 1352}};
     EXPECT_EQ(64184, JSValue::ToInt32(vm, val));
   }
 
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
+    auto val = JSHandle<JSValue>{vm, types::Number{-2.3}};
     EXPECT_EQ(ui32_max - 1, JSValue::ToUint32(vm, val));
   }
 }
 
 TEST(JSValue, ToUint16) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
+  VM* vm = interpreter.GetVM();
   
-  auto ui16_max = std::numeric_limits<std::uint16_t>::max();
+  std::uint16_t ui16_max = std::numeric_limits<std::uint16_t>::max();
   
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(std::pow(2, 16) + 3)};
+    auto val = JSHandle<JSValue>{vm, types::Number{std::pow(2, 16) + 3}};
     EXPECT_EQ(3, JSValue::ToUint16(vm, val));
   }
 
   {
-    auto val = JSHandle<JSValue>{vm, JSValue(-2.3)};
+    auto val = JSHandle<JSValue>{vm, types::Number{-2.3}};
     EXPECT_EQ(ui16_max - 1, JSValue::ToUint16(vm, val));
   }
 }
 
 TEST(JSValue, ToString) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
+  VM* vm = interpreter.GetVM();
   
   EXPECT_EQ(u"undefined", JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue::Undefined()})->GetString());
   EXPECT_EQ(u"null", JSValue::ToString(vm, JSHandle<JSValue>{vm, JSValue::Null()})->GetString());
@@ -185,28 +183,28 @@ TEST(JSValue, ToString) {
 
   { 
     auto val = JSHandle<JSValue>{vm, JSValue(42)};
-    auto str = JSValue::ToString(vm, val);
+    JSHandle<types::String> str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"42", str->GetString());
   }
 
   { 
     auto val = JSHandle<JSValue>{vm, JSValue(1)};
-    auto str = JSValue::ToString(vm, val);
+    JSHandle<types::String> str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"1", str->GetString());
   }
 
   { 
     auto val = JSHandle<JSValue>{vm, JSValue(0.142857)};
-    auto str = JSValue::ToString(vm, val);
+    JSHandle<types::String> str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"0.142857", str->GetString());
   }
 
   { 
     auto val = JSHandle<JSValue>{vm, JSValue(-4200)};
-    auto str = JSValue::ToString(vm, val);
+    JSHandle<types::String> str = JSValue::ToString(vm, val);
 
     EXPECT_EQ(u"-4200", str->GetString());
   }
@@ -214,12 +212,12 @@ TEST(JSValue, ToString) {
 
 TEST(JSValue, ToObject) {
   Interpreter interpreter;
-  auto vm = interpreter.GetVM();
-  auto factory = vm->GetObjectFactory();
+  VM* vm = interpreter.GetVM();
+  ObjectFactory* factory = vm->GetObjectFactory();
 
   {
     auto val = JSHandle<JSValue>{vm, JSValue{false}};
-    auto obj = JSValue::ToObject(vm, val);
+    JSHandle<types::Object> obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSBoolean());
     
@@ -231,11 +229,10 @@ TEST(JSValue, ToObject) {
 
   {
     auto val = JSHandle<JSValue>{vm, JSValue{42}};
-    auto obj = JSValue::ToObject(vm, val);
+    JSHandle<types::Object> obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSNumber());
-    
-    auto num = obj->AsJSNumber();
+    builtins::JSNumber* num = obj->AsJSNumber();
 
     ASSERT_TRUE(num->GetPrimitiveValue().IsInt());
     EXPECT_EQ(42, num->GetPrimitiveValue().GetInt());
@@ -243,11 +240,10 @@ TEST(JSValue, ToObject) {
   
   {
     auto val = factory->NewString(u"Hello").As<JSValue>();
-    auto obj = JSValue::ToObject(vm, val);
+    JSHandle<types::Object> obj = JSValue::ToObject(vm, val);
 
     ASSERT_TRUE(obj->IsJSString());
-    
-    auto str = obj->AsJSString();
+    builtins::JSString* str = obj->AsJSString();
 
     ASSERT_TRUE(str->GetPrimitiveValue().IsString());
     EXPECT_EQ(u"Hello", str->GetPrimitiveValue().GetHeapObject()->AsString()->GetString());
