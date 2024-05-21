@@ -404,6 +404,8 @@ void Builtin::SetPropertiesForBaseObjects(VM *vm) {
                   func_ctor.As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledArrayString(),
                   vm->GetArrayConstructor().As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, constants->HandledStringString(),
+                  vm->GetStringConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledBooleanString(),
                   vm->GetBooleanConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledNumberString(),
@@ -525,12 +527,28 @@ void Builtin::SetProeprtiesForStringObjects(VM* vm) {
   GlobalConstants* constants = vm->GetGlobalConstants();
 
   // Set properties for String Prototype
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"toString"),
+                      JSString::ToString, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"valueOf"),
+                      JSString::ValueOf, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"charAt"),
                       JSString::CharAt, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"concat"),
                       JSString::Concat, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"indexOf"),
                       JSString::IndexOf, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"lastIndexOf"),
+                      JSString::LastIndexOf, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"slice"),
+                      JSString::Slice, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"substring"),
+                      JSString::Substring, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"toLowerCase"),
+                      JSString::ToLowerCase, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"toUpperCase"),
+                      JSString::ToUpperCase, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"trim"),
+                      JSString::Trim, true, false, true);
 }
 
 void Builtin::SetPropertiesForMathObjects(VM* vm) {

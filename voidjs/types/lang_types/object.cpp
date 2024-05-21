@@ -25,9 +25,18 @@
 namespace voidjs {
 namespace types {
 
+// only used for forwarding
+PropertyDescriptor Object::GetOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
+  if (O->IsJSString()) {
+    return builtins::JSString::GetOwnProperty(vm, O.As<builtins::JSString>(), P);
+  } else {
+    return GetOwnPropertyDefault(vm, O, P);
+  }
+}
+
 // GetOwnProperty
 // Defind in ECMAScript 5.1 Chapter 8.12.2
-PropertyDescriptor Object::GetOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
+PropertyDescriptor Object::GetOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   auto props = O->GetProperties().GetHeapObject()->AsPropertyMap();
   
   // 1. If O doesn’t have an own property with name P, return undefined.

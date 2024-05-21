@@ -39,6 +39,12 @@ class Number : public JSValue {
   }
 
   static Number NaN() { return Number{std::numeric_limits<double>::quiet_NaN()}; }
+  bool IsNaN() const { return std::isnan(GetNumber()); }
+
+  static Number Inf() { return Number{std::numeric_limits<double>::infinity()}; }
+  bool IsInf() const { return std::isinf(GetNumber()); }
+
+  static Number Abs(Number number) { return Number{std::abs(number.GetNumber())}; }
 
   Number operator+(Number number) const {
     if (IsInt() && number.IsInt()) {

@@ -1174,6 +1174,42 @@ filtered.join();
   EXPECT_EQ(u"12,130,44", comp.GetValue()->GetString());
 }
 
+TEST(JSString, ToString) {
+  Parser parser(uR"(
+var x = new String("Hello World");
+
+x.toString();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"Hello World", comp.GetValue()->GetString());
+}
+
+TEST(JSString, ValueOf) {
+  Parser parser(uR"(
+var x = new String("Hello World");
+
+x.valueOf();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"Hello World", comp.GetValue()->GetString());
+}
+
 TEST(JSString, CharAt) {
   Parser parser(uR"(
 var sentence = 'The quick brown fox jumps over the lazy dog.';
@@ -1228,6 +1264,137 @@ paragraph.indexOf(searchTerm);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsInt());
   EXPECT_EQ(15, comp.GetValue()->GetInt());
+}
+
+TEST(JSString, LastIndexOf) {
+  Parser parser(uR"(
+var count = 0;
+
+count += "canal".lastIndexOf("a") == 3; 
+count += "canal".lastIndexOf("a", 2) == 1;
+count += "canal".lastIndexOf("a", 0) == -1;
+count += "canal".lastIndexOf("x") == -1;
+count += "canal".lastIndexOf("c", -5) == 0;
+count += "canal".lastIndexOf("c", 0) == 0; 
+count += "canal".lastIndexOf("") == 5;
+count += "canal".lastIndexOf("", 2) == 2;
+
+count;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(8, comp.GetValue()->GetInt());
+}
+
+TEST(JSString, Slice) {
+  Parser parser(uR"(
+var str = "The morning is upon us."; // str1 的长度是 23
+
+var count = 0; 
+
+count += str.slice(1, 8) == "he morn";
+count += str.slice(4, -2) == "morning is upon u";
+count += str.slice(12) == "is upon us.";
+count += str.slice(30) == "";
+
+count;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSString, Substring) {
+  Parser parser(uR"(
+var anyString = "Mozilla";
+
+var count = 0; 
+
+count += anyString.substring(0, 1) == "M";
+count += anyString.substring(1, 0) == 'M';
+
+count += anyString.substring(0, 6) == 'Mozill';
+
+count += anyString.substring(4) == 'lla';
+count += anyString.substring(4, 7) == 'lla';
+count += anyString.substring(7, 4) == 'lla';
+
+count += anyString.substring(0, 7) == 'Mozilla';
+count += anyString.substring(0, 10) == 'Mozilla';
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(8, comp.GetValue()->GetInt());
+}
+
+TEST(JSString, ToLowerCase) {
+  Parser parser(uR"(
+"ALPHABET".toLowerCase();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"alphabet", comp.GetValue()->GetString());
+}
+
+TEST(JSString, ToUpperCase) {
+  Parser parser(uR"(
+"alphabet".toUpperCase();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"ALPHABET", comp.GetValue()->GetString());
+}
+
+TEST(JSString, Trim) {
+  Parser parser(uR"(
+var greeting = '   Hello world!   ';
+greeting.trim();
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"Hello world!", comp.GetValue()->GetString());
 }
 
 TEST(JSBoolean, Construct) {

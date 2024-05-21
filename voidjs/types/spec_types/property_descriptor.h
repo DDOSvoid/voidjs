@@ -18,6 +18,8 @@ namespace types {
 // that is neither a data property descriptor nor an accessor property descriptor.
 class PropertyDescriptor {
  public:
+  PropertyDescriptor() = default;
+  
   explicit PropertyDescriptor(VM* vm)
     : vm_(vm)
   {}

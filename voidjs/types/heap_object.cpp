@@ -100,7 +100,7 @@ std::size_t HeapObject::GetSize(JSValue value) {
       return builtins::JSNumber::SIZE + types::Object::SIZE + HeapObject::SIZE;
     }
     case JSType::JS_MATH: {
-      return builtins::JSMath::SIZE + types::Object::SIZE; + HeapObject::SIZE;
+      return builtins::JSMath::SIZE + types::Object::SIZE + HeapObject::SIZE;
     }
     case JSType::JS_ERROR: {
       return builtins::JSError::SIZE + types::Object::SIZE + HeapObject::SIZE;

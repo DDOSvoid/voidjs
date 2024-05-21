@@ -57,6 +57,7 @@ class ObjectFactory {
     return str;
   }
   JSHandle<types::String> NewStringFromInt(std::int32_t i);
+  JSHandle<types::String> NewString(char16_t ch);
 
   template <GCFlag flag = GCFlag::NORMAL>
   JSHandle<types::Object> NewObject(

@@ -117,9 +117,83 @@ constexpr bool IsCharacterEscapeSequence(char16_t c) {
   return IsSingleEscapeCharacter(c) || IsNonEscapeCharacter(c);
 }
 
-// Regular Expression Precidates
-// Defined in ECMAScript 5.1 Chapter 7.8.5
+// This code is copied directly from https://github.com/zhuzilin/es/blob/67fb4d579bb142669acd8384ea34c62cd052945c/es/parser/character.h#L166
+constexpr char16_t ToLowerCase(char16_t c) {
+  if ('A' <= c && c <= 'Z') {
+    return c + ('a' - 'A');
+  }
+  // lowercase not found until 192
+  if (c < 192) {
+    return c;
+  }
+  // suppress compiler warnings
+  {
+    const std::size_t index = c - 192;
+    if (index < unicode::kLowerCaseCache.size()) {
+      return unicode::kUpperCaseCache[index];
+    }
+  }
+  std::array<char16_t, 101>::const_iterator it =
+    std::upper_bound(unicode::kLowerCaseKeys.begin(),
+                     unicode::kLowerCaseKeys.end(), c) - 1;
+  const int result = static_cast<int>(it - unicode::kLowerCaseKeys.begin());
+  if (result >= 0) {
+    bool by2 = false;
+    const char16_t start = unicode::kLowerCaseKeys[result];
+    char16_t end = unicode::kLowerCaseValues[result * 2];
+    if ((start & 0x8000) != (end & 0x8000)) {
+      end ^= 0x8000;
+      by2 = true;
+    }
+    if (c <= end) {
+      if (by2 && (c & 1) != (start & 1)) {
+        return c;
+      }
+      const char16_t mapping = unicode::kLowerCaseValues[result * 2 + 1];
+      return c + mapping;
+    }
+  }
+  return c;
+}
 
+constexpr char16_t ToUpperCase(char16_t c) {
+  if ('a' <= c && c <= 'z') {
+    return c - ('a' - 'A');
+  }
+  // uppercase not found until 181
+  if (c < 181) {
+    return c;
+  }
+
+  // suppress compiler warnings
+  {
+    const std::size_t index = c - 181;
+    if (index < unicode::kUpperCaseCache.size()) {
+      return unicode::kUpperCaseCache[index];
+    }
+  }
+  std::array<char16_t, 113>::const_iterator it =
+    std::upper_bound(unicode::kUpperCaseKeys.begin(),
+                     unicode::kUpperCaseKeys.end(), c) - 1;
+  const int result = static_cast<int>(it - unicode::kUpperCaseKeys.begin());
+  if (result >= 0) {
+    bool by2 = false;
+    const char16_t start = *it;
+    char16_t end = unicode::kUpperCaseValues[result * 2];
+    if ((start & 0x8000) != (end & 0x8000)) {
+      end ^= 0x8000;
+      by2 = true;
+    }
+    if (c <= end) {
+      if (by2 && (c & 1) != (start & 1)) {
+        return c;
+      }
+      const char16_t mapping = unicode::kUpperCaseValues[result * 2 + 1];
+      return c + mapping;
+    }
+  }
+  return c;
+}
 
 }  // namespace character 
 }  // namespace voidjs

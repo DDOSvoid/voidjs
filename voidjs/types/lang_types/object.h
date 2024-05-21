@@ -35,6 +35,7 @@ class Object : public HeapObject {
   // Internal function properties common to all objects
   // Defined in ECMAScript 5.1 Chapter 8.12
   static PropertyDescriptor GetOwnProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static PropertyDescriptor GetOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static PropertyDescriptor GetProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static JSHandle<JSValue> Get(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static bool CanPut(VM* vm, JSHandle<Object> O, JSHandle<String> P);
