@@ -1415,6 +1415,41 @@ flag;
   EXPECT_EQ(false, comp.GetValue()->GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetBoolean());
 }
 
+TEST(JSBoolean, ToString) {
+  Parser parser(uR"(
+var flag1 = new Boolean(true);
+var flag2 = new Boolean(1);
+
+var count = 0;
+count += flag1.toString() == "true";
+count += flag2.toString() == 'true';
+count;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSBoolean, ValueOf) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
 TEST(JSNumber, Construct) {
   Parser parser(uR"(
 var num = new Number(123);
@@ -1431,6 +1466,38 @@ num;
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsObject() && comp.GetValue()->GetHeapObject()->IsJSNumber());
   EXPECT_EQ(123, comp.GetValue()->GetHeapObject()->AsJSBoolean()->GetPrimitiveValue().GetInt());
+}
+
+TEST(JSNumber, ToString) {
+  Parser parser(uR"(
+var count = 0;
+count += (17).toString() == "17";
+count += (17.2).toString() == "17.2";
+count;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSNumber, ValueOf) {
+  Parser parser(uR"(
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
 }
 
 TEST(JSMath, Abs) {

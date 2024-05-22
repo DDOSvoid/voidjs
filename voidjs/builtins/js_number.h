@@ -1,6 +1,7 @@
 #ifndef VOIDJS_BUILTINS_JS_NUMBER_H
 #define VOIDJS_BUILTINS_JS_NUMBER_H
 
+#include "voidjs/types/js_value.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 
@@ -22,7 +23,9 @@ class JSNumber : public types::Object {
   static JSValue NumberConstructorConstruct(RuntimeCallInfo*);
 
   // Function propreties of the Number Prototype
-  
+  static JSValue ToString(RuntimeCallInfo* argv);
+  static JSValue ValueOf(RuntimeCallInfo* argv);
+  static JSValue ToFixed(RuntimeCallInfo* argv);
 };
 
 }  // namespace builtins

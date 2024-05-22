@@ -42,6 +42,7 @@ class Number : public JSValue {
   bool IsNaN() const { return std::isnan(GetNumber()); }
 
   static Number Inf() { return Number{std::numeric_limits<double>::infinity()}; }
+  static Number NegativeInf() { return Number{-std::numeric_limits<double>::infinity()}; }
   bool IsInf() const { return std::isinf(GetNumber()); }
 
   static Number Abs(Number number) { return Number{std::abs(number.GetNumber())}; }

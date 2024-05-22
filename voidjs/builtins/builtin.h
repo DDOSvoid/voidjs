@@ -42,7 +42,7 @@ class Builtin {
   static void SetPropretiesForBuiltinObjects(VM* vm);
   static void SetPropertiesForBaseObjects(VM* vm);
   static void SetPropertiesForArrayObjectss(VM* vm);
-  static void SetProeprtiesForStringObjects(VM* vm);
+  static void SetPropertiesForStringObjects(VM* vm);
   static void SetPropertiesForBooleanObjects(VM* vm);
   static void SetPropertiesForNumberObjects(VM* vm);
   static void SetPropertiesForMathObjects(VM* vm);

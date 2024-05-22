@@ -11,6 +11,7 @@
 #include "voidjs/types/object_class_type.h"
 #include "voidjs/types/lang_types/object.h"
 #include "voidjs/types/object_factory.h"
+#include "voidjs/types/lang_types/number.h"
 #include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/internal_types/property_map.h"
 #include "voidjs/types/internal_types/internal_function.h"
@@ -380,11 +381,12 @@ JSHandle<JSFunction> Builtin::InstantiatingFunctionDeclaration(
   return F;
 }
 
-
 void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetPropertiesForBaseObjects(vm);
   SetPropertiesForArrayObjectss(vm);
-  SetProeprtiesForStringObjects(vm);
+  SetPropertiesForStringObjects(vm);
+  SetPropertiesForBooleanObjects(vm);
+  SetPropertiesForNumberObjects(vm);
   SetPropertiesForMathObjects(vm);
 }
 
@@ -491,7 +493,7 @@ void Builtin::SetPropertiesForArrayObjectss(VM* vm) {
   
   // Set properties for Array Prototype
   SetDataProperty(vm, arr_proto, constants->HandledConstructorString(),
-                  arr_ctor.As<JSValue>(), false, false, false);
+                  arr_ctor.As<JSValue>(), true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"toString"),
                       JSArray::ToString, true, false, true);
   SetFunctionProperty(vm, arr_proto, factory->NewString(u"toLocaleString"),
@@ -520,7 +522,7 @@ void Builtin::SetPropertiesForArrayObjectss(VM* vm) {
                       JSArray::Filter, true, false, true);
 }
 
-void Builtin::SetProeprtiesForStringObjects(VM* vm) {
+void Builtin::SetPropertiesForStringObjects(VM* vm) {
   JSHandle<JSFunction> str_ctor = vm->GetStringConstructor();
   JSHandle<JSString> str_proto = vm->GetStringPrototype();
   ObjectFactory* factory = vm->GetObjectFactory();
@@ -549,6 +551,58 @@ void Builtin::SetProeprtiesForStringObjects(VM* vm) {
                       JSString::ToUpperCase, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"trim"),
                       JSString::Trim, true, false, true);
+}
+
+void Builtin::SetPropertiesForBooleanObjects(VM* vm) {
+  JSHandle<JSFunction> bool_ctor = vm->GetBooleanConstructor();
+  JSHandle<JSBoolean> bool_proto = vm->GetBooleanPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
+
+  // Set Properties for Boolean Constructor
+  SetDataProperty(vm, bool_ctor, constants->HandledPrototypeString(),
+                  bool_proto.As<JSValue>(), false, false, false);
+  SetDataProperty(vm, bool_ctor, constants->HandledLengthString(),
+                  JSHandle<JSValue>{vm, types::Number{1}}, false, false, false);
+
+  // Set Properties for Boolean Prototype
+  SetDataProperty(vm, bool_proto, constants->HandledConstructorString(),
+                  bool_ctor.As<JSValue>(), true, false, true);
+  SetFunctionProperty(vm, bool_proto, factory->NewString(u"toString"),
+                      JSBoolean::ToString, true, false, true);
+  SetFunctionProperty(vm, bool_proto, factory->NewString(u"valueOf"),
+                      JSBoolean::ValueOf, true, false, true);
+}
+
+void Builtin::SetPropertiesForNumberObjects(VM* vm) {
+  JSHandle<JSFunction> num_ctor = vm->GetNumberConstructor();
+  JSHandle<JSNumber> num_proto = vm->GetNumberPrototype();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
+
+  // Set Properties for Number Constructor
+  SetDataProperty(vm, num_ctor, constants->HandledPrototypeString(),
+                  num_proto.As<JSValue>(), false, false, false);
+  SetDataProperty(vm, num_ctor, constants->HandledLengthString(),
+                  JSHandle<JSValue>{vm, types::Number{1}}, false, false, false);
+  SetDataProperty(vm, num_ctor, factory->NewString(u"MAX_VALUE"),
+                  JSHandle<JSValue>{vm, types::Number{1.7976931348623157e308}}, false, false, false);
+  SetDataProperty(vm, num_ctor, factory->NewString(u"MIN_VALUE"),
+                  JSHandle<JSValue>{vm, types::Number{5e-324}}, false, false, false);
+  SetDataProperty(vm, num_ctor, constants->HandledNANString(),
+                  JSHandle<JSValue>{vm, types::Number::NaN()}, false, false, false);
+  SetDataProperty(vm, num_ctor, factory->NewString(u"NEGATIVE_INFINITY"),
+                  JSHandle<JSValue>{vm, types::Number::NegativeInf()}, false, false, false);
+  SetDataProperty(vm, num_ctor, factory->NewString(u"POSITIVE_INFINITY"),
+                  JSHandle<JSValue>{vm, types::Number::Inf()}, false, false, false);
+
+  // Set Properties for Number Prototype
+  SetDataProperty(vm, num_proto, constants->HandledConstructorString(),
+                  num_ctor.As<JSValue>(), true, false, true);
+  SetFunctionProperty(vm, num_proto, factory->NewString(u"toString"),
+                      JSNumber::ToString, true, false, true);
+  SetFunctionProperty(vm, num_proto, factory->NewString(u"valueOf"),
+                      JSNumber::ValueOf, true, false, true);
 }
 
 void Builtin::SetPropertiesForMathObjects(VM* vm) {
