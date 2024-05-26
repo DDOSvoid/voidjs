@@ -1,3 +1,2 @@
-var array = [0, 1, 2, 3, 4, 5];
-
-print(array[3]);
+print(Math.atan2(0, -0.0))
+print(Math.PI)

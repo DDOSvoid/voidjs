@@ -1547,3 +1547,468 @@ Math.asin(-1); // -1.5707963267948966 (-pi/2)
   ASSERT_TRUE(comp.GetValue()->IsDouble());
   EXPECT_DOUBLE_EQ(-1.5707963267948966, comp.GetValue()->GetDouble());
 }
+
+TEST(JSMath, Atan) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0; 
+
+count += DoubleEqual(Math.atan(1), 0.7853981633974483);
+count += DoubleEqual(Math.atan(0), 0);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Atan2) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0; 
+
+count += DoubleEqual(Math.atan2(90, 15), 1.4056476493802699);
+count += DoubleEqual(Math.atan2(15, 90), 0.16514867741462683);
+count += DoubleEqual(Math.atan2(0, -0), Math.PI);
+count += DoubleEqual(Math.atan2(0, 0), 0);
+count += DoubleEqual(Math.atan2(0, -1), Math.PI)
+count += DoubleEqual(Math.atan2(0, 1), 0);
+count += DoubleEqual(Math.atan2(-0, 1), -0);
+count += DoubleEqual(Math.atan2(-1, 0), -Math.PI / 2);
+count += DoubleEqual(Math.atan2(-1, -0), -Math.PI / 2);
+count += DoubleEqual(Math.atan2(1, 0), Math.PI / 2);
+count += DoubleEqual(Math.atan2(1, -0), Math.PI / 2);
+count += DoubleEqual(Math.atan2(1, -Infinity), Math.PI);
+count += DoubleEqual(Math.atan2(-1, -Infinity), -Math.PI);
+count += DoubleEqual(Math.atan2(1, +Infinity), 0);
+count += DoubleEqual(Math.atan2(-1, +Infinity), -0);
+count += DoubleEqual(Math.atan2(+Infinity, 34234), Math.PI / 2);
+count += DoubleEqual(Math.atan2(-Infinity, 2342), -Math.PI / 2);
+count += DoubleEqual(Math.atan2(+Infinity, -Infinity), 3 * Math.PI / 4);
+count += DoubleEqual(Math.atan2(-Infinity, -Infinity), -3 * Math.PI / 4);
+count += DoubleEqual(Math.atan2(+Infinity, +Infinity), Math.PI / 4);
+count += DoubleEqual(Math.atan2(-Infinity, +Infinity), -Math.PI / 4);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(21, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Ceil) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity || 
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.ceil(-Infinity), -Infinity);
+count += DoubleEqual(Math.ceil(-7.004), -7);
+count += DoubleEqual(Math.ceil(-4), -4);
+count += DoubleEqual(Math.ceil(-0.95), -0);
+count += DoubleEqual(Math.ceil(-0), -0);
+count += DoubleEqual(Math.ceil(0), 0);
+count += DoubleEqual(Math.ceil(0.95), 1);
+count += DoubleEqual(Math.ceil(4), 4);
+count += DoubleEqual(Math.ceil(7.004), 8);
+count += DoubleEqual(Math.ceil(Infinity), Infinity);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(10, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Cos) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity || 
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.cos(0), 1);
+count += DoubleEqual(Math.cos(1), 0.5403023058681398);
+count += DoubleEqual(Math.cos(Math.PI), -1)
+count += DoubleEqual(Math.cos(2 * Math.PI), 1);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Exp) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity || 
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.exp(-1), 0.36787944117144233);
+count += DoubleEqual(Math.exp(0), 1)
+count += DoubleEqual(Math.exp(1), Math.E);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(3, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Floor) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity || 
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.floor(-Infinity), -Infinity)
+count += DoubleEqual(Math.floor(-45.95), -46)
+count += DoubleEqual(Math.floor(-45.05), -46)
+count += DoubleEqual(Math.floor(-0), -0)
+count += DoubleEqual(Math.floor(0), 0)
+count += DoubleEqual(Math.floor(4), 4)
+count += DoubleEqual(Math.floor(45.05), 45)
+count += DoubleEqual(Math.floor(45.95), 45)
+count += DoubleEqual(Math.floor(Infinity), Infinity)
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(9, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Log) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.log(-1), NaN)
+count += DoubleEqual(Math.log(0), -Infinity)
+count += DoubleEqual(Math.log(1), 0)
+count += DoubleEqual(Math.log(10), 2.302585092994046)
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Max) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.max(10, 20), 20);
+count += DoubleEqual(Math.max(-10, -20), -10);
+count += DoubleEqual(Math.max(-10, 20), 20);
+
+function getMaxOfArray(numArray) {
+  return Math.max.apply(null, numArray);
+}
+
+count += DoubleEqual(getMaxOfArray([1, 2, 3, 4]), 4);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Min) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.min(10, 20), 10);
+count += DoubleEqual(Math.min(-10, -20), -20);
+count += DoubleEqual(Math.min(-10, 20), -10);
+
+function getMinOfArray(numArray) {
+  return Math.min.apply(null, numArray);
+}
+
+count += DoubleEqual(getMinOfArray([1, 2, 3, 4]), 1);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Pow) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.pow(7, 3), 343);
+count += DoubleEqual(Math.pow(4, 0.5), 2);
+count += DoubleEqual(Math.pow(7, -2), 0.02040816326530612);
+count += DoubleEqual(Math.pow(-7, 0.5), NaN);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Random) {
+  Parser parser(uR"(
+
+var count = 0;
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+var number = getRandomInt(3);
+
+count += number == 0 || number == 1 || number == 2;
+count += getRandomInt(1) == 0;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(2, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Round) {
+  Parser parser(uR"(
+var count = 0;
+
+count += Math.round(20.49) == 20;
+count += Math.round(20.5) == 21;
+count += Math.round(-20.5) == -20;
+count += Math.round(-20.51) == -21;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Sin) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.sin(0), 0);
+count += DoubleEqual(Math.sin(1), 0.8414709848078965)
+count += DoubleEqual(Math.sin(Math.PI / 2), 1);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(3, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Sqrt) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+var count = 0;
+
+count += DoubleEqual(Math.sqrt(9), 3);
+count += DoubleEqual(Math.sqrt(2), 1.414213562373095);
+count += DoubleEqual(Math.sqrt(1), 1);
+count += DoubleEqual(Math.sqrt(0), 0)
+count += DoubleEqual(Math.sqrt(-1), NaN);
+count += DoubleEqual(Math.sqrt(-0), -0);
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(6, comp.GetValue()->GetInt());
+}
+
+TEST(JSMath, Tan) {
+  Parser parser(uR"(
+function DoubleEqual(x, y) {
+  if (x == Infinity && y == Infinity   || 
+      x == -Infinity && y == -Infinity ||
+      isNaN(x) && isNaN(y)) { 
+    return true;
+  }
+  return Math.abs(x - y) < 1e-7;
+}
+
+function getTanDeg(deg) {
+  var rad = (deg * Math.PI) / 180;
+  return Math.tan(rad);
+}
+
+var count = 0;
+
+count += DoubleEqual(getTanDeg(90), Math.tan(Math.PI / 2));
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_DOUBLE_EQ(1, comp.GetValue()->GetInt());
+}

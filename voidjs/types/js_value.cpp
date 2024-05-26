@@ -414,7 +414,7 @@ JSHandle<types::String> JSValue::NumberToString(VM* vm, double num) {
   auto factory = vm->GetObjectFactory();
   
   if (std::isnan(num)) {
-    return vm->GetGlobalConstants()->HandledNANString();
+    return vm->GetGlobalConstants()->HandledNaNString();
   }
 
   if (num == 0) {

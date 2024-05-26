@@ -40,7 +40,7 @@ DEFINE_GET_METHOD_FOR_HEAP_OBJECT(FalseString, String, types::String, 8)
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(TrueString, String, types::String, 9)
 
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(ZeroString, String, types::String, 10)
-DEFINE_GET_METHOD_FOR_HEAP_OBJECT(NANString, String, types::String, 11)
+DEFINE_GET_METHOD_FOR_HEAP_OBJECT(NaNString, String, types::String, 11)
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(PositiveInfinityString, String, types::String, 12)
 DEFINE_GET_METHOD_FOR_HEAP_OBJECT(NegativeInfinityString, String, types::String, 13)
 
@@ -97,7 +97,7 @@ void GlobalConstants::Initialize() {
   SET_CONSTANT(TrueString, factory->NewString<GCFlag::CONST>(u"true").GetJSValue(), 9);
   
   SET_CONSTANT(ZeroString, factory->NewString<GCFlag::CONST>(u"0").GetJSValue(), 10);
-  SET_CONSTANT(NANString, factory->NewString<GCFlag::CONST>(u"NAN").GetJSValue(), 11);
+  SET_CONSTANT(NaNString, factory->NewString<GCFlag::CONST>(u"NaN").GetJSValue(), 11);
   SET_CONSTANT(PositiveInfinityString, factory->NewString<GCFlag::CONST>(u"Infinity").GetJSValue(), 12);
   SET_CONSTANT(NegativeInfinityString, factory->NewString<GCFlag::CONST>(u"-Infinity").GetJSValue(), 13);
 

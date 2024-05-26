@@ -2375,7 +2375,12 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       // 3. Return the result of negating oldValue;
       //    that is, compute a Number with the same magnitude but opposite sign.
       if (old_val.IsInt()) {
-        return JSHandle<JSValue>{vm_, JSValue{-old_val.GetInt()}};
+        if (old_val.GetInt() == 0) {
+          // deal with -0.0
+          return JSHandle<JSValue>{vm_, JSValue{-0.0}};
+        } else {
+          return JSHandle<JSValue>{vm_, JSValue{-old_val.GetInt()}};
+        }
       } else {
         // old_val must be Double
         return JSHandle<JSValue>{vm_, JSValue{-old_val.GetDouble()}};

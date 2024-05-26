@@ -414,7 +414,20 @@ void Builtin::SetPropertiesForBaseObjects(VM *vm) {
                   vm->GetNumberConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledMathString(),
                   vm->GetMathObject().As<JSValue>(), true, false, true);
-  SetFunctionProperty(vm, global_obj, factory->NewString(u"print"), GlobalObject::Print, false, false, false);
+  SetDataProperty(vm, global_obj, constants->HandledNaNString(), 
+                  JSHandle<JSValue>{vm, types::Number::NaN()}, true, false, true);
+  SetDataProperty(vm, global_obj, constants->HandledPositiveInfinityString(),
+                  JSHandle<JSValue>{vm, types::Number::Inf()}, true, false, true);
+  SetDataProperty(vm, global_obj, constants->HandledUndefinedString(),
+                  constants->HandledUndefined(), true, false, true);
+  SetDataProperty(vm, global_obj, constants->HandledFunctionString(),
+                  func_ctor.As<JSValue>(), true, false, true);
+  SetFunctionProperty(vm, global_obj, factory->NewString(u"isNaN"),
+                      GlobalObject::IsNaN, false, false, false);
+  SetFunctionProperty(vm, global_obj, factory->NewString(u"isFinite"),
+                      GlobalObject::IsFinite, false, false, false);
+  SetFunctionProperty(vm, global_obj, factory->NewString(u"print"),
+                      GlobalObject::Print, false, false, false);
 
   // Set properties for Object Constructor
   SetDataProperty(vm, obj_ctor, constants->HandledLengthString(), JSHandle<JSValue>{vm, JSValue{1}}, false, false, false);
@@ -589,7 +602,7 @@ void Builtin::SetPropertiesForNumberObjects(VM* vm) {
                   JSHandle<JSValue>{vm, types::Number{1.7976931348623157e308}}, false, false, false);
   SetDataProperty(vm, num_ctor, factory->NewString(u"MIN_VALUE"),
                   JSHandle<JSValue>{vm, types::Number{5e-324}}, false, false, false);
-  SetDataProperty(vm, num_ctor, constants->HandledNANString(),
+  SetDataProperty(vm, num_ctor, constants->HandledNaNString(),
                   JSHandle<JSValue>{vm, types::Number::NaN()}, false, false, false);
   SetDataProperty(vm, num_ctor, factory->NewString(u"NEGATIVE_INFINITY"),
                   JSHandle<JSValue>{vm, types::Number::NegativeInf()}, false, false, false);
@@ -611,12 +624,59 @@ void Builtin::SetPropertiesForMathObjects(VM* vm) {
   GlobalConstants* constants = vm->GetGlobalConstants();
 
   // Set properties for Math Object
+  SetDataProperty(vm, math_obj, factory->NewString(u"E"),
+                  JSHandle<JSValue>{vm, types::Number{2.7182818284590452354}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"LN10"),
+                  JSHandle<JSValue>{vm, types::Number{2.302585092994046}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"LN2"),
+                  JSHandle<JSValue>{vm, types::Number{0.6931471805599453}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"LOG2E"),
+                  JSHandle<JSValue>{vm, types::Number{1.4426950408889634}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"LOG10E"),
+                  JSHandle<JSValue>{vm, types::Number{0.4342944819032518}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"PI"),
+                  JSHandle<JSValue>{vm, types::Number{3.1415926535897932}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"SQRT1_2"),
+                  JSHandle<JSValue>{vm, types::Number{0.7071067811865476}}, false, false, false);
+  SetDataProperty(vm, math_obj, factory->NewString(u"SQRT_2"),
+                  JSHandle<JSValue>{vm, types::Number{1.4142135623730951}}, false, false, false);
+  
   SetFunctionProperty(vm, math_obj, factory->NewString(u"abs"),
                       JSMath::Abs, true, false, true);
   SetFunctionProperty(vm, math_obj, factory->NewString(u"acos"),
                       JSMath::Acos, true, false, true);
   SetFunctionProperty(vm, math_obj, factory->NewString(u"asin"),
                       JSMath::Asin, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"atan"),
+                      JSMath::Atan, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"atan2"),
+                      JSMath::Atan2, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"ceil"),
+                      JSMath::Ceil, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"cos"),
+                      JSMath::Cos, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"exp"),
+                      JSMath::Exp, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"floor"),
+                      JSMath::Floor, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"log"),
+                      JSMath::Log, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"max"),
+                      JSMath::Max, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"min"),
+                      JSMath::Min, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"pow"),
+                      JSMath::Pow, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"random"),
+                      JSMath::Random, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"round"),
+                      JSMath::Round, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"sin"),
+                      JSMath::Sin, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"sqrt"),
+                      JSMath::Sqrt, true, false, true);
+  SetFunctionProperty(vm, math_obj, factory->NewString(u"tan"),
+                      JSMath::Tan, true, false, true);
 }
 
 void Builtin::SetDataProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, JSHandle<JSValue> prop_val,

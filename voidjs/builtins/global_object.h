@@ -14,8 +14,12 @@ class GlobalObject : public types::Object {
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
   static_assert(SIZE == 0);
 
+  // Function properties of the Global Object
+  static JSValue IsNaN(RuntimeCallInfo* argv);
+  static JSValue IsFinite(RuntimeCallInfo* argv);
+
   // Host Functions
-  static JSValue Print(RuntimeCallInfo* argv); 
+  static JSValue Print(RuntimeCallInfo* argv);
 };
 
 }  // namespace builtins

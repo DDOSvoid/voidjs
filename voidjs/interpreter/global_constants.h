@@ -37,7 +37,7 @@ class GlobalConstants {
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(TrueString, types::String)
   
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(ZeroString, types::String)
-  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(NANString, types::String)
+  DECLARE_GET_METHOD_FOR_HEAP_OBJECT(NaNString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(PositiveInfinityString, types::String)
   DECLARE_GET_METHOD_FOR_HEAP_OBJECT(NegativeInfinityString, types::String)
   

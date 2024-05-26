@@ -47,6 +47,14 @@ class Number : public JSValue {
 
   static Number Abs(Number number) { return Number{std::abs(number.GetNumber())}; }
 
+  bool IsNegativeZero() const {
+    return
+      GetNumber() == 0.0 &&
+      (utils::BitCast<std::uint64_t>(GetNumber()) & 1ull << 63);
+  }
+
+  bool IsFinite() const { return !IsNaN() && !IsInf(); }
+
   Number operator+(Number number) const {
     if (IsInt() && number.IsInt()) {
       std::int64_t num0 = GetInt();
@@ -122,6 +130,7 @@ class Number : public JSValue {
 
   bool operator==(const Number& other) const { return GetNumber() == other.GetNumber(); }
   bool operator!=(const Number& other) const { return GetNumber() != other.GetNumber(); }
+
 };
 
 }  // namespace types
