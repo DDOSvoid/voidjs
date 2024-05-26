@@ -46,6 +46,7 @@ class Builtin {
   static void SetPropertiesForBooleanObjects(VM* vm);
   static void SetPropertiesForNumberObjects(VM* vm);
   static void SetPropertiesForMathObjects(VM* vm);
+  static void SetPropertiesForErrorObjects(VM* vm);
   static void SetDataProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, JSHandle<JSValue> prop_val,
                               bool writable, bool enumerable, bool configurable);
   static void SetFunctionProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, InternalFunctionType func,

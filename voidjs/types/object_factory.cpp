@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "voidjs/interpreter/vm.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
@@ -16,6 +17,7 @@
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_object.h"
 #include "voidjs/builtins/js_error.h"
+#include "voidjs/builtins/builtin.h"
 #include "voidjs/gc/js_handle.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/interpreter/string_table.h"
@@ -137,8 +139,8 @@ JSHandle<types::LexicalEnvironment> ObjectFactory::NewLexicalEnvironment(
   return env;
 }
 
-JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, JSHandle<types::String> msg) {
-  auto proto = JSHandle<builtins::JSError>{};
+JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type) {
+  JSHandle<builtins::JSError> proto;
   switch (type) {
     case ErrorType::EVAL_ERROR: {
       proto = vm_->GetEvalErrorPrototype();
@@ -169,9 +171,16 @@ JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, JSHand
     }
   }
 
-  auto error = NewObject(builtins::JSError::SIZE, JSType::JS_ERROR,
-                         ObjectClassType::ERROR,
-                         proto.As<JSValue>(), true, false, false).As<builtins::JSError>();
+  JSHandle<builtins::JSError> error =
+    NewObject(builtins::JSError::SIZE, JSType::JS_ERROR, ObjectClassType::ERROR,
+              proto.As<JSValue>(), true, false, false).As<builtins::JSError>();
+  error->SetErrorType(type);
+  return error;
+}
+
+JSHandle<builtins::JSError> ObjectFactory::NewNativeError(ErrorType type, JSHandle<types::String> msg) {
+  JSHandle<builtins::JSError> error = NewNativeError(type);
+  builtins::Builtin::SetDataProperty(vm_, error, NewString(u"message"), msg.As<JSValue>(), true, false, true);
   return error;
 }
 

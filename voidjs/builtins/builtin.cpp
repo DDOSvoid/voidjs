@@ -388,6 +388,7 @@ void Builtin::SetPropretiesForBuiltinObjects(VM* vm) {
   SetPropertiesForBooleanObjects(vm);
   SetPropertiesForNumberObjects(vm);
   SetPropertiesForMathObjects(vm);
+  SetPropertiesForErrorObjects(vm);
 }
 
 void Builtin::SetPropertiesForBaseObjects(VM *vm) {
@@ -414,14 +415,16 @@ void Builtin::SetPropertiesForBaseObjects(VM *vm) {
                   vm->GetNumberConstructor().As<JSValue>(), true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledMathString(),
                   vm->GetMathObject().As<JSValue>(), true, false, true);
+  SetDataProperty(vm, global_obj, constants->HandledErrorString(),
+                  vm->GetErrorConstructor().As<JSValue>(), true, false, true);
+  
   SetDataProperty(vm, global_obj, constants->HandledNaNString(), 
                   JSHandle<JSValue>{vm, types::Number::NaN()}, true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledPositiveInfinityString(),
                   JSHandle<JSValue>{vm, types::Number::Inf()}, true, false, true);
   SetDataProperty(vm, global_obj, constants->HandledUndefinedString(),
                   constants->HandledUndefined(), true, false, true);
-  SetDataProperty(vm, global_obj, constants->HandledFunctionString(),
-                  func_ctor.As<JSValue>(), true, false, true);
+  
   SetFunctionProperty(vm, global_obj, factory->NewString(u"isNaN"),
                       GlobalObject::IsNaN, false, false, false);
   SetFunctionProperty(vm, global_obj, factory->NewString(u"isFinite"),
@@ -677,6 +680,119 @@ void Builtin::SetPropertiesForMathObjects(VM* vm) {
                       JSMath::Sqrt, true, false, true);
   SetFunctionProperty(vm, math_obj, factory->NewString(u"tan"),
                       JSMath::Tan, true, false, true);
+}
+
+void Builtin::SetPropertiesForErrorObjects(VM *vm) {
+  JSHandle<JSError> error_proto = vm->GetErrorPrototype();
+  JSHandle<JSFunction> error_ctor = vm->GetErrorConstructor();
+  JSHandle<JSError> eval_error_proto= vm->GetEvalErrorPrototype();
+  JSHandle<JSFunction> eval_error_ctor = vm->GetEvalErrorConstructor();
+  JSHandle<JSError> range_error_proto= vm->GetRangeErrorPrototype();
+  JSHandle<JSFunction> range_error_ctor = vm->GetRangeErrorConstructor();
+  JSHandle<JSError> reference_error_proto= vm->GetReferenceErrorPrototype();
+  JSHandle<JSFunction> reference_error_ctor = vm->GetReferenceErrorConstructor();
+  JSHandle<JSError> syntax_error_proto= vm->GetSyntaxErrorPrototype();
+  JSHandle<JSFunction> syntax_error_ctor = vm->GetSyntaxErrorConstructor();
+  JSHandle<JSError> type_error_proto= vm->GetTypeErrorPrototype();
+  JSHandle<JSFunction> type_error_ctor = vm->GetTypeErrorConstructor();
+  JSHandle<JSError> uri_error_proto= vm->GetURIErrorPrototype();
+  JSHandle<JSFunction> uri_error_ctor = vm->GetURIErrorConstructor();
+  ObjectFactory* factory = vm->GetObjectFactory();
+  GlobalConstants* constants = vm->GetGlobalConstants();
+
+  // Set properties for the Error Prototype
+  SetDataProperty(vm, error_proto, constants->HandledConstructorString(),
+                  error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"Error").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  SetFunctionProperty(vm, error_proto, factory->NewString(u"toString"),
+                      JSError::ToString, true, false, true);
+
+  // Set properties for the Error Constructor
+  SetDataProperty(vm, error_ctor, constants->HandledPrototypeString(),
+                  error_proto.As<JSValue>(), false, false, false);
+
+  // Set properties for the EvalError Prototype
+  SetDataProperty(vm, eval_error_proto, constants->HandledConstructorString(),
+                  eval_error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, eval_error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"EvalError").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, eval_error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  // Set properties for the EvalError Constructor
+  SetDataProperty(vm, eval_error_ctor, constants->HandledPrototypeString(),
+                  eval_error_proto.As<JSValue>(), false, false, false);
+
+  // Set properties for the RangeError Prototype
+  SetDataProperty(vm, range_error_proto, constants->HandledConstructorString(),
+                  range_error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, range_error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"RangeError").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, range_error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  // Set properties for the RangeError Constructor
+  SetDataProperty(vm, range_error_ctor, constants->HandledPrototypeString(),
+                  range_error_proto.As<JSValue>(), false, false, false);
+  
+  // Set properties for the ReferenceError Prototype
+  SetDataProperty(vm, reference_error_proto, constants->HandledConstructorString(),
+                  reference_error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, reference_error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"ReferenceError").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, reference_error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  // Set properties for the ReferenceError Constructor
+  SetDataProperty(vm, reference_error_ctor, constants->HandledPrototypeString(),
+                  reference_error_proto.As<JSValue>(), false, false, false);
+  
+  // Set properties for the SyntaxError Prototype
+  SetDataProperty(vm, syntax_error_proto, constants->HandledConstructorString(),
+                  syntax_error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, syntax_error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"SyntaxError").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, syntax_error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  // Set properties for the SyntaxError Constructor
+  SetDataProperty(vm, syntax_error_ctor, constants->HandledPrototypeString(),
+                  syntax_error_proto.As<JSValue>(), false, false, false);
+  
+  // Set properties for the TypeError Prototype
+  SetDataProperty(vm, type_error_proto, constants->HandledConstructorString(),
+                  type_error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, type_error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"TypeError").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, type_error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  // Set properties for the TypeError Constructor
+  SetDataProperty(vm, type_error_ctor, constants->HandledPrototypeString(),
+                  type_error_proto.As<JSValue>(), false, false, false);
+  
+  // Set properties for the URIError Prototype
+  SetDataProperty(vm, uri_error_proto, constants->HandledConstructorString(),
+                  uri_error_ctor.As<JSValue>(), true, false, true);
+  
+  SetDataProperty(vm, uri_error_proto, factory->NewString(u"name"),
+                  factory->NewString(u"URIError").As<JSValue>(), true, false, true);
+  SetDataProperty(vm, uri_error_proto, factory->NewString(u"message"),
+                  constants->HandledEmptyString().As<JSValue>(), true, false, true);
+
+  // Set properties for the URIError Constructor
+  SetDataProperty(vm, uri_error_ctor, constants->HandledPrototypeString(),
+                  uri_error_proto.As<JSValue>(), false, false, false);
 }
 
 void Builtin::SetDataProperty(VM* vm, JSHandle<types::Object> obj, JSHandle<types::String> prop_name, JSHandle<JSValue> prop_val,

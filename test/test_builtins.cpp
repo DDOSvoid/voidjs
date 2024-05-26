@@ -2012,3 +2012,74 @@ count += DoubleEqual(getTanDeg(90), Math.tan(Math.PI / 2));
   ASSERT_TRUE(comp.GetValue()->IsInt());
   EXPECT_DOUBLE_EQ(1, comp.GetValue()->GetInt());
 }
+
+TEST(JSError, ErrorConstructorConstruct) {
+  Parser parser(uR"(
+var error = new Error('I was constructed via the "new" keyword!');
+error.message;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"I was constructed via the \"new\" keyword!", comp.GetValue()->GetString());
+}
+
+TEST(JSError, ErrorConstructorCall) {
+  Parser parser(uR"(
+var error = new Error('I was constructed using a function call.');
+error.message;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsString());
+  EXPECT_EQ(u"I was constructed using a function call.", comp.GetValue()->GetString());
+}
+
+TEST(JSError, ToString) {
+  Parser parser(uR"(
+var count = 0;
+
+count += new Error("fatal error").toString() == "Error: fatal error";
+
+var e = new Error('fatal error');
+e.name = '';
+count += e.toString() == "fatal error";
+
+e = new Error('fatal error');
+e.name = '';
+e.message = '';
+count += e.toString() == "Error";
+
+e = new Error('fatal error');
+e.name = '';
+e.message = undefined;
+count += e.toString() == '';
+
+e = new Error('fatal error');
+e.name = '你好';
+e.message = undefined;
+count += e.toString() == "你好";
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(4, comp.GetValue()->GetInt());
+}

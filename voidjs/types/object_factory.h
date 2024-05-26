@@ -92,6 +92,7 @@ class ObjectFactory {
   JSHandle<builtins::JSObject> NewJSObject(JSValue value);
   JSHandle<builtins::JSFunction> NewJSFunction(JSValue value);
   JSHandle<builtins::JSError> NewJSError(JSHandle<types::String> msg);
+  JSHandle<builtins::JSError> NewNativeError(ErrorType type); 
   JSHandle<builtins::JSError> NewNativeError(ErrorType type, JSHandle<types::String> msg);  
   JSHandle<builtins::JSError> NewNativeError(ErrorType type, std::u16string_view msg);  
 

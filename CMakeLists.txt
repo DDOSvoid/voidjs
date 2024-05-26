@@ -34,6 +34,7 @@ add_library(voidjs_obj OBJECT
   voidjs/builtins/js_boolean.cpp
   voidjs/builtins/js_number.cpp
   voidjs/builtins/js_math.cpp
+  voidjs/builtins/js_error.cpp
   voidjs/gc/js_handle_scope.cpp
   voidjs/interpreter/vm.cpp
   voidjs/interpreter/string_table.cpp

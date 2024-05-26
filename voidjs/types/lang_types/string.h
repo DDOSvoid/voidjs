@@ -34,7 +34,9 @@ class String : public HeapObject {
   static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2);
   static JSHandle<String> Concat(VM* vm, JSHandle<String> str1, JSHandle<String> str2, JSHandle<String> str3);
   static JSHandle<String> Substring(VM* vm, JSHandle<String> string, std::size_t start, std::size_t length);
-  static JSHandle<String> CharAt(VM* vm, JSHandle<String> string, std::size_t pos); 
+  static JSHandle<String> CharAt(VM* vm, JSHandle<String> string, std::size_t pos);
+
+  bool IsEmptyString() const { return GetLength() == 0; }
 
   // used for print 
   std::u16string_view GetString() const {

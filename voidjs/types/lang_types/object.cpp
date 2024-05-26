@@ -16,6 +16,7 @@
 #include "voidjs/builtins/js_string.h"
 #include "voidjs/builtins/js_boolean.h"
 #include "voidjs/builtins/js_number.h"
+#include "voidjs/builtins/js_error.h"
 #include "voidjs/interpreter/runtime_call_info.h"
 #include "voidjs/interpreter/interpreter.h"
 #include "voidjs/interpreter/global_constants.h"
@@ -617,6 +618,8 @@ JSHandle<JSValue> Object::Construct(VM* vm, JSHandle<Object> O, JSHandle<JSValue
     ret = builtins::JSBoolean::BooleanConstructorConstruct(info);
   } else if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
     ret = builtins::JSNumber::NumberConstructorConstruct(info);
+  } else if (O.GetJSValue() == vm->GetErrorConstructor().GetJSValue()) {
+    ret = builtins::JSError::ErrorConstructorConstruct(info);
   }
   // Define in ECMAScript 5.1 Chapter 13.2.2
   else if (O->IsJSFunction()) {
@@ -667,6 +670,8 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
     ret = builtins::JSFunction::FunctionConstructorCall(info);
   } else if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
     ret = builtins::JSArray::ArrayConstructorCall(info);
+  } else if (O.GetJSValue() == vm->GetErrorConstructor().GetJSValue()) {
+    ret = builtins::JSError::ErrorConstructorCall(info);
   }
   // Define in ECMAScript 5.1 Chapter 13.2.1
   else if (O->IsJSFunction()) {
