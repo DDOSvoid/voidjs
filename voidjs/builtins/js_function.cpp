@@ -15,6 +15,52 @@
 namespace voidjs {
 namespace builtins {
 
+// [[HasInstance]](V)
+// Defined in ECMAScript 5.1 Chapter 15.3.5.3
+bool JSFunction::HasInstance(VM* vm, JSHandle<JSFunction> F, JSHandle<JSValue> V) {
+  // 1. If V is not an object, return false.
+  if (!V->IsObject()) {
+    return false;
+  }
+  
+  // 2. Let O be the result of calling the [[Get]] internal method of F with property name "prototype".
+  JSHandle<JSValue> O = types::Object::Get(vm, F, vm->GetGlobalConstants()->HandledPrototypeString());
+  
+  // 3. If Type(O) is not Object, throw a TypeError exception.
+  if (!O->IsObject()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Constructor has no prototype in HasInstance.", false);
+  }
+  
+  // 4.Repeat
+  while (true) {
+    // a. Let V be the value of the [[Prototype]] internal property of V.
+    V = JSHandle<JSValue>{vm, V.As<types::Object>()->GetPrototype()};
+    
+    // b. If V is null, return false.
+    if (V->IsNull()) {
+      return false;
+    }
+    
+    // c. If O and V refer to the same object, return true.
+    if (O.GetJSValue() == V.GetJSValue()) {
+      return true;
+    }
+  }
+}
+
+// [[Get]](P)
+// Defined in ECMAScript 5.1 Chapter 15.3.5.4
+JSHandle<JSValue> JSFunction::Get(VM* vm, JSHandle<JSFunction> O, JSHandle<types::String> P) {
+  // 1. Let v be the result of calling the default [[Get]] internal method (8.12.3) on F passing P as the property name argument.
+  JSHandle<JSValue> v = types::Object::GetDefault(vm, O, P);
+  
+  // 2. If P is "caller" and v is a strict mode Function object, throw a TypeError exception.
+  // todo;
+  
+  // 3. Return v.
+  return v;
+}
+
 // Function (p1, p2, ..., pn, body)
 // Defined in ECMAScript 5.1 Chapter 15.3.1.1
 JSValue JSFunction::FunctionConstructorCall(RuntimeCallInfo* argv) {

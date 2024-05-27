@@ -1015,7 +1015,9 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalBinaryExpression(Bin
     case TokenType::LESS_THAN:
     case TokenType::GREATER_THAN:
     case TokenType::LESS_EQUAL:
-    case TokenType::GREATER_EQUAL: {
+    case TokenType::GREATER_EQUAL:
+    case TokenType::KEYWORD_INSTANCEOF:
+    case TokenType::KEYWORD_IN: {
       return ApplyRelationalOperator(op, left, right);
     }
     case TokenType::LEFT_SHIFT:
@@ -2006,10 +2008,13 @@ JSHandle<JSValue> Interpreter::ApplyRelationalOperator(TokenType op, Expression*
     }
     
     // 6. If rval does not have a [[HasInstance]] internal method, throw a TypeError exception.
-    // todo
+    if (!rval->GetHeapObject()->IsJSFunction()) {
+      THROW_TYPE_ERROR_AND_RETURN_HANDLE(
+        vm_, u"Object does not have a [[HasInstance]] internal method when using instanceof operator", JSValue);
+    }
     
     // 7. Return the result of calling the [[HasInstance]] internal method of rval with argument lval.
-    // todo
+    return JSHandle<JSValue>{vm_, JSValue{builtins::JSFunction::HasInstance(vm_, rval.As<builtins::JSFunction>(), lval)}};
   } else {
     // op must be TokenType::KEYWORD_IN
     
@@ -2036,7 +2041,7 @@ JSHandle<JSValue> Interpreter::ApplyRelationalOperator(TokenType op, Expression*
     }
     
     // 6. Return the result of calling the [[HasProperty]] internal method of rval with argument ToString(lval).
-    // todo
+    return JSHandle<JSValue>{vm_, JSValue{types::Object::HasProperty(vm_, rval.As<types::Object>(), JSValue::ToString(vm_, lval))}};
   }
 }
 

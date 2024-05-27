@@ -28,6 +28,10 @@ class JSFunction : public types::Object {
   static constexpr std::size_t SIZE = sizeof(std::uintptr_t) + sizeof(std::uintptr_t);
   static constexpr std::size_t END_OFFSET = types::Object::END_OFFSET + SIZE;
   static_assert(SIZE == 16);
+
+  // [[HasInstance]](V)
+  static bool HasInstance(VM* vm, JSHandle<JSFunction> F, JSHandle<JSValue> V);
+  static JSHandle<JSValue> Get(VM* vm, JSHandle<JSFunction> O, JSHandle<types::String> P);
   
   // The Function Constructor
   static JSValue FunctionConstructorCall(RuntimeCallInfo* argv);

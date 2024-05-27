@@ -38,6 +38,7 @@ class Object : public HeapObject {
   static PropertyDescriptor GetOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static PropertyDescriptor GetProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static JSHandle<JSValue> Get(VM* vm, JSHandle<Object> O, JSHandle<String> P);
+  static JSHandle<JSValue> GetDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static bool CanPut(VM* vm, JSHandle<Object> O, JSHandle<String> P);
   static void Put(VM* vm, JSHandle<Object> O, JSHandle<String> P, JSHandle<JSValue> V, bool Throw);
   static bool HasProperty(VM* vm, JSHandle<Object> O, JSHandle<String> P);

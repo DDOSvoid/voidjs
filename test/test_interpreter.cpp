@@ -982,6 +982,82 @@ e + f;
     ASSERT_TRUE(comp.GetValue()->IsString());
     EXPECT_EQ(u"Hello, World!", comp.GetValue()->GetString());
   }
+
+  // instanceof
+  {
+    Parser parser(uR"(
+var count = 0;
+
+// 定义构造函数
+function C() {}
+function D() {}
+
+var o = new C();
+
+count += o instanceof C; // true，因为 Object.getPrototypeOf(o) === C.prototype
+
+count += !(o instanceof D); // false，因为 D.prototype 不在 o 的原型链上
+
+count += o instanceof Object; // true，因为 Object.prototype.isPrototypeOf(o) 返回 true
+count += C.prototype instanceof Object; // true，同上
+
+C.prototype = {};
+var o2 = new C();
+
+count += o2 instanceof C; // true
+
+count += !(o instanceof C); // false，C.prototype 指向了一个空对象，这个空对象不在 o 的原型链上。
+
+D.prototype = new C(); // 继承
+var o3 = new D();
+count += o3 instanceof D; // true
+count += o3 instanceof C; // true 因为 C.prototype 现在在 o3 的原型链上
+)");
+  
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(8, comp.GetValue()->GetInt());
+  }
+
+  // in
+  {
+    Parser parser(uR"(
+var count = 0;
+
+// 数组
+var trees = new Array("redwood", "bay", "cedar", "oak", "maple");
+count += 0 in trees; // 返回 true
+count += 3 in trees; // 返回 true
+count += !(6 in trees); // 返回 false
+count += !("bay" in trees); // 返回 false (必须使用索引号，而不是数组元素的值)
+
+count += "length" in trees; // 返回 true (length 是一个数组属性)
+
+// 内置对象
+count += "PI" in Math; // 返回 true
+
+// 自定义对象
+var mycar = { make: "Honda", model: "Accord", year: 1998 };
+count += "make" in mycar; // 返回 true
+count += "model" in mycar; // 返回 true
+)");
+  
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsInt());
+    EXPECT_EQ(8, comp.GetValue()->GetInt());
+  }
 }
 
 TEST(Interpreter, EvalNullLiteral) {

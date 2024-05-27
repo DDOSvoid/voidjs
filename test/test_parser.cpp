@@ -389,6 +389,20 @@ TEST(parser, ParseBinaryExpression) {
     EXPECT_EQ(2, binary_expr3->GetLeft()->AsNumericLiteral()->GetNumber<std::int32_t>());
     EXPECT_EQ(3, binary_expr3->GetRight()->AsNumericLiteral()->GetNumber<std::int32_t>());
   }
+
+  {
+    Parser parser(u"'PI' in Math");
+
+    auto expr = parser.ParseBinaryExpression();
+    ASSERT_TRUE(expr->IsBinaryExpression());
+
+    auto binary_expr = expr->AsBinaryExpression();
+    ASSERT_TRUE(binary_expr->GetLeft()->IsStringLiteral());
+    ASSERT_TRUE(binary_expr->GetRight()->IsIdentifier());
+    EXPECT_EQ(TokenType::KEYWORD_IN, binary_expr->GetOperator());
+    EXPECT_EQ(u"PI", binary_expr->GetLeft()->AsStringLiteral()->GetString());
+    EXPECT_EQ(u"Math", binary_expr->GetRight()->AsIdentifier()->GetName());
+  }
 }
 
 TEST(parser, ParseConditionalExpression) {

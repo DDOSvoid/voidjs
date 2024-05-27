@@ -102,9 +102,18 @@ PropertyDescriptor Object::GetProperty(VM* vm, JSHandle<Object> O, JSHandle<Stri
   return GetProperty(vm, JSHandle<Object>{vm, proto}, P);
 }
 
+// only used for forwarding
+JSHandle<JSValue> Object::Get(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
+  if (O->IsJSFunction()) {
+    return builtins::JSFunction::Get(vm, O.As<builtins::JSFunction>(), P);
+  } else {
+    return GetDefault(vm, O, P);
+  }
+}
+
 // Get
 // Defined in ECMASCript 5.1 Chapter 8.12.3
-JSHandle<JSValue> Object::Get(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
+JSHandle<JSValue> Object::GetDefault(VM* vm, JSHandle<Object> O, JSHandle<String> P) {
   // 1. Let desc be the result of calling the [[GetProperty]] internal method of O with property name P.
   auto desc = GetProperty(vm, O, P);
 

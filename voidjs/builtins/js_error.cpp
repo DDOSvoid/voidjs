@@ -135,7 +135,7 @@ JSValue JSError::EvalErrorConstructorConstruct(RuntimeCallInfo* argv) {
 // RangeError(message)
 // Defined in ECMAScript 5.1 Chapter 15.11.7.2
 JSValue JSError::RangeErrorConstructorCall(RuntimeCallInfo* argv) {
-  return EvalErrorConstructorConstruct(argv);
+  return RangeErrorConstructorConstruct(argv);
 }
 
 // new RangeError(message)
@@ -167,7 +167,7 @@ JSValue JSError::RangeErrorConstructorConstruct(RuntimeCallInfo* argv) {
 // ReferenceError(message)
 // Defined in ECMAScript 5.1 Chapter 15.11.7.2
 JSValue JSError::ReferenceErrorConstructorCall(RuntimeCallInfo* argv) {
-  return EvalErrorConstructorConstruct(argv);
+  return ReferenceErrorConstructorConstruct(argv);
 }
 
 // new ReferenceError(message)
@@ -199,7 +199,7 @@ JSValue JSError::ReferenceErrorConstructorConstruct(RuntimeCallInfo* argv) {
 // SyntaxError(message)
 // Defined in ECMAScript 5.1 Chapter 15.11.7.2
 JSValue JSError::SyntaxErrorConstructorCall(RuntimeCallInfo* argv) {
-  return EvalErrorConstructorConstruct(argv);
+  return SyntaxErrorConstructorConstruct(argv);
 }
 
 // new SyntaxError(message)
@@ -231,7 +231,7 @@ JSValue JSError::SyntaxErrorConstructorConstruct(RuntimeCallInfo* argv) {
 // TypeError(message)
 // Defined in ECMAScript 5.1 Chapter 15.11.7.2
 JSValue JSError::TypeErrorConstructorCall(RuntimeCallInfo* argv) {
-  return EvalErrorConstructorConstruct(argv);
+  return TypeErrorConstructorConstruct(argv);
 }
 
 // new TypeError(message)
@@ -263,7 +263,7 @@ JSValue JSError::TypeErrorConstructorConstruct(RuntimeCallInfo* argv) {
 // URIError(message)
 // Defined in ECMAScript 5.1 Chapter 15.11.7.2
 JSValue JSError::URIErrorConstructorCall(RuntimeCallInfo* argv) {
-  return EvalErrorConstructorConstruct(argv);
+  return URIErrorConstructorConstruct(argv);
 }
 
 // new URIError(message)
