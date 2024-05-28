@@ -14,6 +14,11 @@ add_library(voidjs_obj OBJECT
   voidjs/lexer/token.cpp
   voidjs/lexer/lexer.cpp
   voidjs/ir/ast.cpp
+  voidjs/ir/dumper.cpp
+  voidjs/ir/program.cpp
+  voidjs/ir/statement.cpp
+  voidjs/ir/expression.cpp
+  voidjs/ir/literal.cpp
   voidjs/parser/parser.cpp
   voidjs/types/js_value.cpp
   voidjs/types/heap_object.cpp

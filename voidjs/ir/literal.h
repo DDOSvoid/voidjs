@@ -16,6 +16,8 @@ class NullLiteral : public Expression {
   NullLiteral()
     : Expression(AstNodeType::NULL_LITERAL)
   {}
+
+  void Dump(Dumper* dumper) const override;
 };
 
 class BooleanLiteral : public Expression {
@@ -26,6 +28,8 @@ class BooleanLiteral : public Expression {
   {}
 
   bool GetBoolean() const { return boolean_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   bool boolean_;
@@ -43,6 +47,8 @@ class NumericLiteral : public Expression {
   std::int32_t GetInt32() const { return number_; }
   double GetDouble() const { return number_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   double number_; 
 };
@@ -55,6 +61,8 @@ class StringLiteral : public Expression {
   {}
 
   std::u16string GetString() const { return string_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   std::u16string string_;

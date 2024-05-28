@@ -33,6 +33,8 @@ class Token {
   bool IsAssignmentOperator() const;
 
   bool HasString() const;
+
+  static std::string_view TokenTypeToString(TokenType type);
   
  private:
   TokenType type_ {TokenType::EOS};

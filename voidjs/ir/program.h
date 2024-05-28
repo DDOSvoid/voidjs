@@ -24,6 +24,8 @@ class Program : public AstNode {
   const FunctionDeclarations& GetFunctionDeclarations() const { return function_declarations_; }
   
   bool IsStrict() const { return is_strict_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   Statements statements_;

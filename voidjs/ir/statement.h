@@ -41,6 +41,8 @@ class BlockStatement : public Statement {
 
   const Statements& GetStatements() const { return statements_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Statements statements_;
 };
@@ -54,6 +56,8 @@ class VariableStatement : public Statement {
 
   const VariableDeclarations& GetVariableDeclarations() const { return declarations_; }
 
+  void Dump(Dumper* dumper) const override;
+  
  private:
   VariableDeclarations declarations_;
 };
@@ -63,6 +67,8 @@ class EmptyStatement : public Statement {
   explicit EmptyStatement()
     : Statement(AstNodeType::EMPTY_STATEMENT)
   {}
+
+  void Dump(Dumper* dumper) const override;
 };
 
 class ExpressionStatement : public Statement {
@@ -73,6 +79,8 @@ class ExpressionStatement : public Statement {
   {}
 
   Expression* GetExpression() const { return expression_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   Expression* expression_;
@@ -93,6 +101,8 @@ class IfStatement : public Statement {
   Statement* GetConsequent() const { return consequent_; }
   Statement* GetAlternate() const { return alternate_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* condition_;
   Statement* consequent_;
@@ -109,6 +119,8 @@ class DoWhileStatement : public Statement {
   Expression* GetCondition() const { return condition_; }
   Statement* GetBody() const { return body_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* condition_;
   Statement* body_;
@@ -123,6 +135,8 @@ class WhileStatement : public Statement {
 
   Expression* GetCondition() const { return condition_; }
   Statement* GetBody() const { return body_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* condition_;
@@ -143,6 +157,8 @@ class ForStatement : public Statement {
   Expression* GetUpdate() const { return update_; }
   Statement* GetBody() const { return body_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   AstNode* initializer_;  // VariableStatement or Expression
   Expression* condition_;
@@ -161,6 +177,8 @@ class ForInStatement : public Statement {
   Expression* GetRight() const { return right_; }
   Statement* GetBody() const { return body_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   AstNode* left_;  // VariableDeclaration or LeftHandSideExpression
   Expression* right_;
@@ -176,6 +194,8 @@ class ContinueStatement : public Statement {
 
   Expression* GetIdentifier() const { return identifier_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* identifier_;
 };
@@ -188,6 +208,8 @@ class BreakStatement : public Statement {
   {}
 
   Expression* GetIdentifier() const { return identifier_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* identifier_;
@@ -202,6 +224,8 @@ class ReturnStatement : public Statement {
 
   Expression* GetExpression() const { return expression_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* expression_;
 };
@@ -215,6 +239,8 @@ class WithStatement : public Statement {
 
   Expression* GetContext() const { return context_; }
   Statement* GetBody() const { return body_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* context_;
@@ -231,6 +257,8 @@ class SwitchStatement : public Statement {
   Expression* GetDiscriminant() const { return discriminant_; }
   const CaseClauses& GetCaseClauses() const { return case_clauses_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* discriminant_;
   CaseClauses case_clauses_;
@@ -245,6 +273,8 @@ class LabelledStatement : public Statement {
 
   Expression* GetLabel() const { return label_; }
   Statement* GetBody() const { return body_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   Expression* label_;
@@ -259,6 +289,8 @@ class ThrowStatement : public Statement {
   {}
 
   Expression* GetExpression() const { return expression_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* expression_;
@@ -277,6 +309,8 @@ class TryStatement : public Statement {
   Expression* GetCatchName() const { return catch_name_; }
   Statement* GetCatchBlock() const { return catch_block_; }
   Statement* GetFinallyBlock() const { return finally_block_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   Statement* body_;
@@ -290,6 +324,8 @@ class DebuggerStatement : public Statement {
   DebuggerStatement()
     : Statement(AstNodeType::DEBUGGER_STATEMENT)
   {}
+
+  void Dump(Dumper* dumper) const override;
 };
 
 class VariableDeclaration : public Statement {
@@ -302,7 +338,9 @@ class VariableDeclaration : public Statement {
   {}
 
   Expression* GetIdentifier() const { return identifier_; }
-  Expression* GetInitializer() const { return initializer_;} 
+  Expression* GetInitializer() const { return initializer_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   Expression* identifier_;
@@ -320,6 +358,8 @@ class CaseClause : public Statement {
   Statements GetStatements() const { return statements_; }
 
   bool IsDefault() const { return condition_ == nullptr; }
+
+  void Dump(Dumper* dumper) const override;
       
  private:
   Expression* condition_;
@@ -346,6 +386,8 @@ class FunctionDeclaration : public Statement {
   const FunctionDeclarations& GetFunctionDeclarations() const { return function_declarations_; }
 
   bool IsStrict() const { return is_strict_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* name_;

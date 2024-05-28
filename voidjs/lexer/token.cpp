@@ -166,5 +166,235 @@ bool Token::HasString() const {
     type_ == TokenType::STRING;
 }
 
+std::string_view Token::TokenTypeToString(TokenType type) {
+  switch (type) {
+    case TokenType::KEYWORD_BREAK: {
+      return "break";
+    }
+    case TokenType::KEYWORD_DO: {
+      return "do";
+    }
+    case TokenType::KEYWORD_INSTANCEOF: {
+      return "instanceof";
+    }
+    case TokenType::KEYWORD_TYPEOF: {
+      return "typeof";
+    }
+    case TokenType::KEYWORD_CASE: {
+      return "case";
+    }
+    case TokenType::KEYWORD_ELSE: {
+      return "else";
+    }
+    case TokenType::KEYWORD_NEW: {
+      return "new";
+    }
+    case TokenType::KEYWORD_VAR: {
+      return "var";
+    }
+    case TokenType::KEYWORD_CATCH: {
+      return "catch";
+    }
+    case TokenType::KEYWORD_FINALLY: {
+      return "finally";
+    }
+    case TokenType::KEYWORD_RETURN: {
+      return "return";
+    }
+    case TokenType::KEYWORD_VOID: {
+      return "void";
+    }
+    case TokenType::KEYWORD_CONTINUE: {
+      return "continue";
+    }
+    case TokenType::KEYWORD_FOR: {
+      return "for";
+    }
+    case TokenType::KEYWORD_SWITCH: {
+      return "switch";
+    }
+    case TokenType::KEYWORD_WHILE: {
+      return "while";
+    }
+    case TokenType::KEYWORD_DEBUGGER: {
+      return "debugger";
+    }
+    case TokenType::KEYWORD_FUNCTION: {
+      return "function";
+    }
+    case TokenType::KEYWORD_THIS: {
+      return "this";
+    }
+    case TokenType::KEYWORD_WITH: {
+      return "with";
+    }
+    case TokenType::KEYWORD_DEFAULT: {
+      return "default";
+    }
+    case TokenType::KEYWORD_IF: {
+      return "if";
+    }
+    case TokenType::KEYWORD_THROW: {
+      return "throw";
+    }
+    case TokenType::KEYWORD_DELETE: {
+      return "delete";
+    }
+    case TokenType::KEYWORD_IN: {
+      return "in";
+    }
+    case TokenType::KEYWORD_TRY: {
+      return "try";
+    }
+    case TokenType::LEFT_BRACE: {
+      return "{";
+    }
+    case TokenType::RIGHT_BRACE: {
+      return "}";
+    }
+    case TokenType::LEFT_PAREN: {
+      return "(";
+    }
+    case TokenType::RIGHT_PAREN: {
+      return ")";
+    }
+    case TokenType::LEFT_BRACKET: {
+      return "[";
+    }
+    case TokenType::RIGHT_BRACKET: {
+      return "]";
+    }
+    case TokenType::DOT: {
+      return ".";
+    }
+    case TokenType::SEMICOLON: {
+      return ";";
+    }
+    case TokenType::COMMA: {
+      return ",";
+    }
+    case TokenType::LESS_THAN: {
+      return "<";
+    }
+    case TokenType::GREATER_THAN: {
+      return ">";
+    }
+    case TokenType::LESS_EQUAL: {
+      return "<=";
+    }
+    case TokenType::GREATER_EQUAL: {
+      return ">=";
+    }
+    case TokenType::EQUAL: {
+      return "==";
+    }
+    case TokenType::NOT_EQUAL: {
+      return "!=";
+    }
+    case TokenType::STRICT_EQUAL: {
+      return "===";
+    }
+    case TokenType::NOT_STRICT_EQUAL: {
+      return "!==";
+    }
+    case TokenType::ADD: {
+      return "+";
+    }
+    case TokenType::SUB: {
+      return "-";
+    }
+    case TokenType::MUL: {
+      return "*";
+    }
+    case TokenType::MOD: {
+      return "%";
+    }
+    case TokenType::INC: {
+      return "++";
+    }
+    case TokenType::DEC: {
+      return "--";
+    }
+    case TokenType::LEFT_SHIFT: {
+      return "<<";
+    }
+    case TokenType::RIGHT_SHIFT: {
+      return ">>";
+    }
+    case TokenType::U_RIGHT_SHIFT: {
+      return ">>>";
+    }
+    case TokenType::BIT_AND: {
+      return "&";
+    }
+    case TokenType::BIT_OR: {
+      return "|";
+    }
+    case TokenType::BIT_XOR: {
+      return "^";
+    }
+    case TokenType::LOGICAL_NOT: {
+      return "!";
+    }
+    case TokenType::BIT_NOT: {
+      return "~";
+    }
+    case TokenType::LOGICAL_AND: {
+      return "&&";
+    }
+    case TokenType::LOGICAL_OR: {
+      return "||";
+    }
+    case TokenType::QUESTION: {
+      return "?";
+    }
+    case TokenType::COLON: {
+      return ":";
+    }
+    case TokenType::ASSIGN: {
+      return "=";
+    }
+    case TokenType::ADD_ASSIGN: {
+      return "+=";
+    }
+    case TokenType::SUB_ASSIGN: {
+      return "-=";
+    }
+    case TokenType::MUL_ASSIGN: {
+      return "*=";
+    }
+    case TokenType::MOD_ASSIGN: {
+      return "%=";
+    }
+    case TokenType::LEFT_SHIFT_ASSIGN: {
+      return "<<=";
+    }
+    case TokenType::RIGHT_SHIFT_ASSIGN: {
+      return ">>=";
+    }
+    case TokenType::U_RIGHT_SHIFT_ASSIGN: {
+      return ">>>=";
+    }
+    case TokenType::BIT_AND_ASSIGN: {
+      return "&=";
+    }
+    case TokenType::BIT_OR_ASSIGN: {
+      return "|=";
+    }
+    case TokenType::BIT_XOR_ASSIGN: {
+      return "^=";
+    }
+    case TokenType::DIV: {
+      return "/";
+    }
+    case TokenType::DIV_ASSIGN: {
+      return "/=";
+    }
+    default: {
+      return "EOS";
+    }
+  }
+}
+  
 }  // namespace voidjs
 

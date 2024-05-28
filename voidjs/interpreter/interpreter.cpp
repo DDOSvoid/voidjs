@@ -2207,7 +2207,6 @@ JSHandle<JSValue> Interpreter::ApplyMultiplicativeOperator(TokenType op, Express
 }
 
 // ApplyUnaryOperator
-// todo
 JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr) {
   auto factory = vm_->GetObjectFactory();
   

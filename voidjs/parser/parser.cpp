@@ -13,7 +13,6 @@
 #include "voidjs/utils/error.h"
 #include "voidjs/utils/helper.h"
 
-
 namespace voidjs {
 
 using namespace ast;

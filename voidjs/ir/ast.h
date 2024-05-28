@@ -117,6 +117,8 @@ using CaseClauses = std::vector<CaseClause*>;
 using Properties = std::vector<Property*>;
 using FunctionDeclarations = std::vector<FunctionDeclaration*>;
 
+class Dumper;
+
 class AstNode {
  public:
   explicit AstNode(AstNodeType type)
@@ -128,6 +130,8 @@ class AstNode {
   AstNode& operator=(const AstNode&) = delete;
 
   AstNodeType GetType() const { return type_; }
+
+  virtual void Dump(Dumper* dumper) const = 0;
 
   // Is Check
   bool IsProgram() const { return type_ == AstNodeType::PROGRAM; }

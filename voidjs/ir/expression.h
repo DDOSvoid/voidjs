@@ -27,6 +27,7 @@ class Expression : public AstNode {
   explicit Expression(AstNodeType type)
     : AstNode(type)
   {}
+
 };
 
 class NewExpression : public Expression {
@@ -38,6 +39,8 @@ class NewExpression : public Expression {
 
   Expression* GetConstructor() const { return constructor_; }
   const Expressions& GetArguments() const { return arguments_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* constructor_;
@@ -53,6 +56,8 @@ class CallExpression : public Expression {
 
   Expression* GetCallee() const { return callee_; }
   const Expressions& GetArguments() const { return arguments_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Expression* callee_;
@@ -70,6 +75,8 @@ class MemberExpression : public Expression {
   Expression* GetProperty() const { return property_; }
   bool IsDot() const { return is_dot_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* object_;
   Expression* property_;
@@ -85,6 +92,8 @@ class PostfixExpression : public Expression {
 
   TokenType GetOperator() const { return operator_; }
   Expression* GetExpression() const { return expression_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   TokenType operator_;
@@ -100,6 +109,8 @@ class UnaryExpression : public Expression {
 
   TokenType GetOperator() const { return operator_; }
   Expression* GetExpression() const { return expression_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   TokenType operator_;
@@ -116,6 +127,8 @@ class BinaryExpression : public Expression {
   TokenType GetOperator() const { return operator_; }
   Expression* GetLeft() const { return left_; }
   Expression* GetRight() const { return right_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   TokenType operator_;
@@ -137,6 +150,8 @@ class ConditionalExpression : public Expression {
   Expression* GetConditional() const { return condition_; }
   Expression* GetConsequent() const { return consequent_; }
   Expression* GetAlternate() const { return alternate_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   Expression* condition_;
@@ -154,6 +169,8 @@ class AssignmentExpression : public Expression {
   TokenType GetOperator() const { return operator_; }
   Expression* GetLeft() const { return left_; }
   Expression* GetRight() const { return right_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   TokenType operator_;
@@ -170,6 +187,8 @@ class SequenceExpression : public Expression {
 
   const Expressions& GetExpressions() const { return expressions_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expressions expressions_;
 };
@@ -179,6 +198,8 @@ class This: public Expression {
   This()
     : Expression(AstNodeType::THIS)
   {}
+  
+  void Dump(Dumper* dumper) const override;
 };
 
 class FunctionExpression : public Expression {
@@ -201,6 +222,8 @@ class FunctionExpression : public Expression {
 
   bool IsStrict() const { return is_strict_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expression* name_;
   Expressions parameters_;
@@ -220,6 +243,8 @@ class Identifier : public Expression {
 
   std::u16string_view GetName() const { return name_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   std::u16string name_;
 };
@@ -233,6 +258,8 @@ class ArrayLiteral : public Expression {
 
   const Expressions& GetElements() const { return elements_; }
 
+  void Dump(Dumper* dumper) const override;
+
  private:
   Expressions elements_;
 };
@@ -245,6 +272,8 @@ class ObjectLiteral : public Expression {
   {}
 
   const Properties& GetProperties() const { return properties_; }
+
+  void Dump(Dumper* dumper) const override;
 
  private:
   Properties properties_;
@@ -266,6 +295,8 @@ class Property : public Expression {
   PropertyType GetPropertyType() const { return type_; }
   Expression* GetKey() const { return key_; }
   Expression* GetValue() const { return value_; }
+
+  void Dump(Dumper* dumper) const override;
   
  private:
   PropertyType type_;
