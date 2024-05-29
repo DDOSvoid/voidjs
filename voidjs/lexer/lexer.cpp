@@ -824,6 +824,7 @@ void Lexer::ScanIdentifier() {
     token_.SetType(ident_name == u"true" ? TokenType::TRUE: TokenType::FALSE);
   } else if (std::find(kKeywords.begin(), kKeywords.end(), ident_name) != kKeywords.end()) {
     token_.SetType(kStringToKeywords.at(ident_name));
+    token_.SetString(std::move(ident_name));
   } else if (std::find(kFutureReservedWords.begin(),
                        kFutureReservedWords.end(), ident_name) != kFutureReservedWords.end()) {
     token_.SetType(TokenType::FUTURE_RESERVED_WORD);

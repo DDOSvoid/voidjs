@@ -101,6 +101,10 @@ bool Token::IsIdentifierName() const {
     IsKeyword();
 }
 
+bool Token::IsPropertyName() const {
+  return IsIdentifierName() || type_ == TokenType::NUMBER || type_ == TokenType::STRING;
+}
+
 bool Token::IsBinaryOperator(bool allow_in) const {
   switch (type_) {
     case TokenType::LOGICAL_OR:

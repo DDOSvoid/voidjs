@@ -1451,14 +1451,12 @@ Properties Parser::ParsePropertyNameAndValueList() {
 //    set PropertyName ( PropertySetParameterList ) { FunctionBody }
 Property* Parser::ParsePropertyAssignment() {
   if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
-      lexer_.GetToken().GetString() == u"get") {
+      lexer_.GetToken().GetString() == u"get"              &&
+      lexer_.NextRewindToken().GetType() != TokenType::COLON) {
     auto type = PropertyType::GET;
     lexer_.NextToken();
 
-    if (const auto& token = lexer_.GetToken();
-        !token.IsIdentifierName()            &&
-        token.GetType() != TokenType::NUMBER &&
-        token.GetType() != TokenType::STRING) {
+    if (!lexer_.GetToken().IsPropertyName()) {
       ThrowSyntaxError("invalid token");
     }
     auto key = ParsePropertyName();
@@ -1511,14 +1509,12 @@ Property* Parser::ParsePropertyAssignment() {
 
     return new Property(type, key, value);
   } else if (lexer_.GetToken().GetType() == TokenType::IDENTIFIER &&
-             lexer_.GetToken().GetString() == u"set") {
+             lexer_.GetToken().GetString() == u"set"              &&
+             lexer_.NextRewindToken().GetType() != TokenType::COLON) {
     auto type = PropertyType::SET;
     lexer_.NextToken();
 
-    if (const auto& token = lexer_.GetToken();
-        !token.IsIdentifierName()            &&
-        token.GetType() != TokenType::NUMBER &&
-        token.GetType() != TokenType::STRING) {
+    if (!lexer_.GetToken().IsPropertyName()) {
       ThrowSyntaxError("invalid token");
     }
     auto key = ParsePropertyName();
@@ -1580,10 +1576,7 @@ Property* Parser::ParsePropertyAssignment() {
   } else {
     auto type = PropertyType::INIT;
 
-    if (const auto& token = lexer_.GetToken();
-        !token.IsIdentifierName()            &&
-        token.GetType() != TokenType::NUMBER &&
-        token.GetType() != TokenType::STRING) {
+    if (!lexer_.GetToken().IsPropertyName()) {
       ThrowSyntaxError("invalid token");
     }
     auto key = ParsePropertyName();
