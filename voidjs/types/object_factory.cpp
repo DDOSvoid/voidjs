@@ -57,9 +57,17 @@ JSHandle<types::DataPropertyDescriptor> ObjectFactory::NewDataPropertyDescriptor
   const types::PropertyDescriptor &desc) {
   auto prop = NewHeapObject(types::DataPropertyDescriptor::SIZE).As<types::DataPropertyDescriptor>();
   prop->SetType(JSType::DATA_PROPERTY_DESCRIPTOR);
-  prop->SetValue(desc.GetValue());
+  prop->SetHasValue(desc.HasValue());
+  if (desc.HasValue()) {
+    prop->SetValue(desc.GetValue());
+  } else {
+    prop->SetValue(JSValue::Hole());
+  }
+  prop->SetHasWritable(desc.HasWritable());
   prop->SetWritable(desc.GetWritable());
+  prop->SetHasEnumerable(desc.HasEnumerable());
   prop->SetEnumerable(desc.GetEnumerable());
+  prop->SetHasConfigurable(desc.HasConfigurable());
   prop->SetConfigurable(desc.GetConfigurable());
   return prop;
 }
@@ -68,9 +76,13 @@ JSHandle<types::AccessorPropertyDescriptor> ObjectFactory::NewAccessorPropertyDe
   const types::PropertyDescriptor &desc) {
   auto prop = NewHeapObject(types::AccessorPropertyDescriptor::SIZE).As<types::AccessorPropertyDescriptor>();
   prop->SetType(JSType::ACCESSOR_PROPERTY_DESCRIPTOR);
+  prop->SetHasGetter(desc.HasGetter());
   prop->SetGetter(desc.GetGetter());
+  prop->SetHasSetter(desc.HasSetter());
   prop->SetSetter(desc.GetSetter());
+  prop->SetHasEnumerable(desc.HasEnumerable());
   prop->SetEnumerable(desc.GetEnumerable());
+  prop->SetHasConfigurable(desc.HasConfigurable());
   prop->SetConfigurable(desc.GetConfigurable());
   return prop;
 }
@@ -79,7 +91,9 @@ JSHandle<types::GenericPropertyDescriptor> ObjectFactory::NewGenericPropertyDesc
   const types::PropertyDescriptor &desc) {
   auto prop = NewHeapObject(types::GenericPropertyDescriptor::SIZE).As<types::GenericPropertyDescriptor>();
   prop->SetType(JSType::GENERIC_PROPERTY_DESCRIPTOR);
+  prop->SetHasEnumerable(desc.HasEnumerable());
   prop->SetEnumerable(desc.GetEnumerable());
+  prop->SetHasConfigurable(desc.HasConfigurable());
   prop->SetConfigurable(desc.GetConfigurable());
   return prop;
 }

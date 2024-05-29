@@ -55,25 +55,37 @@ PropertyDescriptor Object::GetOwnPropertyDefault(VM* vm, JSHandle<Object> O, JSH
   // 4. If X is a data property, then
   if (X->IsDataPropertyDescriptor()) {
     // 1. Set D.[[Value]] to the value of X’s [[Value]] attribute.
-    D.SetValue(X->AsDataPropertyDescriptor()->GetValue());
+    if (X->HasValue()) {
+      D.SetValue(X->AsDataPropertyDescriptor()->GetValue());
+    }
     
     // 2. Set D.[[Writable]] to the value of X’s [[Writable]] attribute
-    D.SetWritable(X->GetWritable());
+    if (X->HasWritable()) {
+      D.SetWritable(X->GetWritable());
+    }
   }
   // 5. Else X is an accessor property, so
   else if (X->IsAccessorPropertyDescriptor()) {
     // 1. Set D.[[Get]] to the value of X’s [[Get]] attribute.
-    D.SetGetter(X->AsAccessorPropertyDescriptor()->GetGetter());
+    if (X->HasGetter()) {
+      D.SetGetter(X->AsAccessorPropertyDescriptor()->GetGetter());
+    }
 
     // 2. Set D.[[Set]] to the value of X’s [[Set]] attribute.
-    D.SetSetter(X->AsAccessorPropertyDescriptor()->GetSetter());
+    if (X->HasSetter()) {
+      D.SetSetter(X->AsAccessorPropertyDescriptor()->GetSetter());
+    }
   }
 
   // 6. Set D.[[Enumerable]] to the value of X’s [[Enumerable]] attribute.
-  D.SetEnumerable(X->GetEnumerable());
+  if (X->HasEnumerable()) {
+    D.SetEnumerable(X->GetEnumerable());
+  }
 
   // 7. Set D.[[Configurable]] to the value of X’s [[Configurable]] attribute.
-  D.SetConfigurable(X->GetConfigurable());
+  if (X->HasConfigurable()) {
+    D.SetConfigurable(X->GetConfigurable());
+  }
 
   // 8. Return D.
   return D;

@@ -6,25 +6,31 @@
 #include "voidjs/ir/expression.h"
 #include "voidjs/ir/statement.h"
 #include "voidjs/types/heap_object.h"
+#include "voidjs/types/js_type.h"
 #include "voidjs/types/js_value.h"
+#include "voidjs/types/object_class_type.h"
 #include "voidjs/types/object_factory.h"
+#include "voidjs/types/lang_types/number.h"
+#include "voidjs/types/spec_types/property_descriptor.h"
 #include "voidjs/types/spec_types/environment_record.h"
 #include "voidjs/types/spec_types/lexical_environment.h"
 #include "voidjs/builtins/builtin.h"
 #include "voidjs/builtins/global_object.h"
 #include "voidjs/builtins/js_function.h"
+#include "voidjs/builtins/arguments.h"
 #include "voidjs/interpreter/vm.h"
+#include "voidjs/interpreter/global_constants.h"
 #include "voidjs/utils/macros.h"
 
 namespace voidjs {
 
-void ExecutionContext::EnterGlobalCode(VM* vm, ast::AstNode* ast_node) {
+void ExecutionContext::EnterGlobalCode(VM* vm, ast::AstNode* ast_node, bool is_strict) {
   // 1. Initialize the execution context using the global code as described in 10.4.1.1.
-  auto global_ctx = new ExecutionContext(vm->GetGlobalEnv(), vm->GetGlobalEnv(), vm->GetGlobalObject());
+  auto global_ctx = new ExecutionContext(vm->GetGlobalEnv(), vm->GetGlobalEnv(), vm->GetGlobalObject(), is_strict);
   vm->PushExecutionContext(global_ctx);
 
   // 2. Perform Declaration Binding Instantiation as described in 10.5 using the global code.
-  DeclarationBindingInstantiation(vm, ast_node, {});
+  DeclarationBindingInstantiation(vm, ast_node, {}, {});
 }
 
 void ExecutionContext::EnterFunctionCode(
@@ -34,7 +40,7 @@ void ExecutionContext::EnterFunctionCode(
   // 3. Else if Type(thisArg) is not Object, set the ThisBinding to ToObject(thisArg).
   // 4. Else set the ThisBinding to thisArg.
   JSHandle<types::Object> this_binding;
-  auto strict = std::invoke([=]() {
+  bool strict = std::invoke([=]() {
     if (ast_node->IsFunctionDeclaration()) {
       return ast_node->AsFunctionDeclaration()->IsStrict();
     } else {
@@ -43,6 +49,7 @@ void ExecutionContext::EnterFunctionCode(
     }
   });
   if (strict) {
+    this_binding = this_arg.As<types::Object>();
   } else if (this_arg->IsNull() || this_arg->IsUndefined()) {
     this_binding = vm->GetGlobalObject();
   } else if (!this_arg->IsObject()) {
@@ -57,16 +64,16 @@ void ExecutionContext::EnterFunctionCode(
   
   // 6. Set the LexicalEnvironment to localEnv.
   // 7. Set the VariableEnvironment to localEnv.
-  auto context = new ExecutionContext(local_env, local_env, this_binding);
+  auto context = new ExecutionContext(local_env, local_env, this_binding, strict);
 
   vm->PushExecutionContext(context);
   
   // 8. Let code be the value of F’s [[Code]] internal property.
   // 9. Perform Declaration Binding Instantiation using the function code code and argumentList as described in 10.5.
-  DeclarationBindingInstantiation(vm, ast_node, args);
+  DeclarationBindingInstantiation(vm, ast_node, F, args);
 }
 
-void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSHandle<JSValue>>& args) {
+void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F, const std::vector<JSHandle<JSValue>>& args) {
   auto factory = vm->GetObjectFactory();
   
   // 1. Let env be the environment record component of the running execution context’s VariableEnvironment.
@@ -77,8 +84,16 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
   bool configurable_bindings = false;
 
   // 3. If code is strict mode code, then let strict be true else let strict be false.
-  // todo
-  auto strict = false;
+  bool strict = std::invoke([=]() {
+    if (ast_node->IsProgram()) {
+      return ast_node->AsProgram()->IsStrict();
+    } else if (ast_node->IsFunctionDeclaration()) {
+      return ast_node->AsFunctionDeclaration()->IsStrict();
+    } else {
+      // ast_node must be FunctionExpression
+      return ast_node->AsFunctionExpression()->IsStrict();
+    }
+  });
 
   // 4. If code is function code, then
   if (ast_node->IsFunctionExpression() || ast_node->IsFunctionDeclaration()) {
@@ -186,10 +201,33 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
 
   // 6. Let argumentsAlreadyDeclared be the result of
   //    calling env’s HasBinding concrete method passing "arguments" as the argument
-  // auto args_already_declared_ = env->HasBinding(ObjectFactory::NewString(u"arguments"));
+  bool arguments_already_declared = types::EnvironmentRecord::HasBinding(vm, env, factory->NewString(u"arguments"));
 
   // 7. If code is function code and argumentsAlreadyDeclared is false, then
-  // todo
+  if ((ast_node->IsFunctionDeclaration() || ast_node->IsFunctionExpression()) && !arguments_already_declared) {
+    // a. Let argsObj be the result of calling the abstract operation
+    //    CreateArgumentsObject (10.6) passing func, names, args, env and strict as arguments.
+    JSHandle<builtins::Arguments> args_obj = CreateArgumentsObject(vm, ast_node, F, args, env, strict);
+
+    JSHandle<types::String> arguments_string = factory->NewString(u"arguments");
+    // b. If strict is true, then
+    if (strict) {
+      // i. Call env’s CreateImmutableBinding concrete method passing the String "arguments" as the argument.
+      types::DeclarativeEnvironmentRecord::CreateImmutableBinding(vm, env.As<types::DeclarativeEnvironmentRecord>(), arguments_string);
+                                                                  
+      // ii. Call env’s InitializeImmutableBinding concrete method passing "arguments" and argsObj as arguments.
+      types::DeclarativeEnvironmentRecord::InitializeImmutableBinding(
+        vm, env.As<types::DeclarativeEnvironmentRecord>(), arguments_string, args_obj.As<JSValue>());
+    }
+    // c. Else,
+    else {
+      // i. Call env’s CreateMutableBinding concrete method passing the String "arguments" as the argument.
+      types::EnvironmentRecord::CreateMutableBinding(vm, env, arguments_string, false);
+      
+      // ii. Call env’s SetMutableBinding concrete method passing "arguments", argsObj, and false as arguments.
+      types::EnvironmentRecord::SetMutableBinding(vm, env, arguments_string, args_obj.As<JSValue>(), false);
+    }
+  }
 
   // 8. For each VariableDeclaration and VariableDeclarationNoIn d in code, in source text order do
   const auto& var_decls = std::invoke([](ast::AstNode* ast_node) {
@@ -221,6 +259,133 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
       types::EnvironmentRecord::SetMutableBinding(vm, env, dn_str, JSHandle<JSValue>{vm, JSValue::Undefined()}, strict);
     }
   }
+}
+
+JSHandle<builtins::Arguments> ExecutionContext::CreateArgumentsObject(
+  VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F,
+  const std::vector<JSHandle<JSValue>>& args, JSHandle<types::EnvironmentRecord> env, bool strict) {
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  auto params = std::invoke([=]() {
+    if (ast_node->IsFunctionDeclaration()) {
+      return ast_node->AsFunctionDeclaration()->GetParameters();
+    } else {
+      // ast_node must be FunctionExpression
+      return ast_node->AsFunctionExpression()->GetParameters();
+    }
+  });
+  std::vector<JSHandle<types::String>> names;
+  for (auto param : params) {
+    names.push_back(factory->NewString(param->AsIdentifier()->GetName()));
+  }
+  
+  // 1. Let len be the number of elements in args.
+  int len = args.size();
+  
+  // 2. Let obj be the result of creating a new ECMAScript object.
+  // 3. Set all the internal methods of obj as specified in 8.12.
+  // 4. Set the [[Class]] internal property of obj to "Arguments".
+  // 5. Let Object be the standard built-in Object constructor (15.2.2).
+  // 6. Set the [[Prototype]] internal property of obj to the standard built-in Object prototype object (15.2.4).
+  JSHandle<builtins::Arguments> obj =
+    factory->NewObject(builtins::Arguments::SIZE, JSType::ARGUMENTS, ObjectClassType::ARGUMENTS,
+                       vm->GetObjectPrototype().As<JSValue>(), true, false, false).As<builtins::Arguments>();
+  
+  // 7. Call the [[DefineOwnProperty]] internal method on obj passing "length",
+  //    the Property Descriptor {[[Value]]: len, [[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}, and false as arguments.
+  types::Object::DefineOwnProperty(vm, obj, vm->GetGlobalConstants()->HandledLengthString(),
+                                   types::PropertyDescriptor{vm, JSHandle<JSValue>{vm, types::Number{len}}, true, false, true}, false);
+  
+  // 8. Let map be the result of creating a new object as if by the expression new Object() where Object is the standard built-in constructor with that name
+  JSHandle<builtins::JSObject> map =
+    types::Object::Construct(vm, vm->GetObjectConstructor(), vm->GetGlobalConstants()->HandledUndefined(), {}).As<builtins::JSObject>();
+  
+  // 9. Let mappedNames be an empty List.
+  std::vector<JSHandle<types::String>> mapped_names;
+  
+  // 10. Let indx = len - 1.
+  int indx = len - 1;
+  
+  // 11. Repeat while indx >= 0,
+  while (indx >= 0) {
+    // a. Let val be the element of args at 0-origined list position indx.
+    JSHandle<JSValue> val = args[indx];
+    
+    // b. Call the [[DefineOwnProperty]] internal method on obj passing ToString(indx),
+    //    the property descriptor {[[Value]]: val, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false as arguments.
+    types::Object::DefineOwnProperty(vm, obj, factory->NewStringFromInt(indx),
+                                     types::PropertyDescriptor{vm, val, true, true, true}, false);
+
+    // c. If indx is less than the number of elements in names, then
+    // todo
+    if (indx < names.size()) {
+      // i. Let name be the element of names at 0-origined list position indx.
+      JSHandle<types::String> name = names[indx];
+      
+      // ii. If strict is false and name is not an element of mappedNames, then
+      if (!strict) {
+        // a. Add name as an element of the list mappedNames.
+        mapped_names.push_back(name);
+
+        // todo
+        // b. Let g be the result of calling the MakeArgGetter abstract operation with arguments name and env.
+        // JSHandle<builtins::JSFunction> g;
+        {
+          // 1. Let body be the result of concatenating the Strings "return ", name, and ";"
+          // JSHandle<types::String> body = types::String::Concat(vm, factory->NewString(u"return "), name, factory->NewString(u";"));
+          
+          // 2. Return the result of creating a function object as described in 13.2
+          //    using no FormalParameterList, body for FunctionBody, env as Scope, and true for Strict.
+          // g = builtins::Builtin::InstantiatingFunctionDeclaration(vm, ast_node, env, true);
+        }
+        
+        // c. Let p be the result of calling the MakeArgSetter abstract operation with arguments name and env.
+        // JSHandle<builtins::JSFunction> f;
+        {
+          // 1. Let param be the String name concatenated with the String "_arg"
+          // 2. Let body be the String "<name> = <param>;" with <name> replaced by the value of name and <param> replaced by the value of param.
+          // 3. Return the result of creating a function object as described in 13.2
+          //    using a List containing the single String param as FormalParameterList, body for FunctionBody, env as Scope, and true for Strict.
+        }
+        
+        // d. Call the [[DefineOwnProperty]] internal method of map passing ToString(indx),
+        //    the Property Descriptor {[[Set]]: p, [[Get]]: g, [[Configurable]]: true}, and false as arguments.
+        
+      }
+    }
+
+    // d. Let indx = indx - 1
+    --indx;
+  }
+  
+  // 12. If mappedNames is not empty, then
+  if (!mapped_names.empty()) {
+    // a. Set the [[ParameterMap]] internal property of obj to map.
+    obj->SetParameterMap(map.As<JSValue>());
+    
+    // b. Set the [[Get]], [[GetOwnProperty]], [[DefineOwnProperty]], and [[Delete]] internal methods of obj to the definitions provided below.
+    
+  }
+
+  // 13. If strict is false, then
+  if (!strict) {
+    // a. Call the [[DefineOwnProperty]] internal method on obj passing "callee",
+    //    the property descriptor {[[Value]]: func, [[Writable]]: true, [[Enumerable]]: false, [[Configurable]]: true}, and false as arguments.
+    types::Object::DefineOwnProperty(vm, obj, factory->NewString(u"callee"),
+                                     types::PropertyDescriptor{vm, F.As<JSValue>(), true, false, true}, false);
+  }
+  // 14. Else, strict is true so
+  else {
+    // todo
+    // a. Let thrower be the [[ThrowTypeError]] function Object (13.2.3).
+    // b. Call the [[DefineOwnProperty]] internal method of obj with arguments "caller",
+    //    PropertyDescriptor {[[Get]]: thrower, [[Set]]: thrower, [[Enumerable]]: false, [[Configurable]]: false}, and false.
+    // c. Call the [[DefineOwnProperty]] internal method of obj with arguments "callee",
+    //    PropertyDescriptor {[[Get]]: thrower, [[Set]]: thrower, [[Enumerable]]: false, [[Configurable]]: false}, and false.
+  }
+
+  // 15. Return obj.
+  return obj;
 }
 
 }  // namespace voidjs

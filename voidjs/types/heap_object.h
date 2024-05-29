@@ -41,6 +41,7 @@ class JSBoolean;
 class JSNumber;
 class JSMath; 
 class JSError;
+class Arguments;
 
 }  // namespace builtins
 
@@ -63,6 +64,12 @@ class HeapObject {
   // bool writable                     1 bit
   // bool enumerable                   1 bit
   // bool configurable                 1 bit
+  // bool has_writable                 1 bit
+  // bool has_enumerable               1 bit
+  // bool has_configurable             1 bit
+  // bool has_value                    1 bit
+  // bool has_getter                   1 bit
+  // bool has_setter                   1 bit
 
   // Binding attributes
   // bool deletable                    1 bit
@@ -112,15 +119,39 @@ class HeapObject {
   bool GetConfigurable() const { return ConfigurableBitSet::Get(*GetMetaData()); }
   void SetConfigurable(bool flag) { ConfigurableBitSet::Set(GetMetaData(), flag); }
 
-  using DeletableBitSet = utils::BitSet<bool, 30, 31>;
+  using HasWritableBitSet = utils::BitSet<bool, 30, 31>;
+  bool HasWritable() const { return HasWritableBitSet::Get(*GetMetaData()); }
+  void SetHasWritable(bool flag) { HasWritableBitSet::Set(GetMetaData(), flag); }
+
+  using HasConfigurableBitSet = utils::BitSet<bool, 31, 32>;
+  bool HasConfigurable() const { return HasConfigurableBitSet::Get(*GetMetaData()); }
+  void SetHasConfigurable(bool flag) { HasConfigurableBitSet::Set(GetMetaData(), flag); }
+
+  using HasEnumerableBitSet = utils::BitSet<bool, 32, 33>;
+  bool HasEnumerable() const { return HasEnumerableBitSet::Get(*GetMetaData()); }
+  void SetHasEnumerable(bool flag) { HasEnumerableBitSet::Set(GetMetaData(), flag); }
+
+  using HasValueBitSet = utils::BitSet<bool, 33, 34>;
+  bool HasValue() const { return HasValueBitSet::Get(*GetMetaData()); }
+  void SetHasValue(bool flag) { HasValueBitSet::Set(GetMetaData(), flag); }
+
+  using HasGetterBitSet = utils::BitSet<bool, 34, 35>;
+  bool HasGetter() const { return HasGetterBitSet::Get(*GetMetaData()); }
+  void SetHasGetter(bool flag) { HasGetterBitSet::Set(GetMetaData(), flag); }
+
+  using HasSetterBitSet = utils::BitSet<bool, 35, 36>;
+  bool HasSetter() const { return HasSetterBitSet::Get(*GetMetaData()); }
+  void SetHasSetter(bool flag) { HasSetterBitSet::Set(GetMetaData(), flag); }
+
+  using DeletableBitSet = utils::BitSet<bool, 36, 37>;
   bool GetDeletable() const { return DeletableBitSet::Get(*GetMetaData()); }
   void SetDeletable(bool flag) { DeletableBitSet::Set(GetMetaData(), flag); }
 
-  using MutableBitSet = utils::BitSet<bool, 31, 32>;
+  using MutableBitSet = utils::BitSet<bool, 37, 38>;
   bool GetMutable() const { return MutableBitSet::Get(*GetMetaData()); }
   void SetMutable(bool flag) { MutableBitSet::Set(GetMetaData(), flag); }
 
-  using ProvideThisBitSet = utils::BitSet<bool, 32, 33>;
+  using ProvideThisBitSet = utils::BitSet<bool, 38, 39>;
   bool GetProvideThis() const { return ProvideThisBitSet::Get(*GetMetaData()); }
   void SetProvideThis(bool flag) { ProvideThisBitSet::Set(GetMetaData(), flag); }
 
@@ -155,6 +186,7 @@ class HeapObject {
   bool IsJSNumber() const { return GetType() == JSType::JS_NUMBER; }
   bool ISJSMath() const { return GetType() == JSType::JS_MATH; } 
   bool IsJSError() const { return GetType() == JSType::JS_ERROR; }
+  bool IsArguments() const { return GetType() == JSType::ARGUMENTS; }
 
   // As Cast
   types::String* AsString() { return reinterpret_cast<types::String*>(this); }
@@ -180,6 +212,7 @@ class HeapObject {
   builtins::JSNumber* AsJSNumber() { return reinterpret_cast<builtins::JSNumber*>(this); }
   builtins::JSMath* AsJSMath() { return reinterpret_cast<builtins::JSMath*>(this); }
   builtins::JSError* AsJSError() { return reinterpret_cast<builtins::JSError*>(this); }
+  builtins::Arguments* AsArguments() { return reinterpret_cast<builtins::Arguments*>(this); } 
 
   // As Cast
   const types::String* AsString() const { return reinterpret_cast<const types::String*>(this); }
@@ -205,6 +238,7 @@ class HeapObject {
   const builtins::JSNumber* AsJSNumber() const { return reinterpret_cast<const builtins::JSNumber*>(this); }
   const builtins::JSMath* AsJSMath() const { return reinterpret_cast<const builtins::JSMath*>(this); }
   const builtins::JSError* AsJSError() const { return reinterpret_cast<const builtins::JSError*>(this); }
+  const builtins::Arguments* AsArguments() const { return reinterpret_cast<const builtins::Arguments*>(this); } 
 };
 
 }  // namespace voidjs

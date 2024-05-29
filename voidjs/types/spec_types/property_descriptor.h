@@ -116,7 +116,7 @@ class PropertyDescriptor {
   };
 
  private:
-  VM* vm_                 {nullptr};
+  VM* vm_                {nullptr};
   
   bool writable_         {false};
   bool enumerable_       {false};

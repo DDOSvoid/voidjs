@@ -4,13 +4,18 @@
 #include <functional>
 #include <map>
 
-#include "voidjs/gc/js_handle_scope.h"
-#include "voidjs/interpreter/interpreter.h"
-#include "voidjs/interpreter/vm.h"
 #include "voidjs/ir/ast.h"
 #include "voidjs/ir/program.h"
 #include "voidjs/ir/dumper.h"
 #include "voidjs/parser/parser.h"
+#include "voidjs/types/heap_object.h"
+#include "voidjs/types/js_value.h"
+#include "voidjs/types/object_factory.h"
+#include "voidjs/builtins/js_error.h"
+#include "voidjs/gc/js_handle.h"
+#include "voidjs/gc/js_handle_scope.h"
+#include "voidjs/interpreter/interpreter.h"
+#include "voidjs/interpreter/vm.h"
 #include "voidjs/utils/helper.h"
 
 std::string ReadFile(char* filename) {
@@ -22,19 +27,26 @@ std::string ReadFile(char* filename) {
 }
 
 void ExecuteFile(char* filename) {
+  using namespace voidjs;
+  
   std::u16string source = voidjs::utils::U8StrToU16Str(ReadFile(filename));
 
-  voidjs::Parser parser{source};
-  voidjs::ast::Program* program = parser.ParseProgram();
+  Parser parser{source};
+  ast::Program* program = parser.ParseProgram();
   if (!program) {
     return ;
   }
   
-  voidjs::Interpreter interpreter;
-  voidjs::VM* vm = interpreter.GetVM();
-  voidjs::JSHandleScope top_handle_scope{vm};
+  Interpreter interpreter;
+  VM* vm = interpreter.GetVM();
+  JSHandleScope top_handle_scope{vm};
 
-  interpreter.Execute(program);
+  types::Completion comp = interpreter.Execute(program);
+  if (vm->HasException()) {
+    JSHandle<types::String> msg = types::Object::Call(vm, vm->GetObjectFactory()->NewInternalFunction(voidjs::builtins::JSError::ToString),
+                                                      vm->GetException().As<voidjs::JSValue>(), {}).As<types::String>();
+    std::cout << utils::U16StrToU8Str(std::u16string{msg->GetString()}) << std::endl;
+  }
 }
 
 void DumpAst(char* filename) {

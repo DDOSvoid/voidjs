@@ -12,11 +12,12 @@ using JSValueType = std::uint64_t;
 
 namespace jsvalue {
 
+// Special Values
 // False:       [56 bits 0] | 0000 0110
 // True:        [56 bits 0] | 0000 0111
 // Undefined:   [56 bits 0] | 0000 0010
 // Null:        [56 bits 0] | 0000 0011
-// Hole:       [56 bits 0] | 0000 0101
+// Hole:        [56 bits 0] | 0000 0101
 // Exception:   [56 bits 0] | 0000 1000
 inline constexpr JSValueType VALUE_FALSE            = 0x0000'0000'0000'0006;
 inline constexpr JSValueType VALUE_TRUE             = 0x0000'0000'0000'0007;
@@ -24,6 +25,8 @@ inline constexpr JSValueType VALUE_UNDEFINED        = 0x0000'0000'0000'0002;
 inline constexpr JSValueType VALUE_NULL             = 0x0000'0000'0000'0003;
 inline constexpr JSValueType VALUE_HOLE             = 0x0000'0000'0000'0005;
 inline constexpr JSValueType VALUE_EXCEPTION        = 0x0000'0000'0000'0008;
+inline constexpr JSValueType SPECIAL_VALUE_MASK     = 0xFFFF'FFFF'FFFF'FFF0;
+inline constexpr JSValueType SPECIAL_VALUE          = 0x0000'0000'0000'0000;
 
 // [0x0000] [48 bit direct pointer]
 inline constexpr JSValueType TAG_HEAP_OBJECT_MASK   = 0xFFFF'000000000006;
@@ -126,9 +129,10 @@ class JSValue {
   bool IsObject() const { return !IsPrimitive() && !IsHole(); }
 
   // internal checks
+  bool IsSpecial() const { return (value_ & jsvalue::SPECIAL_VALUE_MASK) == jsvalue::SPECIAL_VALUE && (value_ & 0xF); }
   bool IsHeapObject() const { return (value_ & jsvalue::TAG_HEAP_OBJECT_MASK) == jsvalue::TAG_HEAP_OBJECT; }
   bool IsInt() const { return (value_ & jsvalue::TAG_INT_MASK) == jsvalue::TAG_INT; }
-  bool IsDouble() const { return !IsHeapObject() && !IsInt(); }
+  bool IsDouble() const { return !IsHeapObject() && !IsInt() && !IsSpecial(); }
   bool IsHole() const { return value_ == jsvalue::VALUE_HOLE; }
   bool IsException() const { return value_ == jsvalue::VALUE_EXCEPTION; }
   bool IsPropertyName() const { return IsString() || IsNumber(); }

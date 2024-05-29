@@ -57,7 +57,6 @@ void Interpreter::Initialize() {
 }
 
 Completion Interpreter::Execute(AstNode* ast_node) {
-  ExecutionContext::EnterGlobalCode(vm_, ast_node);
   return EvalProgram(ast_node);
 }
   
@@ -80,11 +79,13 @@ Completion Interpreter::EvalProgram(AstNode *ast_node) {
   }
 
   // 3. Let progCxt be a new execution context for global code as described in 10.4.1.
+  ExecutionContext::EnterGlobalCode(vm_, ast_node, is_strict);
 
   // 4. Let result be the result of evaluating SourceElements.
   auto result = EvalSourceElements(prog->GetStatements());
   
   // 5. Exit the execution context progCxt.
+  vm_->PopExecutionContext();
 
   // 6. Return result
   return result;
@@ -716,6 +717,11 @@ Completion Interpreter::EvalThrowStatement(ThrowStatement* throw_stmt) {
   auto val = GetValue(expr_ref);
   RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
 
+  if (!val->IsObject() || !val->GetHeapObject()->IsJSError()) {
+    val = vm_->GetObjectFactory()->NewNativeError(ErrorType::SYNTAX_ERROR, u"User should always throw an error that is Error or NativeError.").As<JSValue>();
+  }
+
+  vm_->SetException(val.As<JSError>());
   return Completion{CompletionType::THROW, val};
 }
 
@@ -1092,8 +1098,7 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalMemberExpression(Mem
 
   // 7. If the syntactic production that is being evaluated is contained in strict mode code,
   //    let strict be true, else let strict be false.
-  // todo
-  bool strict = false;
+  bool strict = vm_->GetExecutionContext()->IsStrict();
 
   // 8. Return a value of type Reference
   //    whose base value is baseValue and whose referenced name is propertyNameString,
@@ -1217,8 +1222,8 @@ JSHandle<JSValue> Interpreter::EvalFunctionExpression(FunctionExpression* func_e
   //    with parameters specified by FormalParameterListopt and body specified by FunctionBody.
   //    Pass in funcEnv as the Scope. Pass in true as the Strict flag if
   //    the FunctionExpression is contained in strict code or if its FunctionBody is strict code.
-  // todo
-  auto closure = Builtin::InstantiatingFunctionDeclaration(vm_, func_expr, func_env, false);
+  bool strict = vm_->GetExecutionContext()->IsStrict() || func_expr->IsStrict();
+  auto closure = Builtin::InstantiatingFunctionDeclaration(vm_, func_expr, func_env, strict);
   
   // 5. Call the InitializeImmutableBinding(N,V) concrete method of envRec passing the String value of Identifier and closure as the arguments.
   DeclarativeEnvironmentRecord::InitializeImmutableBinding(vm_, env_rec, ident, closure.As<JSValue>());
@@ -1615,6 +1620,7 @@ JSHandle<JSValue> Interpreter::EvalPropertyNameAndValueList(const ast::Propertie
     
     // 4. If previous is not undefined then throw a SyntaxError exception if any of the following conditions are true
     if (!previous.IsEmpty()) {
+      bool strict = vm_->GetExecutionContext()->IsStrict();
       // a. This production is contained in strict code and IsDataDescriptor(previous) is true and
       //    IsDataDescriptor(propId.descriptor) is true.
       // b. IsDataDescriptor(previous) is true and IsAccessorDescriptor(propId.descriptor) is true.
@@ -1622,7 +1628,14 @@ JSHandle<JSValue> Interpreter::EvalPropertyNameAndValueList(const ast::Propertie
       // d. IsAccessorDescriptor(previous) is true and IsAccessorDescriptor(propId.descriptor) is true and
       //    either both previous and propId.descriptor have [[Get]] fields or
       //    both previous and propId.descriptor have [[Set]] fields
-      // todo
+      if (strict && previous.IsDataDescriptor() && prop_id_desc.IsDataDescriptor() ||
+          previous.IsDataDescriptor() && prop_id_desc.IsAccessorDescriptor()       ||
+          previous.IsAccessorDescriptor() && prop_id_desc.IsDataDescriptor()) {
+        // previous.IsAccessorDescriptor() && prop_id_desc.IsAccessorDescriptor() &&
+        // (previous.HasGetter() && prop_id_desc.HasGetter() || previous.HasSetter() && prop_id_desc.HasSetter())) {
+        // todo 
+        THROW_SYNTAX_ERROR_AND_RETURN_HANDLE(vm_, u"A conflict occurred trying to add an already existing property to an object.", JSValue);
+      }
     }
 
     // 5. Call the [[DefineOwnProperty]] internal method of obj with arguments propId.name, propId.descriptor, and false.
@@ -1678,9 +1691,9 @@ std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignm
     //    with an empty parameter list and body specified by FunctionBody.
     //    Pass in the LexicalEnvironment of the running execution context as the Scope.
     //    Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
-    //    todo
+    bool strict = vm_->GetExecutionContext()->IsStrict() || prop->GetValue()->AsFunctionExpression()->IsStrict();
     JSHandle<JSFunction> closure = Builtin::InstantiatingFunctionDeclaration(
-      vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), false);
+      vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), strict);
     
     // 3. Let desc be the Property Descriptor{[[Get]]: closure, [[Enumerable]]: true, [[Configurable]]: true}
     auto desc = PropertyDescriptor{vm_, closure.As<JSValue>(), JSHandle<JSValue>{}, true, true};
@@ -1696,6 +1709,7 @@ std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignm
     //    with parameters specified by PropertySetParameterList and body specified by FunctionBody.
     //    Pass in the LexicalEnvironment of the running execution context as the Scope.
     //    Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
+    bool strict = vm_->GetExecutionContext()->IsStrict() || prop->GetValue()->AsFunctionExpression()->IsStrict();
     JSHandle<JSFunction> closure = Builtin::InstantiatingFunctionDeclaration(
       vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), false);
     
@@ -2465,8 +2479,7 @@ Reference Interpreter::IdentifierResolution(JSHandle<String> ident) {
 
   // 2. If the syntactic production that is being evaluated is contained in a strict mode code,
   //    then let strict be true, else let strict be false.
-  // todo
-  auto strict = false;
+  bool strict = vm_->GetExecutionContext()->IsStrict();
 
   // 3. Return the result of calling GetIdentifierReference function passing env,
   //    Identifier, and strict as arguments.

@@ -2016,7 +2016,11 @@ count += DoubleEqual(getTanDeg(90), Math.tan(Math.PI / 2));
 TEST(JSError, ErrorConstructorConstruct) {
   Parser parser(uR"(
 var error = new Error('I was constructed via the "new" keyword!');
-error.message;
+try {
+  throw error;
+} catch (e) {
+  e.message;
+}
 )");
 
   Interpreter interpreter;
@@ -2032,7 +2036,7 @@ error.message;
 
 TEST(JSError, ErrorConstructorCall) {
   Parser parser(uR"(
-var error = new Error('I was constructed using a function call.');
+var error = Error('I was constructed using a function call.');
 error.message;
 )");
 
@@ -2082,4 +2086,31 @@ count += e.toString() == "你好";
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
   ASSERT_TRUE(comp.GetValue()->IsInt());
   EXPECT_EQ(4, comp.GetValue()->GetInt());
+}
+
+TEST(Arguments, Test) {
+  Parser parser(uR"(
+var count = 0;
+
+function add(a, b, c) {
+  count += arguments[0] == a;
+  count += arguments[1] == b;
+  count += arguments[2] == c;
+  return a + b + c; 
+}
+
+add(1, 2, 3);
+
+count;
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(3, comp.GetValue()->GetInt());
 }

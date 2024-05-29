@@ -7,3 +7,8 @@
 # ignore build dir
 /build
 
+# ignore test/test.js
+/test/test.js
+
+# ignore test/test.out
+/test/test.out

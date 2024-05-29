@@ -514,10 +514,10 @@ TEST(Interpreter, EvalTryStatement) {
   {
     Parser parser(uR"(
 try {
-var i = 2;
-i *= i;
+  var i = 2;
+  i *= i;
 } catch (error) {
-42;
+  42;
 }
 )");
 
@@ -535,9 +535,9 @@ i *= i;
   {
     Parser parser(uR"(
 try {
-throw 'Error!';
+  throw Error('Error!');
 } catch (error) {
-error;
+  error.message;
 }
 )");
 
@@ -550,6 +550,30 @@ error;
     EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
     ASSERT_TRUE(comp.GetValue()->IsString());
     EXPECT_EQ(u"Error!", comp.GetValue()->GetString());
+  }
+
+  {
+    Parser parser(uR"(
+function foo() {
+  throw Error("Here's an error.");
+}
+
+try {
+  foo();
+} catch (e) {
+  e.message;
+}
+)");
+
+    Interpreter interpreter;
+
+    auto prog = parser.ParseProgram();
+    ASSERT_TRUE(prog->IsProgram());
+
+    auto comp = interpreter.Execute(prog);
+    EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+    ASSERT_TRUE(comp.GetValue()->IsString());
+    EXPECT_EQ(u"Here's an error.", comp.GetValue()->GetString());
   }
 }
 
@@ -882,6 +906,21 @@ TEST(Interpreter, EvalBinaryExpression) {
   {
     Parser parser(uR"(
 "12.3e3" == 12300
+)");
+  
+    Interpreter interpreter;
+
+    auto ast_node = parser.ParseBinaryExpression();
+    ASSERT_TRUE(ast_node->IsBinaryExpression());
+
+    auto val = interpreter.GetValue(interpreter.EvalExpression(ast_node->AsBinaryExpression()));
+    ASSERT_TRUE(val->IsBoolean());
+    EXPECT_EQ(true, val->GetBoolean());
+  }
+
+  {
+    Parser parser(uR"(
+true === true
 )");
   
     Interpreter interpreter;

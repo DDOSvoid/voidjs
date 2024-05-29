@@ -16,10 +16,10 @@ class ExecutionContext {
  public:
   ExecutionContext(JSHandle<types::LexicalEnvironment> lex_env,
                    JSHandle<types::LexicalEnvironment> var_env,
-                   JSHandle<types::Object> obj)
+                   JSHandle<types::Object> obj, bool is_strict)
     : lexical_environment_(lex_env),
       variable_environment_(var_env),
-      this_binding_(obj) {
+      this_binding_(obj), is_strict_(is_strict) {
     label_set_.insert(u"");
   }
   
@@ -42,6 +42,7 @@ class ExecutionContext {
   void EnterSwitch() { ++switch_depth_; }
   void ExitSwitch() { --switch_depth_;}
 
+  bool IsStrict() const { return is_strict_; }
   
   JSHandle<types::LexicalEnvironment> GetLexicalEnvironment() const {
     return lexical_environment_;
@@ -60,11 +61,14 @@ class ExecutionContext {
   JSHandle<types::Object> GetThisBinding() const { return this_binding_; }
   void SetThisBinding(JSHandle<types::Object> this_binding) { this_binding_ = this_binding; }
 
-  static void EnterGlobalCode(VM* vm, ast::AstNode* ast_node);
+  static void EnterGlobalCode(VM* vm, ast::AstNode* ast_node, bool is_strict);
   static void EnterEvalCode(VM* vm);
   static void EnterFunctionCode(
     VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
-  static void DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, const std::vector<JSHandle<JSValue>>& args);
+  static void DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F, const std::vector<JSHandle<JSValue>>& args);
+  static JSHandle<builtins::Arguments> CreateArgumentsObject(
+    VM* vm, ast::AstNode* ast_node, JSHandle<builtins::JSFunction> F,
+    const std::vector<JSHandle<JSValue>>& args, JSHandle<types::EnvironmentRecord> env, bool strict);
   
  private:
   // label set
@@ -76,6 +80,8 @@ class ExecutionContext {
 
   // switch 
   std::size_t switch_depth_ {0};
+
+  bool is_strict_ {false};
 
   // 
   JSHandle<types::LexicalEnvironment> lexical_environment_;

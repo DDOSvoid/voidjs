@@ -34,6 +34,7 @@ enum class JSType : std::uint8_t {
   JS_NUMBER,
   JS_MATH,
   JS_ERROR,
+  ARGUMENTS,
 };
 
 }  // namespace voidjs
