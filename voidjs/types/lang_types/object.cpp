@@ -743,5 +743,20 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
   return JSHandle<JSValue>{vm, ret};
 }
 
+std::vector<JSHandle<JSValue>> Object::GetAllEnumerableKeys(VM* vm, JSHandle<Object> O) {
+  JSHandle<PropertyMap> prop_map = JSHandle<PropertyMap>{vm, O->GetProperties()};
+  std::vector<JSHandle<JSValue>> result = prop_map->GetAllOwnEnumerableKeys(vm);
+  if (!O->GetPrototype().IsNull()) {
+    JSHandle<Object> proto = JSHandle<Object>{vm, O->GetPrototype()};
+    std::vector<JSHandle<JSValue>> keys = GetAllEnumerableKeys(vm, proto);
+    for (auto key : keys) {
+      if (!prop_map->HasProperty(vm, key.As<String>())) {
+        result.push_back(key);
+      }
+    }
+  }
+  return result;
+}
+
 }  // namespace types
 }  // namespace voidjs

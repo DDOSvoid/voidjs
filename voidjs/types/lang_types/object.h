@@ -52,7 +52,7 @@ class Object : public HeapObject {
   static JSHandle<JSValue> Construct(VM* vm, JSHandle<Object> O, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
   static JSHandle<JSValue> Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> this_arg, const std::vector<JSHandle<JSValue>>& args);
 
-  static void GetAllEnumerableProps(Object* O);
+  static std::vector<JSHandle<JSValue>> GetAllEnumerableKeys(VM* vm, JSHandle<Object> O);
 };
 
 }  // namespace types

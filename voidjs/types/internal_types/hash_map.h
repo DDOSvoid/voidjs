@@ -74,7 +74,7 @@ class HashMap : public Array {
     }
   }
 
-  std::vector<JSHandle<JSValue>> GetAllKeys(VM* vm) {
+  std::vector<JSHandle<JSValue>> GetAllOwnKeys(VM* vm) {
     std::vector<JSHandle<JSValue>> keys;
     std::uint32_t capacity = GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < capacity; ++idx) {
@@ -86,7 +86,7 @@ class HashMap : public Array {
     return keys;
   }
 
-  std::vector<JSHandle<JSValue>> GetAllEnumerableKeys(VM* vm) {
+  std::vector<JSHandle<JSValue>> GetAllOwnEnumerableKeys(VM* vm) {
     std::vector<JSHandle<JSValue>> keys;
     std::uint32_t capacity = GetBucketCapacity();
     for (std::uint32_t idx = 0; idx < capacity; ++idx) {
@@ -98,17 +98,17 @@ class HashMap : public Array {
     return keys;
   }
 
-  std::vector<JSHandle<JSValue>> GetAllValues(VM* vm) {
-    std::vector<JSHandle<JSValue>> keys;
-    std::uint32_t capacity = GetBucketCapacity();
-    for (std::uint32_t idx = 0; idx < capacity; ++idx) {
-      JSValue key = GetKey(idx);
-      if (!GetKey(idx).IsHole() && !GetKey(idx).IsUndefined()) {
-        keys.emplace_back(vm, GetValue(idx));
-      }
-    }
-    return keys;
-  }
+  // std::vector<JSHandle<JSValue>> GetAllValues(VM* vm) {
+  //   std::vector<JSHandle<JSValue>> keys;
+  //   std::uint32_t capacity = GetBucketCapacity();
+  //   for (std::uint32_t idx = 0; idx < capacity; ++idx) {
+  //     JSValue key = GetKey(idx);
+  //     if (!GetKey(idx).IsHole() && !GetKey(idx).IsUndefined()) {
+  //       keys.emplace_back(vm, GetValue(idx));
+  //     }
+  //   }
+  //   return keys;
+  // }
 
   static JSHandle<HashMap> Reserve(VM* vm, JSHandle<HashMap> hashmap, std::uint32_t capacity) {
     if (capacity <= hashmap->GetBucketCapacity()) {

@@ -374,7 +374,7 @@ double Lexer::ConvertToNumber(std::u16string source) {
       ret += val;
       val = 0;
       base = 0.1;
-    } else if (ch == u'e' || ch == u'E') {
+    } else if (!hex && (ch == u'e' || ch == u'E')) {
       exp = true;
       dot = false;
       ret += val;

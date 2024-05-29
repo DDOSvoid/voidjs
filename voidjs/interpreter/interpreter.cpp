@@ -481,8 +481,10 @@ Completion Interpreter::EvalForInStatement(ForInStatement* for_in_stmt) {
   JSHandle<JSValue> V;
 
   // 7. Repeat
-  auto props = JSHandle<PropertyMap>{vm_, obj->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = props->GetAllEnumerableKeys(vm_);
+  std::vector<JSHandle<JSValue>> keys = Object::GetAllEnumerableKeys(vm_, obj);
+  std::sort(keys.begin(), keys.end(), [](auto lhs, auto rhs) {
+    return lhs.template As<String>()->GetString() < rhs.template As<String>()->GetString();
+  });
   for (auto P : keys) {
     // a. Let P be the name of the next property of obj whose [[Enumerable]] attribute is true.
     //    If there is no such property, return (normal, V, empty).
@@ -501,6 +503,7 @@ Completion Interpreter::EvalForInStatement(ForInStatement* for_in_stmt) {
     if (!stmt.GetValue().IsEmpty()) {
       V = stmt.GetValue();
     }
+    
     // f. If stmt.type is break and stmt.target is in the current label set, return (normal, V, empty).
     if (stmt.GetType() == CompletionType::BREAK &&
         vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
@@ -736,15 +739,15 @@ Completion Interpreter::EvalTryStatement(TryStatement* try_stmt) {
   
   // 1. Let B be the result of evaluating Block.
   Completion C;
-  auto B = EvalStatement(try_stmt->GetBody());
-    
-  // 2. If B.type is not throw, return B.
+  Completion B = EvalStatement(try_stmt->GetBody());
+
+  // 2. If B.type is throw, then
   if (B.GetType() == CompletionType::THROW) {
     // a. Let C be the result of evaluating Catch with parameter B.
     if (try_stmt->GetCatchBlock()) {
       vm_->ClearException();
       C = EvalCatch(try_stmt->GetCatchName(), try_stmt->GetCatchBlock(), B.GetValue());
-      RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
+      // RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
     }
   }
   // 3. Else, B.type is not throw,
@@ -757,7 +760,16 @@ Completion Interpreter::EvalTryStatement(TryStatement* try_stmt) {
   if (!try_stmt->GetFinallyBlock()) {
     return C;
   }
-  auto F = EvalStatement(try_stmt->GetFinallyBlock());
+
+  // clear exception to ensure the evalution of the finally block
+  JSHandle<JSError> error = vm_->GetException();
+  vm_->ClearException();
+  
+  Completion F = EvalStatement(try_stmt->GetFinallyBlock());
+  
+  if (!error.IsEmpty()) {
+    vm_->SetException(error);
+  }
   RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
 
   // 5. If F.type is normal, return C.

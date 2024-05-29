@@ -1,6 +1,7 @@
 #include "voidjs/builtins/js_object.h"
 
 #include "voidjs/builtins/js_array.h"
+#include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
 #include "voidjs/types/object_class_type.h"
 #include "voidjs/types/object_factory.h"
@@ -142,7 +143,7 @@ JSValue JSObject::GetOwnPropertyNames(RuntimeCallInfo* argv) {
   
   // 4. For each named own property P of O
   auto prop_map = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = prop_map->GetAllKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = prop_map->GetAllOwnKeys(vm);
   for (auto name : keys) {
     // a. Let name be the String value that is the name of P.
     // b. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(n),
@@ -191,7 +192,7 @@ JSValue JSObject::Create(RuntimeCallInfo* argv) {
     RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
 
     auto prop_map = JSHandle<types::PropertyMap>{vm, props.As<types::Object>()->GetProperties()};
-    std::vector<JSHandle<JSValue>> keys = prop_map->GetAllEnumerableKeys(vm);
+    std::vector<JSHandle<JSValue>> keys = prop_map->GetAllOwnEnumerableKeys(vm);
     for (auto key : keys) {
       JSHandle<JSValue> prop = types::Object::Get(vm, props, key.As<types::String>());
     
@@ -263,7 +264,7 @@ JSValue JSObject::DefineProperties(RuntimeCallInfo* argv) {
   // 8. Return O
 
   auto prop_map = JSHandle<types::PropertyMap>{vm, props.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = prop_map->GetAllEnumerableKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = prop_map->GetAllOwnEnumerableKeys(vm);
   for (auto key : keys) {
     JSHandle<JSValue> prop = types::Object::Get(vm, props, key.As<types::String>());
     
@@ -291,7 +292,7 @@ JSValue JSObject::Seal(RuntimeCallInfo* argv) {
 
   // 2. For each named own property name P of O,
   auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = props->GetAllOwnKeys(vm);
   for (auto key : keys) {
     // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
     types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
@@ -329,7 +330,7 @@ JSValue JSObject::Freeze(RuntimeCallInfo* argv) {
 
   // 2. For each named own property name P of O,
   auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = props->GetAllOwnKeys(vm);
   for (auto key : keys) {
     // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
     types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
@@ -392,7 +393,7 @@ JSValue JSObject::IsSealed(RuntimeCallInfo* argv) {
 
   // 2. For each named own property name P of O,
   auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = props->GetAllOwnKeys(vm);
   for (auto key : keys) {
     // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
     types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
@@ -428,7 +429,7 @@ JSValue JSObject::IsFrozen(RuntimeCallInfo* argv) {
 
   // 2. For each named own property name P of O,
   auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = props->GetAllKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = props->GetAllOwnKeys(vm);
   for (auto key : keys) {
     // a. Let desc be the result of calling the [[GetOwnProperty]] internal method of O with P.
     types::PropertyDescriptor desc = types::Object::GetOwnProperty(vm, O.As<types::Object>(), key.As<types::String>());
@@ -499,7 +500,7 @@ JSValue JSObject::Keys(RuntimeCallInfo* argv) {
 
   // 5. For each own enumerable property of O whose name String is P
   auto props = JSHandle<types::PropertyMap>{vm, O.As<types::Object>()->GetProperties()};
-  std::vector<JSHandle<JSValue>> keys = props->GetAllEnumerableKeys(vm);
+  std::vector<JSHandle<JSValue>> keys = props->GetAllOwnEnumerableKeys(vm);
   for (auto key : keys) {
     // a. Call the [[DefineOwnProperty]] internal method of array with arguments ToString(index),
     //    the PropertyDescriptor {[[Value]]: P, [[Writable]]: true, [[Enumerable]]: true, [[Configurable]]: true}, and false.
@@ -611,6 +612,23 @@ JSValue JSObject::HasOwnProperty(RuntimeCallInfo* argv) {
   
   // 5. Return true.
   return JSValue::True();
+}
+
+// Object.setPrototypeOf(O, proto)
+// Defined in ECMAScript 6
+JSValue JSObject::SetPrototypeOf(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> O = argv->GetArg(0);
+  JSHandle<JSValue> proto = argv->GetArg(1);
+
+  if (!O->IsObject() || !proto->IsObject() && !proto->IsNull()) {
+    THROW_TYPE_ERROR_AND_RETURN_VALUE(vm, u"Object.setPrototypeOf fails.", JSValue{});
+  }
+
+  O.As<types::Object>()->SetPrototype(proto);
+
+  return O.GetJSValue();
 }
 
 // Object.prototype.isPrototypeOf(V)

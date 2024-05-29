@@ -26,6 +26,10 @@ class PropertyMap : public HashMap {
     return Find(vm, key);
   }
 
+  bool HasProperty(VM* vm, JSHandle<String> key) {
+    return !Find(vm, key).IsEmpty();
+  }
+
   static JSHandle<PropertyMap> SetProperty(VM* vm, JSHandle<PropertyMap> prop_map, JSHandle<String> key, const PropertyDescriptor& desc) {
     auto factory = vm->GetObjectFactory();
     

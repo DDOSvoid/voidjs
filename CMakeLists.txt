@@ -71,6 +71,7 @@ add_executable(
   test/test_internal_types.cpp
   test/test_builtins.cpp
   test/test_gc.cpp
+  test/test.cpp
 )
 target_link_libraries(
   unit_test

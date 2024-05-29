@@ -130,7 +130,7 @@ TEST(Lexer, NumericLiteral) {
   // https://github.com/zhuzilin/es/blob/main/test/test_lexer.cc#L77
   std::u16string source = uR"(
 0 101 0.01 12.05 .8 0xAbC09
-1e10 101E02 0.01E5 .8E5 12.05e05 123e-1
+1e10 101E02 0.01E5 .8E5 12.05e05 123e-1 0x7ffffffe
 )";
 
   Lexer lexer(source);
@@ -148,6 +148,7 @@ TEST(Lexer, NumericLiteral) {
     {TokenType::NUMBER, u"", 80000},
     {TokenType::NUMBER, u"", 1205000},
     {TokenType::NUMBER, u"", 12.3},
+    {TokenType::NUMBER, u"", 2147483646},
   };
   
   for (auto& expect_token : expects) {

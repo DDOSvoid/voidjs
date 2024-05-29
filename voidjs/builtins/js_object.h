@@ -34,6 +34,7 @@ class JSObject : public types::Object {
   static JSValue IsFrozen(RuntimeCallInfo* argv);
   static JSValue IsExtensible(RuntimeCallInfo* argv);
   static JSValue Keys(RuntimeCallInfo* argv);
+  static JSValue SetPrototypeOf(RuntimeCallInfo* argv);
 
   // Function properties of the Object Prototype
   // Defined in ECMAScript 5.1 Chapter 15.2.4

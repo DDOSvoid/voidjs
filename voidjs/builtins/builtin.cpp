@@ -462,6 +462,10 @@ void Builtin::SetPropertiesForBaseObjects(VM *vm) {
   SetFunctionProperty(vm, obj_ctor, factory->NewString(u"keys"),
                       JSObject::Keys, true, false, true);
 
+  // ES6 Object.setPrototypeOf(O, proto)
+  SetFunctionProperty(vm, obj_ctor, factory->NewString(u"setPrototypeOf"),
+                      JSObject::SetPrototypeOf, true, false, true);
+
   // Set properties for Object Prototype
   SetDataProperty(vm, obj_proto, constants->HandledConstructorString(),
                   vm->GetObjectConstructor().As<JSValue>(), true, false, true);
