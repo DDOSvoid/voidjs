@@ -388,3 +388,465 @@ test_try_catch8();
   auto comp = interpreter.Execute(prog);
   EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
 }
+
+TEST(Voidjs, Language) {
+  Parser parser(uR"(
+function assert(actual, expected, message) {
+    if (arguments.length == 1)
+        expected = true;
+
+    if (actual === expected)
+        return;
+    
+    if (actual !== null && expected !== null
+    &&  typeof actual == 'object' && typeof expected == 'object'
+    &&  actual.toString() === expected.toString())
+        return;
+    
+    throw Error('assertion failed: got |' + actual + '|' +
+                ', expected |' + expected + '|' +
+                (message ? ' (' + message + ')' : ''));
+}
+
+/*----------------*/
+
+function test_op1()
+{
+    var r, a;
+    r = 1 + 2;
+    assert(r, 3, "1 + 2 === 3");
+
+    r = 1 - 2;
+    assert(r, -1, "1 - 2 === -1");
+
+    r = -1;
+    assert(r, -1, "-1 === -1");
+
+    r = +2;
+    assert(r, 2, "+2 === 2");
+
+    r = 2 * 3;
+    assert(r, 6, "2 * 3 === 6");
+
+    r = 4 / 2;
+    assert(r, 2, "4 / 2 === 2");
+
+    r = 4 % 3;
+    assert(r, 1, "4 % 3 === 3");
+
+    r = 4 << 2;
+    assert(r, 16, "4 << 2 === 16");
+
+    r = 1 << 0;
+    assert(r, 1, "1 << 0 === 1");
+
+    r = 1 << 31;
+    assert(r, -2147483648, "1 << 31 === -2147483648");
+    
+    r = 1 << 32;
+    assert(r, 1, "1 << 32 === 1");
+    
+    r = (1 << 31) < 0;
+    assert(r, true, "(1 << 31) < 0 === true");
+
+    r = -4 >> 1;
+    assert(r, -2, "-4 >> 1 === -2");
+
+    r = -4 >>> 1;
+    assert(r, 0x7ffffffe, "-4 >>> 1 === 0x7ffffffe");
+
+    r = 1 & 1;
+    assert(r, 1, "1 & 1 === 1");
+
+    r = 0 | 1;
+    assert(r, 1, "0 | 1 === 1");
+
+    r = 1 ^ 1;
+    assert(r, 0, "1 ^ 1 === 0");
+
+    r = ~1;
+    assert(r, -2, "~1 === -2");
+
+    r = !1;
+    assert(r, false, "!1 === false");
+
+    assert((1 < 2), true, "(1 < 2) === true");
+
+    assert((2 > 1), true, "(2 > 1) === true");
+
+    assert(('b' > 'a'), true, "('b' > 'a') === true");
+}
+
+function test_cvt()
+{
+    assert((NaN | 0) === 0);
+    assert((Infinity | 0) === 0);
+    assert(((-Infinity) | 0) === 0);
+    assert(("12345" | 0) === 12345);
+    assert(("0x12345" | 0) === 0x12345);
+    assert(((4294967296 * 3 - 4) | 0) === -4);
+    
+    assert(("12345" >>> 0) === 12345);
+    assert(("0x12345" >>> 0) === 0x12345);
+    assert((NaN >>> 0) === 0);
+    assert((Infinity >>> 0) === 0);
+    assert(((-Infinity) >>> 0) === 0);
+    assert(((4294967296 * 3 - 4) >>> 0) === (4294967296 - 4));
+}
+
+function test_eq()
+{
+    assert(null == undefined);
+    assert(undefined == null);
+    assert(true == 1);
+    assert(0 == false);
+    assert("" == 0);
+    assert("123" == 123);
+    assert("122" != 123);
+    assert((new Number(1)) == 1);
+    assert(2 == (new Number(2)));
+    assert((new String("abc")) == "abc");
+    assert({} != "abc");
+}
+
+function test_inc_dec()
+{
+    var a, r;
+    
+    a = 1;
+    r = a++;
+    assert(r === 1 && a === 2, true, "++");
+
+    a = 1;
+    r = ++a;
+    assert(r === 2 && a === 2, true, "++");
+
+    a = 1;
+    r = a--;
+    assert(r === 1 && a === 0, true, "--");
+
+    a = 1;
+    r = --a;
+    assert(r === 0 && a === 0, true, "--");
+
+    a = {x:true};
+    a.x++;
+    assert(a.x, 2, "++");
+
+    a = {x:true};
+    a.x--;
+    assert(a.x, 0, "--");
+
+    a = [true];
+    a[0]++;
+    assert(a[0], 2, "++");
+    
+    a = {x:true};
+    r = a.x++;
+    assert(r === 1 && a.x === 2, true, "++");
+    
+    a = {x:true};
+    r = a.x--;
+    assert(r === 1 && a.x === 0, true, "--");
+    
+    a = [true];
+    r = a[0]++;
+    assert(r === 1 && a[0] === 2, true, "++");
+    
+    a = [true];
+    r = a[0]--;
+    assert(r === 1 && a[0] === 0, true, "--");
+}
+
+function F(x)
+{
+    this.x = x;
+}
+
+function test_op2()
+{
+    var a, b;
+    a = new Object;
+    a.x = 1;
+    assert(a.x, 1, "new");
+    b = new F(2);
+    assert(b.x, 2, "new");
+
+    a = {x : 2};
+    assert(("x" in a), true, "in");
+    assert(("y" in a), false, "in");
+
+    a = {};
+    assert((a instanceof Object), true, "instanceof");
+    assert((a instanceof String), false, "instanceof");
+
+    assert((typeof 1), "number", "typeof");
+    assert((typeof Object), "function", "typeof");
+    assert((typeof null), "object", "typeof");
+    assert((typeof unknown_var), "undefined", "typeof");
+    
+    a = {x: 1, if: 2, async: 3};
+    assert(a.if === 2);
+    assert(a.async === 3);
+}
+
+function test_delete()
+{
+    var a, err;
+
+    a = {x: 1, y: 1};
+    assert((delete a.x), true, "delete");
+    assert(("x" in a), false, "delete");
+    
+    /* the following are not tested by test262 */
+    assert(delete "abc"[100], true);
+}
+
+function test_prototype()
+{
+    var f = function f() { };
+    assert(f.prototype.constructor, f, "prototype");
+}
+
+function test_arguments()
+{
+    function f2() {
+        assert(arguments.length, 2, "arguments");
+        assert(arguments[0], 1, "arguments");
+        assert(arguments[1], 3, "arguments");
+    }
+    f2(1, 3);
+}
+
+function test_object_literal()
+{
+    var a = { get: 2, set: 3, async: 4 };
+    assert(a.get, 2);
+    assert(a.set, 3);
+    assert(a.async, 4);
+}
+
+function test_function_expr_name()
+{
+    var f;
+
+    /* non strict mode test : assignment to the function name silently
+       fails */
+    
+    f = function myfunc() {
+        myfunc = 1;
+        return myfunc;
+    };
+    assert(f(), f);
+
+    // eval unimplemented
+    // f = function myfunc() {
+    //     eval("myfunc = 1");
+    //     return myfunc;
+    // };
+    // assert(f(), f);
+}
+
+test_op1();
+test_cvt();
+test_eq();
+test_inc_dec();
+test_op2();
+test_delete();
+test_prototype();
+test_arguments();
+test_object_literal();
+test_function_expr_name();
+
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}
+
+
+TEST(Voidjs, Closure) {
+  Parser parser(uR"(
+function assert(actual, expected, message) {
+    if (arguments.length == 1)
+        expected = true;
+
+    if (actual === expected)
+        return;
+    
+    if (actual !== null && expected !== null
+    &&  typeof actual == 'object' && typeof expected == 'object'
+    &&  actual.toString() === expected.toString())
+        return;
+    
+    throw Error('assertion failed: got |' + actual + '|' +
+                ', expected |' + expected + '|' +
+                (message ? ' (' + message + ')' : ''));
+}
+
+/*----------------*/
+
+var log_str = "";
+
+function log(str)
+{
+    log_str += str + ",";
+}
+
+function f(a, b, c)
+{
+    var x = 10;
+    log("a="+a);
+    function g(d) {
+        function h() {
+            log("d=" + d);
+            log("x=" + x);
+        }
+        log("b=" + b);
+        log("c=" + c);
+        h();
+    }
+    g(4);
+    return g;
+}
+
+var g1 = f(1, 2, 3);
+g1(5);
+
+assert(log_str, "a=1,b=2,c=3,d=4,x=10,b=2,c=3,d=5,x=10,", "closure1");
+
+function test_closure1()
+{
+    function f2()
+    {
+        var val = 1;
+        
+        function set(a) {
+            val = a;
+        }
+        function get(a) {
+            return val;
+        }
+        return { "set": set, "get": get };
+    }
+    
+    var obj = f2();
+    obj.set(10);
+    var r;
+    r = obj.get();
+    assert(r, 10, "closure2");
+}
+
+function test_closure2()
+{
+    var expr_func = function myfunc1(n) {
+        function myfunc2(n) {
+            return myfunc1(n - 1);
+        }
+        if (n == 0)
+            return 0;
+        else
+            return myfunc2(n);
+    };
+    var r;
+    r = expr_func(1);
+    assert(r, 0, "expr_func");
+}
+
+function test_closure3()
+{
+    function fib(n)
+    {
+        if (n <= 0)
+            return 0;
+        else if (n == 1)
+            return 1;
+        else
+            return fib(n - 1) + fib(n - 2);
+    }
+
+    var fib_func = function fib1(n)
+    {
+        if (n <= 0)
+            return 0;
+        else if (n == 1)
+            return 1;
+        else
+            return fib1(n - 1) + fib1(n - 2);
+    };
+
+    assert(fib(6), 8, "fib");
+    assert(fib_func(6), 8, "fib_func");
+}
+
+function test_with()
+{
+    var o1 = { x: "o1", y: "o1" };
+    var x = "local";
+    var z = "var_obj";
+    with (o1) {
+        assert(x === "o1");
+        assert(eval("x") === "o1");
+        var f = function () {
+            o2 = { x: "o2" };
+            with (o2) {
+                assert(x === "o2");
+                assert(y === "o1");
+                assert(z === "var_obj");
+                assert(eval("x") === "o2");
+                assert(eval("y") === "o1");
+                assert(eval("z") === "var_obj");
+                assert(eval('eval("x")') === "o2");
+            }
+        };
+        f();
+    }
+}
+
+/* eval unimplemented
+function test_eval_closure()
+{
+    var tab;
+
+    tab = [];
+    for(var i = 0; i < 3; i++) {
+        eval('tab.push(function g1() { return i; })');
+    }
+    for(var i = 0; i < 3; i++) {
+        assert(tab[i]() === i);
+    }
+
+    tab = [];
+    for(var i = 0; i < 3; i++) {
+        var f = function f() {
+            eval('tab.push(function g2() { return i; })');
+        };
+        f();
+    }
+    for(var i = 0; i < 3; i++) {
+        assert(tab[i]() === i);
+    }
+}
+*/
+
+test_closure1();
+test_closure2();
+test_closure3();
+test_with();
+// test_eval_closure();
+
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+}

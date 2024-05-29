@@ -1182,7 +1182,7 @@ var a = new String("Hello world"); // a === "Hello world" 为 false
 
 count += !(a === "Hello world");
 count += a instanceof String;
-//count += typeof a === "object";
+count += typeof a === "object";
 )");
 
   Interpreter interpreter;

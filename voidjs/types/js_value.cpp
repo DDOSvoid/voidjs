@@ -63,7 +63,7 @@ bool JSValue::ToBoolean(VM* vm, JSHandle<JSValue> val) {
       return !std::isnan(d) && d != 0;
     }
   } else if (val->IsString()) {
-    return val->GetString().size() == 0;
+    return val->GetString().size() != 0;
   } else if (val->IsObject()) {
     return true;
   }
