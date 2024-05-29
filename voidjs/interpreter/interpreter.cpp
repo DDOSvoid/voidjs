@@ -1021,7 +1021,7 @@ std::variant<JSHandle<JSValue>, Reference> Interpreter::EvalBinaryExpression(Bin
     }
     case TokenType::BIT_OR:
     case TokenType::BIT_AND:
-    case TokenType::BIT_NOT: {
+    case TokenType::BIT_XOR: {
       return ApplyBitwiseOperator(op, left, right);
     }
     case TokenType::EQUAL:
