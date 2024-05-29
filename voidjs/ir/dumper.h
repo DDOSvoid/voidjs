@@ -21,6 +21,8 @@ class Dumper {
     explicit NullableAstNode(AstNode* ast_node)
       : ast_node_(ast_node)
     {}
+
+    AstNode* GetAstNode() const { return ast_node_; }
     
    private:
     AstNode* ast_node_{nullptr};
@@ -92,6 +94,7 @@ class Dumper {
   void DumpBoolean(bool boolean);
   void DumpAstNode(AstNode* ast_node);
   void DumpAstNodes(std::vector<AstNode*> ast_nodes);
+  void DumpNullableAstNode(NullableAstNode nullable);
 
   void AddIndent();
 

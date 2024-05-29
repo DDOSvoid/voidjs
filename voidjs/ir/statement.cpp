@@ -38,7 +38,7 @@ void IfStatement::Dump(Dumper* dumper) const {
       Dumper::DumperNode{"type", "IfStatement"},
       Dumper::DumperNode{"condition", condition_},
       Dumper::DumperNode{"consequent", consequent_},
-      Dumper::DumperNode{"alternate", alternate_}
+      Dumper::DumperNode{"alternate", Dumper::NullableAstNode{alternate_}}
     });
 }
 
@@ -61,9 +61,9 @@ void WhileStatement::Dump(Dumper* dumper) const {
 void ForStatement::Dump(Dumper* dumper) const {
   dumper->Dump({
       Dumper::DumperNode{"type", "ForStatement"},
-      Dumper::DumperNode{"initializer", initializer_},
-      Dumper::DumperNode{"condition", condition_},
-      Dumper::DumperNode{"update", update_},
+      Dumper::DumperNode{"initializer", Dumper::NullableAstNode{initializer_}},
+      Dumper::DumperNode{"condition", Dumper::NullableAstNode{condition_}},
+      Dumper::DumperNode{"update", Dumper::NullableAstNode{update_}},
       Dumper::DumperNode{"body", body_},
     });
 }
@@ -80,21 +80,21 @@ void ForInStatement::Dump(Dumper* dumper) const {
 void ContinueStatement::Dump(Dumper* dumper) const {
   dumper->Dump({
       Dumper::DumperNode{"type", "ContinueStatement"},
-      Dumper::DumperNode{"identifier", identifier_},
+      Dumper::DumperNode{"identifier", Dumper::NullableAstNode{identifier_}},
     });
 }
 
 void BreakStatement::Dump(Dumper* dumper) const {
   dumper->Dump({
       Dumper::DumperNode{"type", "BreakStatement"},
-      Dumper::DumperNode{"identifier", identifier_},
+      Dumper::DumperNode{"identifier", Dumper::NullableAstNode{identifier_}},
     });
 }
 
 void ReturnStatement::Dump(Dumper* dumper) const {
   dumper->Dump({
       Dumper::DumperNode{"type", "ReturnStatement"},
-      Dumper::DumperNode{"expression", expression_},
+      Dumper::DumperNode{"expression", Dumper::NullableAstNode{expression_}},
     });
 }
 
@@ -135,7 +135,7 @@ void TryStatement::Dump(Dumper* dumper) const {
       Dumper::DumperNode{"body", body_},
       Dumper::DumperNode{"catch_name", catch_name_},
       Dumper::DumperNode{"catch_block", catch_block_},
-      Dumper::DumperNode{"finally_block", finally_block_},
+      Dumper::DumperNode{"finally_block", Dumper::NullableAstNode{finally_block_}},
     });
 }
 
@@ -149,7 +149,7 @@ void VariableDeclaration::Dump(Dumper* dumper) const {
   dumper->Dump({
       Dumper::DumperNode{"type", "VariableDeclaration"},
       Dumper::DumperNode{"identifier", identifier_},
-      Dumper::DumperNode{"initalizer", initializer_},
+      Dumper::DumperNode{"initalizer", Dumper::NullableAstNode{initializer_}},
     });
 }
 

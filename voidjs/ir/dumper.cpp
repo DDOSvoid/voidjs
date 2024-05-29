@@ -39,6 +39,7 @@ void Dumper::Dump(const DumperNode& node) {
   } else if (std::holds_alternative<std::vector<AstNode*>>(node.GetValue())) {
     DumpAstNodes(std::get<std::vector<AstNode*>>(node.GetValue()));
   } else if (std::holds_alternative<NullableAstNode>(node.GetValue())) {
+    DumpNullableAstNode(std::get<NullableAstNode>(node.GetValue()));
   }
 }
 
@@ -117,6 +118,14 @@ void Dumper::DumpAstNodes(std::vector<AstNode*> ast_nodes) {
   --indent_;
   AddIndent();
   ss_ << ']';
+}
+
+void Dumper::DumpNullableAstNode(NullableAstNode nullable) {
+  if (nullable.GetAstNode() == nullptr) {
+    ss_ << "null";
+  } else {
+    DumpAstNode(nullable.GetAstNode());
+  }
 }
 
 void Dumper::AddIndent() {

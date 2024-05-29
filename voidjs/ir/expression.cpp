@@ -89,7 +89,7 @@ void This::Dump(Dumper* dumper) const {
 void FunctionExpression::Dump(Dumper* dumper) const {
   dumper->Dump({
       Dumper::DumperNode{"type", "FunctionExpression"},
-      Dumper::DumperNode{"name", name_},
+      Dumper::DumperNode{"name", Dumper::NullableAstNode{name_}},
       Dumper::DumperNode{"parameters", parameters_},
       Dumper::DumperNode{"statements", statements_},
     });
