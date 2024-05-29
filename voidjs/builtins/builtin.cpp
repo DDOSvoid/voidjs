@@ -547,7 +547,11 @@ void Builtin::SetPropertiesForStringObjects(VM* vm) {
   JSHandle<JSString> str_proto = vm->GetStringPrototype();
   ObjectFactory* factory = vm->GetObjectFactory();
   GlobalConstants* constants = vm->GetGlobalConstants();
-
+  
+  // Set properties for String Constructor
+  SetDataProperty(vm, str_ctor, constants->HandledPrototypeString(),
+                  str_proto.As<JSValue>(), false, false, false);
+  
   // Set properties for String Prototype
   SetFunctionProperty(vm, str_proto, factory->NewString(u"toString"),
                       JSString::ToString, true, false, true);

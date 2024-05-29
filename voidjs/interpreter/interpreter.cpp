@@ -2298,18 +2298,18 @@ JSHandle<JSValue> Interpreter::ApplyUnaryOperator(TokenType op, Expression* expr
       if (auto pref = std::get_if<Reference>(&ref)) {
         // a. If IsUnresolvableReference(val) is true, return "undefined".
         if (pref->IsUnresolvableReference()) {
-          return vm_->GetGlobalConstants()->HandledUndefined().As<JSValue>();
+          return vm_->GetGlobalConstants()->HandledUndefinedString().As<JSValue>();
         }
         // b. Let val be GetValue(val).
       }
       auto val = GetValue(ref);
       
-      // 4. Return a String determined by Type(val) according to Table 20.
+      // 2. Return a String determined by Type(val) according to Table 20.
       std::u16string_view str;
       if (val->IsUndefined()) {
         str = u"undefined";
       } else if (val->IsNull()) {
-        str = u"null";
+        str = u"object";
       } else if (val->IsBoolean()) {
         str = u"boolean";
       } else if (val->IsNumber()) {

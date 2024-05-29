@@ -12,7 +12,7 @@ namespace types {
 
 Reference LexicalEnvironment::GetIdentifierReference(VM* vm, JSHandle<LexicalEnvironment> lex, JSHandle<String> name, bool strict) {
   // 1. If lex is the value null, then
-  if (lex.IsEmpty()) {
+  if (lex.IsEmpty() || lex.As<JSValue>()->IsHole()) {
     // a. Return a value of type Reference whose base value is undefined,
     //  whose referenced name is name, and whose strict mode flag is strict.
     return Reference{JSHandle<JSValue>{vm, JSValue::Undefined()}, name, strict};

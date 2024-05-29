@@ -1174,6 +1174,28 @@ filtered.join();
   EXPECT_EQ(u"12,130,44", comp.GetValue()->GetString());
 }
 
+TEST(JSString, StringConstructorConstruct) {
+  Parser parser(uR"(
+var count = 0;
+
+var a = new String("Hello world"); // a === "Hello world" 为 false
+
+count += !(a === "Hello world");
+count += a instanceof String;
+//count += typeof a === "object";
+)");
+
+  Interpreter interpreter;
+
+  auto prog = parser.ParseProgram();
+  ASSERT_TRUE(prog->IsProgram());
+
+  auto comp = interpreter.Execute(prog);
+  EXPECT_EQ(types::CompletionType::NORMAL, comp.GetType());
+  ASSERT_TRUE(comp.GetValue()->IsInt());
+  EXPECT_EQ(3, comp.GetValue()->GetInt());
+}
+
 TEST(JSString, ToString) {
   Parser parser(uR"(
 var x = new String("Hello World");
