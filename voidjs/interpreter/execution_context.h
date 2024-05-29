@@ -20,18 +20,21 @@ class ExecutionContext {
     : lexical_environment_(lex_env),
       variable_environment_(var_env),
       this_binding_(obj), is_strict_(is_strict) {
-    label_set_.insert(u"");
+    label_set_.push_back(u"");
   }
   
   bool HasLabel(std::u16string_view label) {
-    return label_set_.find(label) != label_set_.end();
+    return std::find(label_set_.begin(), label_set_.end(), label) != label_set_.end();
+  }
+  bool IsCurrentLabel(std::u16string_view label) {
+    return label == label_set_.back();
   }
   void AddLabel(std::u16string_view label) {
     cur_label_ = label;
-    label_set_.insert(label);
+    label_set_.push_back(label);
   }
-  void DeleteLabel(std::u16string_view label) {
-    label_set_.erase(label);
+  void DeleteLabel() {
+    label_set_.pop_back();
   }
   
   bool InIteration() const { return iteration_depth_ > 0; }
@@ -72,7 +75,7 @@ class ExecutionContext {
   
  private:
   // label set
-  std::unordered_set<std::u16string_view> label_set_;  // contain "" initially
+  std::vector<std::u16string_view> label_set_;  // contain "" initially
   std::u16string_view cur_label_;
 
   // iteration

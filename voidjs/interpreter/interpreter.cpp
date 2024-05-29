@@ -283,11 +283,11 @@ Completion Interpreter::EvalDoWhileStatement(DoWhileStatement* do_while_stmt) {
     // c. If stmt.type is not continue ||
     //    stmt.target is not in the current label set, then
     if (stmt.GetType() != CompletionType::CONTINUE ||
-        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        !vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
       // i. If stmt.type is break and stmt.target is in the current label set,
       //    return (normal, V, empty).
       if (stmt.GetType() == CompletionType::BREAK &&
-          vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+          vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
         vm_->GetExecutionContext()->ExitIteration();
         return Completion(CompletionType::NORMAL, V);
       }
@@ -349,10 +349,10 @@ Completion Interpreter::EvalWhileStatement(WhileStatement* while_stmt) {
     // e. If stmt.type is not continue ||
     //    stmt.target is not in the current label set, then
     if (stmt.GetType() != CompletionType::CONTINUE || 
-        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        !vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
       // i. If stmt.type is break and stmt.target is in the current label set, then
       if (stmt.GetType() == CompletionType::BREAK &&
-          vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+          vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
         // 1. Return (normal, V, empty).
         vm_->GetExecutionContext()->ExitIteration();
         return Completion(CompletionType::NORMAL, V);
@@ -415,7 +415,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     // d. If stmt.type is break and stmt.target is in the current label set,
     //    return (normal, V, empty).
     if (stmt.GetType() == CompletionType::BREAK &&
-        vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
       vm_->GetExecutionContext()->ExitIteration();
       return Completion(CompletionType::NORMAL, V);
     }
@@ -423,7 +423,7 @@ Completion Interpreter::EvalForStatement(ForStatement *for_stmt) {
     // e. If stmt.type is not continue ||
     //    stmt.target is not in the current label set, then
     if (stmt.GetType() != CompletionType::CONTINUE || 
-        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        !vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
       // 1. If stmt is an abrupt completion, return stmt.
       if (stmt.IsAbruptCompletion()) {
         vm_->GetExecutionContext()->ExitIteration();
@@ -503,13 +503,13 @@ Completion Interpreter::EvalForInStatement(ForInStatement* for_in_stmt) {
     }
     // f. If stmt.type is break and stmt.target is in the current label set, return (normal, V, empty).
     if (stmt.GetType() == CompletionType::BREAK &&
-        vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
       return Completion{CompletionType::NORMAL, V};
     }
     
     // g. If stmt.type is not continue || stmt.target is not in the current label set, then
     if (stmt.GetType() != CompletionType::CONTINUE ||
-        !vm_->GetExecutionContext()->HasLabel(stmt.GetTarget())) {
+        !vm_->GetExecutionContext()->IsCurrentLabel(stmt.GetTarget())) {
       // i. If stmt is an abrupt completion, return stmt.
       if (stmt.IsAbruptCompletion()) {
         return stmt;
@@ -663,7 +663,7 @@ Completion Interpreter::EvalSwitchStatement(SwitchStatement* switch_stmt) {
   
   // 3. If R.type is break and R.target is in the current label set, return (normal, R.value, empty).
   if (R.GetType() == CompletionType::BREAK &&
-      vm_->GetExecutionContext()->HasLabel(R.GetTarget())) {
+      vm_->GetExecutionContext()->IsCurrentLabel(R.GetTarget())) {
     return Completion{CompletionType::NORMAL, R.GetValue()};
   }
   
@@ -695,11 +695,11 @@ Completion Interpreter::EvalLabelledStatement(LabelledStatement* label_stmt) {
   auto ret = EvalStatement(label_stmt->GetBody());
   RETURN_COMPLETION_IF_HAS_EXCEPTION(vm_);
   if (ret.GetType() == CompletionType::BREAK && ret.GetTarget() == label) {
-    vm_->GetExecutionContext()->DeleteLabel(label);
+    vm_->GetExecutionContext()->DeleteLabel();
     return Completion{CompletionType::NORMAL, ret.GetValue()};
   }
   
-  vm_->GetExecutionContext()->DeleteLabel(label);
+  vm_->GetExecutionContext()->DeleteLabel();
   
   return ret;
 }
