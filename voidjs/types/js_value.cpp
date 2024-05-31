@@ -5,7 +5,6 @@
 #include <limits>
 #include <iostream>
 #include <locale>
-#include <unistd.h>
 
 #include "voidjs/lexer/character.h"
 #include "voidjs/parser/parser.h"

@@ -52,7 +52,7 @@ TEST(JSValue, ToNumber) {
     types::Number num = JSValue::ToNumber(vm, val);
 
     ASSERT_TRUE(num.IsDouble());
-    EXPECT_EQ(0.42, num.GetDouble());
+    EXPECT_DOUBLE_EQ(0.42, num.GetDouble());
   }
 
 

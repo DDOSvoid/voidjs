@@ -54,28 +54,28 @@ constexpr bool IsLineTerminator(char16_t ch) {
 
 // Identifier Predicates
 // Defined in ECMAScript 5.1 Chapter 7.6
-constexpr bool IsUnicodeLetter(char16_t ch) {
+inline bool IsUnicodeLetter(char16_t ch) {
   return 1 << unicode::GetCategory(ch) & (unicode::Lu | unicode::Ll | unicode::Lt |
                                           unicode::Lm | unicode::Lo | unicode::Nl);
 }
 
-constexpr bool IsUnicodeCombiningMark(char16_t ch) {
+inline bool IsUnicodeCombiningMark(char16_t ch) {
   return 1 << unicode::GetCategory(ch) & (unicode::Mn | unicode::Mc);
 }
 
-constexpr bool IsUnicodeDigit(char16_t ch) {
+inline bool IsUnicodeDigit(char16_t ch) {
   return unicode::GetCategory(ch) == unicode::DECIMAL_DIGIT_NUMBER;
 }
 
-constexpr bool IsUnicodeConnectorPunctuation(char16_t ch) {
+inline bool IsUnicodeConnectorPunctuation(char16_t ch) {
   return unicode::GetCategory(ch) == unicode::CONNECTOR_PUNCTUATION;
 }
 
-constexpr bool IsIdentifierStart(char16_t ch) {
+inline bool IsIdentifierStart(char16_t ch) {
   return IsUnicodeLetter(ch) || ch == u'$' || ch == u'_' || ch == u'\\';
 }
 
-constexpr bool IsIdentifierPart(char16_t ch) {
+inline bool IsIdentifierPart(char16_t ch) {
   return
     IsIdentifierStart(ch) || IsUnicodeCombiningMark(ch)        ||
     IsUnicodeDigit(ch)   || IsUnicodeConnectorPunctuation(ch) ||
@@ -84,41 +84,41 @@ constexpr bool IsIdentifierPart(char16_t ch) {
 
 // Numeric Literal Predicates
 // Defined in ECMAScript 5.1 Charpter 7.8.3
-constexpr bool IsDecimalDigit(char16_t ch) {
+inline bool IsDecimalDigit(char16_t ch) {
   return u'0' <= ch && ch <= u'9'; 
 }
 
-constexpr bool IsNonZeroDigit(char16_t ch) {
+inline bool IsNonZeroDigit(char16_t ch) {
   return u'1' <= ch && ch <= u'9';
 }
 
-constexpr bool IsHexDigit(char16_t ch) {
+inline bool IsHexDigit(char16_t ch) {
   return IsDecimalDigit(ch) || (u'a' <= ch && ch <= u'f') || (u'A' <= ch && ch <= u'F');
 }
 
 // String Literal Predicates
 // Defined in EcMAScript 5.1 Charpter 7.8.4
-constexpr bool IsSingleEscapeCharacter(char16_t ch) {
+inline bool IsSingleEscapeCharacter(char16_t ch) {
   return
     ch == u'\'' || ch == u'"'  || ch == u'\\' || ch == u'b' ||
     ch == u'f'  || ch == u'n'  || ch == u'r'  ||
     ch == u't'  || ch == u'v';
 }
 
-constexpr bool IsEscapeCharacter(char16_t ch) {
+inline bool IsEscapeCharacter(char16_t ch) {
   return IsSingleEscapeCharacter(ch) || IsDecimalDigit(ch) || ch == u'x' || ch == u'u';
 }
 
-constexpr bool IsNonEscapeCharacter(char16_t ch) {
+inline bool IsNonEscapeCharacter(char16_t ch) {
   return !IsEscapeCharacter(ch) || !IsLineTerminator(ch); 
 }
 
-constexpr bool IsCharacterEscapeSequence(char16_t c) {
+inline bool IsCharacterEscapeSequence(char16_t c) {
   return IsSingleEscapeCharacter(c) || IsNonEscapeCharacter(c);
 }
 
 // This code is copied directly from https://github.com/zhuzilin/es/blob/67fb4d579bb142669acd8384ea34c62cd052945c/es/parser/character.h#L166
-constexpr char16_t ToLowerCase(char16_t c) {
+inline char16_t ToLowerCase(char16_t c) {
   if ('A' <= c && c <= 'Z') {
     return c + ('a' - 'A');
   }
@@ -156,7 +156,7 @@ constexpr char16_t ToLowerCase(char16_t c) {
   return c;
 }
 
-constexpr char16_t ToUpperCase(char16_t c) {
+inline char16_t ToUpperCase(char16_t c) {
   if ('a' <= c && c <= 'z') {
     return c - ('a' - 'A');
   }
