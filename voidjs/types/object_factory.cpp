@@ -41,10 +41,6 @@ JSHandle<types::String> ObjectFactory::NewStringFromInt(std::int32_t i) {
   return JSValue::NumberToString(vm_, i);
 }
 
-JSHandle<types::String> ObjectFactory::NewString(char16_t ch) {
-  return NewString(std::u16string{1, ch});
-}
-
 JSHandle<types::Array> ObjectFactory::NewArray(std::size_t len) {
   auto arr = NewHeapObject(sizeof(std::size_t) + len * sizeof(JSValue)).As<types::Array>();
   arr->SetType(JSType::ARRAY);

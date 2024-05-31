@@ -84,16 +84,19 @@ void ExecutionContext::DeclarationBindingInstantiation(VM* vm, ast::AstNode* ast
   bool configurable_bindings = false;
 
   // 3. If code is strict mode code, then let strict be true else let strict be false.
-  bool strict = std::invoke([=]() {
-    if (ast_node->IsProgram()) {
-      return ast_node->AsProgram()->IsStrict();
-    } else if (ast_node->IsFunctionDeclaration()) {
-      return ast_node->AsFunctionDeclaration()->IsStrict();
-    } else {
-      // ast_node must be FunctionExpression
-      return ast_node->AsFunctionExpression()->IsStrict();
-    }
-  });
+  bool strict =
+    std::invoke([=]() {
+      if (ast_node->IsProgram()) {
+        return ast_node->AsProgram()->IsStrict();
+      } else if (ast_node->IsFunctionDeclaration()) {
+        return ast_node->AsFunctionDeclaration()->IsStrict();
+      } else {
+        // ast_node must be FunctionExpression
+        return ast_node->AsFunctionExpression()->IsStrict();
+      }
+    })
+    ||
+    vm->GetExecutionContext()->IsStrict();
 
   // 4. If code is function code, then
   if (ast_node->IsFunctionExpression() || ast_node->IsFunctionDeclaration()) {

@@ -691,6 +691,12 @@ JSHandle<JSValue> Object::Call(VM* vm, JSHandle<Object> O, JSHandle<JSValue> thi
     ret = builtins::JSFunction::FunctionConstructorCall(info);
   } else if (O.GetJSValue() == vm->GetArrayConstructor().GetJSValue()) {
     ret = builtins::JSArray::ArrayConstructorCall(info);
+  } else if (O.GetJSValue() == vm->GetStringConstructor().GetJSValue()) {
+    ret = builtins::JSString::StringConstructorCall(info);
+  } else if (O.GetJSValue() == vm->GetBooleanConstructor().GetJSValue()) {
+    ret = builtins::JSBoolean::BooleanConstructorCall(info);
+  } else if (O.GetJSValue() == vm->GetNumberConstructor().GetJSValue()) {
+    ret = builtins::JSNumber::NumberConstructorCall(info);
   } else if (O.GetJSValue() == vm->GetErrorConstructor().GetJSValue()) {
     ret = builtins::JSError::ErrorConstructorCall(info);
   }

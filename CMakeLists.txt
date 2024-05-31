@@ -70,8 +70,8 @@ add_executable(
   test/test_js_value.cpp
   test/test_internal_types.cpp
   test/test_builtins.cpp
-  test/test_gc.cpp
-  test/test.cpp
+  test/quickjs_test.cpp
+  test/voidjs_test.cpp
 )
 target_link_libraries(
   unit_test

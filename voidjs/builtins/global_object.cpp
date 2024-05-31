@@ -53,12 +53,12 @@ JSValue GlobalObject::Print(RuntimeCallInfo* argv) {
 
   std::string output_string;
   for (std::size_t idx = 0; idx < args_num; ++idx) {
-    JSHandle<JSValue> value = argv->GetArg(idx);
-    JSHandle<types::String> string = JSValue::ToString(vm, value);
-    output_string += utils::U16StrToU8Str(std::u16string{string->GetString()});
     if (idx != 0) {
       output_string.push_back(' ');
     }
+    JSHandle<JSValue> value = argv->GetArg(idx);
+    JSHandle<types::String> string = JSValue::ToString(vm, value);
+    output_string += utils::U16StrToU8Str(std::u16string{string->GetString()});
   }
 
   std::cout << output_string << std::endl;

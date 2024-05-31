@@ -130,7 +130,7 @@ JSValue JSFunction::FunctionConstructorConstruct(RuntimeCallInfo* argv) {
   }
   
   // 9. If body is strict mode code (see 10.1.1) then let strict be true, else let strict be false.
-  bool strict = false;
+  bool strict = func_expr->AsFunctionExpression()->IsStrict();
   
   // 10. If strict is true, throw any exceptions specified in 13.1 that apply.
   // todo

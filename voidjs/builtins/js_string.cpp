@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "voidjs/builtins/builtin.h"
 #include "voidjs/gc/js_handle_scope.h"
 #include "voidjs/types/heap_object.h"
 #include "voidjs/types/js_value.h"
@@ -18,6 +19,44 @@
 
 namespace voidjs {
 namespace builtins {
+
+// Defined in ECMAScript 5.1 Chapter 15.5.5.2
+types::PropertyDescriptor JSString::GetOwnProperty(VM* vm, JSHandle<JSString> S, JSHandle<types::String> P) {
+  // 1. Let desc be the result of calling the default [[GetOwnProperty]] internal method (8.12.1) on S with argument P.
+  types::PropertyDescriptor desc = types::Object::GetOwnPropertyDefault(vm, S, P);
+  
+  // 2. If desc is not undefined return desc.
+  if (!desc.IsEmpty()) {
+    return desc;
+  }
+  
+  // 3. If ToString(abs(ToInteger(P))) is not the same value as P, return undefined.
+  if (!JSValue::ToString(vm, JSHandle<JSValue>{vm, types::Number::Abs(JSValue::ToInteger(vm, P.As<JSValue>()))})->Equal(P)) {
+    return {};
+  }
+  
+  // 4. Let str be the String value of the [[PrimitiveValue]] internal property of S.
+  auto str = JSHandle<types::String>{vm, S->GetPrimitiveValue()};
+  
+  // 5. Let index be ToInteger(P).
+  types::Number index = JSValue::ToInteger(vm, P.As<JSValue>());
+  
+  // 6. Let len be the number of characters in str.
+  std::size_t len = str->GetLength();
+  
+  // 7. If len ≤ index, return undefined.
+  if (len <= index.GetNumber()) {
+    return {};
+  }
+  
+  // 8. Let resultStr be a String of length 1, containing one character from str,
+  //    specifically the character at position index, where the first (leftmost) character in str is considered to be at position 0,
+  //    the next one at position 1, and so on.
+  JSHandle<types::String> result_str = types::String::CharAt(vm, str, index.GetNumber());
+  
+  // 9. Return a Property Descriptor { [[Value]]: resultStr, [[Enumerable]]: true, [[Writable]]: false, [[Configurable]]: false }
+  return types::PropertyDescriptor{vm, result_str.As<JSValue>(), true, false, false};
+}
 
 // String([value])
 // Defined in ECMAScript 5.1 Chapter 15.5.1.1
@@ -56,45 +95,28 @@ JSValue JSString::StringConstructorConstruct(RuntimeCallInfo* argv) {
     vm->GetGlobalConstants()->HandledEmptyString() : JSValue::ToString(vm, argv->GetArg(0));
   str->SetPrimitiveValue(val.As<JSValue>());
 
+  // The number of characters in the String value represented by this String object.
+  // Once a String object is created, this property is unchanging.
+  // It has the attributes { [[Writable]]: false, [[Enumerable]]: false, [[Configurable]]: false }.
+  Builtin::SetDataProperty(vm, str, vm->GetGlobalConstants()->HandledLengthString(),
+                           JSHandle<JSValue>{vm, JSValue{static_cast<int>(val->GetLength())}}, false, false, false);
+
   return str.GetJSValue();
 }
 
-// Defined in ECMAScript 5.1 Chapter 15.5.5.2
-types::PropertyDescriptor JSString::GetOwnProperty(VM* vm, JSHandle<JSString> S, JSHandle<types::String> P) {
-  // 1. Let desc be the result of calling the default [[GetOwnProperty]] internal method (8.12.1) on S with argument P.
-  types::PropertyDescriptor desc = types::Object::GetOwnPropertyDefault(vm, S, P);
-  
-  // 2. If desc is not undefined return desc.
-  if (!desc.IsEmpty()) {
-    return desc;
+// String.fromCharCode([char0,[,char1[,...]]])
+// Defined in ECMAScript 5.1 Chapter 15.5.3.2
+JSValue JSString::FromCharCode(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  std::size_t args_num = argv->GetArgsNum();
+  ObjectFactory* factory = vm->GetObjectFactory();
+
+  std::u16string result;
+  for (std::size_t idx = 0; idx < args_num; ++idx) {
+    result += JSValue::ToUint16(vm, argv->GetArg(idx));
   }
-  
-  // 3. If ToString(abs(ToInteger(P))) is not the same value as P, return undefined.
-  if (!JSValue::ToString(vm, JSHandle<JSValue>{vm, types::Number::Abs(JSValue::ToInteger(vm, P.As<JSValue>()))})->Equal(P)) {
-    return {};
-  }
-  
-  // 4. Let str be the String value of the [[PrimitiveValue]] internal property of S.
-  auto str = JSHandle<types::String>{vm, S->GetPrimitiveValue()};
-  
-  // 5. Let index be ToInteger(P).
-  types::Number index = JSValue::ToInteger(vm, P.As<JSValue>());
-  
-  // 6. Let len be the number of characters in str.
-  std::size_t len = str->GetLength();
-  
-  // 7. If len ≤ index, return undefined.
-  if (len <= index.GetNumber()) {
-    return {};
-  }
-  
-  // 8. Let resultStr be a String of length 1, containing one character from str,
-  //    specifically the character at position index, where the first (leftmost) character in str is considered to be at position 0,
-  //    the next one at position 1, and so on.
-  JSHandle<types::String> result_str = types::String::CharAt(vm, str, index.GetNumber());
-  
-  // 9. Return a Property Descriptor { [[Value]]: resultStr, [[Enumerable]]: true, [[Writable]]: false, [[Configurable]]: false }
-  return types::PropertyDescriptor{vm, result_str.As<JSValue>(), true, false, false};
+  return factory->NewString(result).GetJSValue();
 }
 
 // String.prototype.toString()
@@ -183,7 +205,42 @@ JSValue JSString::CharAt(RuntimeCallInfo* argv) {
   //    namely the character at position position,
   //    where the first (leftmost) character in S is considered to be at position 0,
   //    the next one at position 1, and so on.
-  return factory->NewString(std::u16string_view{S->GetData() + idx, 1}).GetJSValue();
+  return types::String::CharAt(vm, S, idx).GetJSValue();
+}
+
+// String.prototype.charCodeAt(pos)
+// Defined in ECMAScript 5.1 Chapter 15.5.4.5
+JSValue JSString::CharCodeAt(RuntimeCallInfo* argv) {
+  VM* vm = argv->GetVM();
+  JSHandleScope handle_scope{vm};
+  JSHandle<JSValue> this_value = argv->GetThis();
+  JSHandle<JSValue> pos = argv->GetArg(0);
+  ObjectFactory* factory = vm->GetObjectFactory();
+  
+  // 1. Call CheckObjectCoercible passing the this value as its argument.
+  JSValue::CheckObjectCoercible(vm, this_value);
+  RETURN_VALUE_IF_HAS_EXCEPTION(vm, JSValue{});
+  
+  // 2. Let S be the result of calling ToString, giving it the this value as its argument.
+  auto S = JSValue::ToString(vm, this_value);
+  
+  // 3. Let position be ToInteger(pos).
+  auto position = JSValue::ToInteger(vm, pos).GetNumber();
+  
+  // 4. Let size be the number of characters in S.
+  auto size = S->GetLength();
+  
+  // 5. If position < 0 or position ≥ size, return NaN.
+  if (position < 0 || position >= size) {
+    return types::Number::NaN();
+  }
+  auto idx = static_cast<int>(position);
+
+  // 6. Return a value of Number type,
+  //    whose value is the code unit value of the character at position position in the String S,
+  //    where the first (leftmost) character in S is considered to be at position 0,
+  //    the next one at position 1, and so on.
+  return types::Number{static_cast<std::int32_t>(S->GetString().at(idx))};
 }
 
 // String.prototype.concat([string1[,string2[,...]]]

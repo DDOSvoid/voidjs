@@ -552,6 +552,9 @@ void Builtin::SetPropertiesForStringObjects(VM* vm) {
   SetDataProperty(vm, str_ctor, constants->HandledPrototypeString(),
                   str_proto.As<JSValue>(), false, false, false);
   
+  SetFunctionProperty(vm, str_ctor, factory->NewString(u"fromCharCode"),
+                      JSString::FromCharCode, true, false, true);
+  
   // Set properties for String Prototype
   SetFunctionProperty(vm, str_proto, factory->NewString(u"toString"),
                       JSString::ToString, true, false, true);
@@ -559,6 +562,8 @@ void Builtin::SetPropertiesForStringObjects(VM* vm) {
                       JSString::ValueOf, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"charAt"),
                       JSString::CharAt, true, false, true);
+  SetFunctionProperty(vm, str_proto, factory->NewString(u"charCodeAt"),
+                      JSString::CharCodeAt, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"concat"),
                       JSString::Concat, true, false, true);
   SetFunctionProperty(vm, str_proto, factory->NewString(u"indexOf"),

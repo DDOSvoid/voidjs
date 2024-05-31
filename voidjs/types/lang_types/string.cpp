@@ -25,7 +25,7 @@ JSHandle<String> String::Substring(VM* vm, JSHandle<String> string, std::size_t 
 }
 
 JSHandle<String> String::CharAt(VM* vm, JSHandle<String> string, std::size_t pos) {
-  return vm->GetObjectFactory()->NewString(string->GetString().at(pos));
+  return vm->GetObjectFactory()->NewString(string->GetString().substr(pos, 1));
 }
 
 

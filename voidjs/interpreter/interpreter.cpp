@@ -1215,7 +1215,8 @@ JSHandle<JSValue> Interpreter::EvalFunctionExpression(FunctionExpression* func_e
   
   if (!func_expr->GetName()) {
     return Builtin::InstantiatingFunctionDeclaration(
-      vm_, func_expr, vm_->GetExecutionContext()->GetLexicalEnvironment(), false).As<JSValue>();
+      vm_, func_expr, vm_->GetExecutionContext()->GetLexicalEnvironment(),
+      vm_->GetExecutionContext()->IsStrict() || func_expr->IsStrict()).As<JSValue>();
   }
   auto ident = vm_->GetObjectFactory()->NewString(func_expr->GetName()->AsIdentifier()->GetName());
 
@@ -1723,7 +1724,7 @@ std::pair<JSHandle<String>, PropertyDescriptor> Interpreter::EvalPropertyAssignm
     //    Pass in true as the Strict flag if the PropertyAssignment is contained in strict code or if its FunctionBody is strict code.
     bool strict = vm_->GetExecutionContext()->IsStrict() || prop->GetValue()->AsFunctionExpression()->IsStrict();
     JSHandle<JSFunction> closure = Builtin::InstantiatingFunctionDeclaration(
-      vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), false);
+      vm_, prop->GetValue(), vm_->GetExecutionContext()->GetLexicalEnvironment(), strict);
     
     // 3. Let desc be the Property Descriptor{[[Set]]: closure, [[Enumerable]]: true, [[Configurable]]: true}
     auto desc = PropertyDescriptor{vm_, JSHandle<JSValue>{}, closure.As<JSValue>(), true, true};
